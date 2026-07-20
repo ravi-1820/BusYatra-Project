@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<!-- Success Confirmation Header -->
+    <div class="container my-4 text-center print-hide">
+        <div class="icon-container icon-green mx-auto mb-3" style="width: 80px; height: 80px; border-radius: 50%;">
+            <i class="bi bi-check-circle-fill fs-1 text-success"></i>
+        </div>
+        <h2 class="text-navy-dark fw-bold">Booking Confirmed!</h2>
+        <p class="text-muted">Your ticket has been generated successfully. Happy Journey!</p>
+    </div>
+
+    <!-- E-Ticket Main Card -->
+    <main class="container mb-5">
+        <div class="ticket-container">
+            <!-- Ticket Top Header -->
+            <div class="ticket-header d-flex flex-wrap justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-3">
+                    <img src="{% static 'assets/images/logo.png' %}" alt="BusYatra Logo" height="42" class="bg-white p-1 rounded">
+                    <div>
+                        <h4 class="mb-1 text-white fw-bold">BusYatra E-Ticket</h4>
+                        <span class="text-white-50 small">Show this QR code at the time of boarding</span>
+                    </div>
+                </div>
+                <div class="text-md-end text-start mt-2 mt-md-0">
+                    <span class="badge bg-success text-white px-3 py-2 rounded-pill fw-bold fs-6">CONFIRMED</span>
+                </div>
+            </div>
+
+            <!-- Ticket Body -->
+            <div class="ticket-body">
+                <!-- Row 1: Journey Route details -->
+                <div class="row align-items-center gy-4 mb-4">
+                    <div class="col-md-5">
+                        <span class="text-muted small">Boarding From</span>
+                        <h4 class="text-navy-dark fw-bold mb-1" id="ticketFrom">{{ bookings.first.bus.source }}</h4>
+                        <p class="text-muted small mb-0" id="ticketBoardingPoint">Main Bus Terminus</p>
+                    </div>
+                    <div class="col-md-2 text-center">
+                        <div class="d-none d-md-block">
+                            <i class="bi bi-arrow-right text-primary fs-3"></i>
+                        </div>
+                        <div class="d-md-none">
+                            <i class="bi bi-arrow-down text-primary fs-3"></i>
+                        </div>
+                        <span class="badge bg-light text-navy-dark border px-2 py-1 rounded" id="ticketBusName">{{ bookings.first.bus.bus_name }}</span>
+                    </div>
+                    <div class="col-md-5 text-md-end text-start">
+                        <span class="text-muted small">Destination</span>
+                        <h4 class="text-navy-dark fw-bold mb-1" id="ticketTo">{{ bookings.first.bus.destination }}</h4>
+                        <p class="text-muted small mb-0" id="ticketDroppingPoint">Central Drop Point</p>
+                    </div>
+                </div>
+
+                <!-- Row 2: Timing details -->
+                <div class="row gy-3 bg-light p-3 rounded-4 mb-4">
+                    <div class="col-sm-4">
+                        <span class="text-muted small d-block">Travel Date</span>
+                        <span class="fw-semibold text-navy-dark" id="ticketDate">{{ bookings.first.travel_date }}</span>
+                    </div>
+                    <div class="col-sm-4">
+                        <span class="text-muted small d-block">Departure Time</span>
+                        <span class="fw-semibold text-navy-dark" id="ticketTime">{{ bookings.first.bus.departure_time }}</span>
+                    </div>
+                    <div class="col-sm-4">
+                        <span class="text-muted small d-block">Ticket Booking ID</span>
+                        <span class="fw-bold text-primary" id="ticketId">BY-{{ bookings.first.id }}</span>
+                    </div>
+                </div>
+
+                <!-- Row 3: Passenger Grid table -->
+                <h6 class="text-navy-dark fw-bold mb-3"><i class="bi bi-people-fill text-primary me-2"></i>Passenger
+                    Information</h6>
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Name</th>
+                                <th class="text-center">Age</th>
+                                <th class="text-center">Gender</th>
+                                <th class="text-center">Seat Assigned</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ticketPassengersBody">
+                            {% for booking in bookings %}
+                            <tr>
+                                <td class="fw-medium">{{ booking.passenger_name }}</td>
+                                <td class="text-center">{{ booking.passenger_age }}</td>
+                                <td class="text-center">{{ booking.passenger_gender }}</td>
+                                <td class="text-center fw-bold text-primary">{{ booking.seat_number }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Cutting Notch Line -->
+                <div class="ticket-divider"></div>
+
+                <!-- Row 4: QR Code & Payment Summary -->
+                <div class="row align-items-center gy-4">
+                    <div class="col-md-3 text-center">
+                        <div class="qr-code-box shadow-sm bg-white">
+                            <!-- Clean SVG QR Code -->
+                            <svg width="100" height="100" viewBox="0 0 24 24" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <rect width="24" height="24" fill="white" />
+                                <path d="M1 1H7V7H1V1ZM2 2V6H6V2H2ZM3 3H5V5H3V3Z" fill="#0F172A" />
+                                <path d="M17 1H23V7H17V1ZM18 2V6H22V2H18ZM19 3H21V5H19V3Z" fill="#0F172A" />
+                                <path d="M1 17H7V23H1V17ZM2 18V22H6V18H2ZM3 19H5V21H3V19Z" fill="#0F172A" />
+                                <rect x="9" y="1" width="2" height="2" fill="#0F172A" />
+                                <rect x="13" y="1" width="2" height="2" fill="#0F172A" />
+                                <rect x="9" y="5" width="2" height="2" fill="#0F172A" />
+                                <rect x="9" y="9" width="6" height="2" fill="#0F172A" />
+                                <rect x="1" y="9" width="2" height="6" fill="#0F172A" />
+                                <rect x="5" y="13" width="2" height="2" fill="#0F172A" />
+                                <rect x="17" y="9" width="2" height="6" fill="#0F172A" />
+                                <rect x="21" y="13" width="2" height="2" fill="#0F172A" />
+                                <rect x="9" y="13" width="2" height="2" fill="#0F172A" />
+                                <rect x="9" y="17" width="2" height="6" fill="#0F172A" />
+                                <rect x="13" y="17" width="2" height="2" fill="#0F172A" />
+                                <rect x="17" y="17" width="6" height="2" fill="#0F172A" />
+                                <rect x="17" y="21" width="6" height="2" fill="#0F172A" />
+                            </svg>
+                        </div>
+                        <div class="small text-muted mt-2">Scan to Verify</div>
+                    </div>
+                    <div class="col-md-9">
+                        <h6 class="text-navy-dark fw-bold mb-2">Payment Details</h6>
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <span class="text-muted small">Status:</span>
+                                <span class="text-success fw-bold d-block"><i
+                                        class="bi bi-patch-check-fill me-1"></i>PAID</span>
+                            </div>
+                            <div class="col-6">
+                                <span class="text-muted small">Amount:</span>
+                                <span class="text-navy-dark fw-bold d-block" id="ticketTotalAmount">₹{{ total_amount }}</span>
+                            </div>
+                        </div>
+                        <div class="bg-light p-2 rounded-3 border">
+                            <span class="text-muted small d-block" style="font-size: 0.75rem;"><i
+                                    class="bi bi-info-circle me-1"></i>Terms & Guidelines</span>
+                            <p class="mb-0 text-muted" style="font-size: 0.7rem; line-height: 1.3;">
+                                Please arrive at the boarding location at least 30 minutes prior to departure.
+                                Passengers must show a valid government-issued photo identity proof at the time of
+                                boarding. Tickets are non-transferable.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="text-center mt-4 print-hide action-buttons">
+            <button class="btn btn-primary-custom px-4 py-2 me-2" onclick="window.print();"><i
+                    class="bi bi-printer me-2"></i>Print Ticket</button>
+            <button onclick="downloadPDF();" class="btn btn-outline-primary px-4 py-2 me-2" id="btnDownload"><i
+                    class="bi bi-download me-2"></i>Download PDF</button>
+            <a href="{% url 'index' %}" class="btn btn-amber-custom px-4 py-2"><i class="bi bi-house-door me-2"></i>Book Another Ticket</a>
+        </div>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script>
+    function downloadPDF() {
+        // Select the ticket container element
+        const element = document.querySelector('.ticket-container');
+        
+        // Store original styles to restore after rendering
+        const originalWidth = element.style.width;
+        const originalMaxWidth = element.style.maxWidth;
+        const originalMargin = element.style.margin;
+        const originalBoxShadow = element.style.boxShadow;
+        const originalBorder = element.style.border;
+        
+        // Force A4 optimized dimensions and remove shadows for clean PDF output
+        element.style.width = '100%';
+        element.style.maxWidth = '680px';
+        element.style.margin = '0 auto';
+        element.style.boxShadow = 'none';
+        element.style.border = '1px solid #cbd5e1';
+        
+        // Configure options for pixel-perfect high-resolution A4 rendering
+        const opt = {
+            margin:       [10, 10, 10, 10], // 10mm margins on all sides
+            filename:     'BusYatra_Ticket.pdf',
+            image:        { type: 'jpeg', quality: 1.0 },
+            html2canvas:  { 
+                scale: 2.5, // High resolution scale
+                useCORS: true, 
+                logging: false,
+                scrollY: 0,
+                scrollX: 0
+            },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+        
+        // Generate and download the PDF, then restore original visual styles
+        html2pdf().set(opt).from(element).save().then(() => {
+            element.style.width = originalWidth;
+            element.style.maxWidth = originalMaxWidth;
+            element.style.margin = originalMargin;
+            element.style.boxShadow = originalBoxShadow;
+            element.style.border = originalBorder;
+        }).catch((err) => {
+            console.error('PDF Generation Error:', err);
+            // Restore styles in case of error
+            element.style.width = originalWidth;
+            element.style.maxWidth = originalMaxWidth;
+            element.style.margin = originalMargin;
+            element.style.boxShadow = originalBoxShadow;
+            element.style.border = originalBorder;
+        });
+    }
+    </script>
+
+    <!-- Footer Section -->
+{% endblock %}

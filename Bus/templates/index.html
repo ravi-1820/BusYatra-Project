@@ -1,0 +1,266 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+
+<!-- Hero Banner Section -->
+<header class="hero-section">
+    <div class="container">
+        <div class="row align-items-center gy-4">
+            <div class="col-lg-6 text-center text-lg-start">
+                <h1 class="hero-title mb-3">Explore The World <span>Comfortably</span></h1>
+                <p class="hero-subtitle">Book premium AC sleeper and seater bus tickets at the lowest prices. Enjoy safe
+                    journeys with top-rated travel operators across the country.</p>
+                <div class="d-flex flex-wrap justify-content-center justify-content-lg-start gap-3">
+                    <a href="{% url 'bus_list' %}" class="btn btn-primary-custom btn-lg"><i
+                            class="bi bi-search me-2"></i>Book Now</a>
+                    <a href="#why-choose-us" class="btn btn-outline-primary btn-lg border-2 rounded-4"><i
+                            class="bi bi-shield-check me-2"></i>Safe Travel Guidelines</a>
+                </div>
+            </div>
+            <div class="col-lg-6 text-center">
+                <div class="position-relative d-inline-block">
+                    <img src="{% static 'assets/images/hero-bus.jpg' %}" alt="Travel Bus Banner"
+                        class="img-fluid rounded-4 shadow-lg border border-secondary border-opacity-25"
+                        style="max-height: 400px; object-fit: cover;">
+                    <span
+                        class="position-absolute top-0 end-0 m-3 badge rounded-pill bg-warning text-dark px-3 py-2 fs-6 shadow">
+                        <i class="bi bi-star-fill me-1"></i>4.5 rated
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- Search Form Section -->
+<section id="search-section" class="container mb-5">
+    <div class="search-card">
+        <h4 class="mb-4 text-navy-dark"><i class="bi bi-ticket-perforated text-primary me-2"></i>Search Bus Tickets</h4>
+        <form action="{% url 'bus_list' %}" method="GET" id="busSearchForm">
+            <div class="row g-3 align-items-end">
+                <!-- From Field -->
+                <div class="col-lg-3 col-md-6">
+                    <label class="form-label fw-semibold text-secondary">From City</label>
+                    <div class="input-group-custom">
+                        <i class="bi bi-geo-alt-fill text-primary"></i>
+                        <select class="form-select" name="from" id="fromCity">
+                            <option value="" selected>Select Source</option>
+                            {% for src in sources %}
+                            <option value="{{ src }}">{{ src }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Swap Button -->
+                <div class="col-lg-1 col-md-12 text-center my-2 my-lg-0">
+                    <button type="button" class="btn btn-swap-cities" id="swapBtn" title="Swap Cities">
+                        <i class="bi bi-arrow-left-right"></i>
+                    </button>
+                </div>
+
+                <!-- To Field -->
+                <div class="col-lg-3 col-md-6">
+                    <label class="form-label fw-semibold text-secondary">To City</label>
+                    <div class="input-group-custom">
+                        <i class="bi bi-geo-fill text-primary"></i>
+                        <select class="form-select" name="to" id="toCity">
+                            <option value="" selected>Select Destination</option>
+                            {% for dest in destinations %}
+                            <option value="{{ dest }}">{{ dest }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Date Field -->
+                <div class="col-lg-3 col-md-6">
+                    <label class="form-label fw-semibold text-secondary">Travel Date</label>
+                    <div class="input-group-custom">
+                        <i class="bi bi-calendar-event-fill text-primary"></i>
+                        <input type="date" class="form-control" name="date" id="travelDate" required>
+                    </div>
+                </div>
+
+                <!-- Passengers Field -->
+                <div class="col-lg-2 col-md-6">
+                    <label class="form-label fw-semibold text-secondary">Passengers</label>
+                    <div class="input-group-custom">
+                        <i class="bi bi-people-fill text-primary"></i>
+                        <select class="form-select" name="passengers" id="passengers" required>
+                            <option value="1" selected>1 Passenger</option>
+                            <option value="2">2 Passengers</option>
+                            <option value="3">3 Passengers</option>
+                            <option value="4">4 Passengers</option>
+                            <option value="5">5 Passengers</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="col-12 mt-4">
+                    <button type="submit" class="btn btn-primary-custom w-100 py-3 fs-5">
+                        <i class="bi bi-search me-2"></i>Search Available Buses
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</section>
+
+<!-- Popular Routes Section -->
+<section class="py-5 bg-white">
+    <div class="container">
+        <h2 class="section-title text-center">Popular Bus Routes</h2>
+        <div class="row g-4">
+            <div class="col-12 text-center mb-4">
+                <span class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill fw-semibold">
+                    <i class="bi bi-geo-alt-fill me-1"></i>Total Active Routes: {{ routes.count }}
+                </span>
+            </div>
+            {% for route in routes %}
+            <div class="col-md-6 col-lg-3">
+                <div class="card card-custom h-100">
+                    <div class="card-body p-4">
+                        <span class="badge bg-success-subtle text-success mb-2 px-3 py-1 rounded-pill">
+                            Daily Runs
+                        </span>
+                        <h5 class="card-title mb-1 text-navy-dark">
+                            {{ route.source }} to {{ route.destination }}
+                        </h5>
+                        <p class="text-muted small mb-3">
+                            <i class="bi bi-clock me-1"></i>
+                            {{ route.duration }} hrs travel time
+                        </p>
+                        <hr class="my-3 text-secondary opacity-25">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="text-muted small">Distance</span>
+                                <h4 class="text-primary mb-0">
+                                    {{ route.distance }} KM
+                                </h4>
+                            </div>
+                            <a href="{% url 'bus_list' %}?source={{ route.source }}&destination={{ route.destination }}"
+                                class="btn btn-amber-custom btn-sm px-3">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center">
+                <h5>No Routes Available</h5>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Why Choose Us Section -->
+<section id="why-choose-us" class="py-5 bg-light">
+    <div class="container">
+        <h2 class="section-title text-center">Why Book With BusYatra?</h2>
+        <div class="row g-4">
+            <!-- Card 1 -->
+            <div class="col-md-4 text-center">
+                <div class="card card-custom h-100 p-4 border-0">
+                    <div class="card-body">
+                        <div class="icon-container icon-blue mx-auto">
+                            <i class="bi bi-shield-fill-check fs-3"></i>
+                        </div>
+                        <h5 class="mb-2 text-navy-dark">100% Safe Travel</h5>
+                        <p class="text-muted mb-0">Track your bus live, get emergency alert buttons, and travel with
+                            certified drivers.</p>
+                    </div>
+                </div>
+            </div>
+            <!-- Card 2 -->
+            <div class="col-md-4 text-center">
+                <div class="card card-custom h-100 p-4 border-0">
+                    <div class="card-body">
+                        <div class="icon-container icon-amber mx-auto">
+                            <i class="bi bi-cash-stack fs-3"></i>
+                        </div>
+                        <h5 class="mb-2 text-navy-dark">No Booking Fees</h5>
+                        <p class="text-muted mb-0">We guarantee the lowest ticket pricing. Zero hidden commissions or
+                            extra checkout fees.</p>
+                    </div>
+                </div>
+            </div>
+            <!-- Card 3 -->
+            <div class="col-md-4 text-center">
+                <div class="card card-custom h-100 p-4 border-0">
+                    <div class="card-body">
+                        <div class="icon-container icon-green mx-auto">
+                            <i class="bi bi-headset fs-3"></i>
+                        </div>
+                        <h5 class="mb-2 text-navy-dark">24/7 Customer Care</h5>
+                        <p class="text-muted mb-0">Dedicated support team available round the clock to help with
+                            scheduling issues and refunds.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Testimonials Section -->
+<section class="py-5 bg-white">
+    <div class="container">
+        <h2 class="section-title text-center">What Our Travelers Say</h2>
+        <div id="testimonialCarousel" class="carousel slide" data-bs-ride="carousel">
+            <div class="carousel-inner">
+                <!-- Slide 1 -->
+                <div class="carousel-item active">
+                    <div class="row justify-content-center">
+                        <div class="col-md-8 text-center">
+                            <div class="rating-badge mb-3 bg-amber-light text-warning px-3 py-1">
+                                <i class="bi bi-star-fill me-1"></i>
+                                <i class="bi bi-star-fill me-1"></i>
+                                <i class="bi bi-star-fill me-1"></i>
+                                <i class="bi bi-star-fill me-1"></i>
+                                <i class="bi bi-star-fill"></i>
+                            </div>
+                            <p class="fs-5 italic text-secondary px-4">"Booking tickets with BusYatra was an absolute
+                                breeze. The seat selection interface is interactive and easy to use. The bus arrived on
+                                time and was very comfortable!"</p>
+                            <h6 class="mt-4 mb-0 text-navy-dark">Rahul Verma</h6>
+                            <small class="text-muted">Travelled to Goa</small>
+                        </div>
+                    </div>
+                </div>
+                <!-- Slide 2 -->
+                <div class="carousel-item">
+                    <div class="row justify-content-center">
+                        <div class="col-md-8 text-center">
+                            <div class="rating-badge mb-3 bg-amber-light text-warning px-3 py-1">
+                                <i class="bi bi-star-fill me-1"></i>
+                                <i class="bi bi-star-fill me-1"></i>
+                                <i class="bi bi-star-fill me-1"></i>
+                                <i class="bi bi-star-fill me-1"></i>
+                                <i class="bi bi-star-half"></i>
+                            </div>
+                            <p class="fs-5 italic text-secondary px-4">"I highly recommend the sleeper coach option.
+                                Super spacious seats, clean linens, and a helper to carry bags. The digital QR ticket on
+                                my phone made boarding seamless."</p>
+                            <h6 class="mt-4 mb-0 text-navy-dark">Sneha Patil</h6>
+                            <small class="text-muted">Travelled to Bangalore</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button class="carousel-control-prev" type="button" data-bs-target="#testimonialCarousel"
+                data-bs-slide="prev">
+                <span class="carousel-control-prev-icon bg-navy-dark p-3 rounded-circle" aria-hidden="true"></span>
+                <span class="visually-hidden">Previous</span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#testimonialCarousel"
+                data-bs-slide="next">
+                <span class="carousel-control-next-icon bg-navy-dark p-3 rounded-circle" aria-hidden="true"></span>
+                <span class="visually-hidden">Next</span>
+            </button>
+        </div>
+    </div>
+</section>
+{% endblock %}

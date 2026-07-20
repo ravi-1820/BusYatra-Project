@@ -1,0 +1,528 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<!-- Top Account Banner -->
+    <section class="modify-banner shadow-sm py-4">
+        <div class="container">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="position-relative" style="width: 75px; height: 75px;">
+                        <div class="profile-img-container m-0 bg-primary text-white w-100 h-100 rounded-circle d-flex align-items-center justify-content-center overflow-hidden border border-2 border-white shadow" style="font-size:1.75rem;" id="profileAvatarContainer">
+                            <span id="profileInitials">AD</span>
+                        </div>
+                        <label for="profilePhotoInput" class="position-absolute bottom-0 end-0 bg-warning text-dark rounded-circle d-flex align-items-center justify-content-center shadow-sm cursor-pointer hover-scale transition-all" style="width: 26px; height: 26px; font-size: 0.8rem; cursor: pointer; border: 2px solid white;" title="Change Profile Picture">
+                            <i class="bi bi-camera-fill"></i>
+                        </label>
+                        <input type="file" id="profilePhotoInput" accept="image/*" class="d-none">
+                    </div>
+                    <div>
+                        <h4 class="mb-0 text-white fw-bold" id="profileName">Loading User...</h4>
+                        <small class="text-white-50" id="profileContact"><i class="bi bi-envelope me-1"></i>loading... | <i class="bi bi-phone me-1"></i>loading...</small>
+                    </div>
+                </div>
+                <div class="text-md-end text-start">
+                    <span class="badge bg-white text-primary px-3 py-2 rounded-pill shadow-sm"><i class="bi bi-patch-check-fill me-1 text-warning"></i>Verified Prime Member</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Dashboard Body -->
+    <main class="container my-5">
+        <div class="row g-4">
+            
+            <!-- Left Navigation Menu -->
+            <aside class="col-lg-3">
+                <div class="dashboard-sidebar mb-4">
+                    <div class="text-center border-bottom pb-3 mb-3">
+                        <h6 class="text-navy-dark fw-bold mb-1">Total Savings</h6>
+                        <h4 class="text-success fw-bold mb-0" id="profileSavingsAmount">₹0</h4>
+                        <small class="text-muted">Saved using coupon codes</small>
+                    </div>
+                    
+                    <div class="nav flex-column gap-1">
+                        <a href="{% url 'my_orders' %}" class="dashboard-menu-link active" id="menuBookings"><i class="bi bi-ticket-perforated"></i>My Orders</a>
+                        <a href="{% url 'dashboard' %}" class="dashboard-menu-link" id="menuProfile"><i class="bi bi-person-gear"></i>Profile Details</a>
+                        <a href="{% url 'dashboard' %}" class="dashboard-menu-link" id="menuWallet"><i class="bi bi-wallet2"></i>BusYatra Wallet (<span id="profileWalletBalance">₹0</span>)</a>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Right Side Dashboard Views -->
+            <section class="col-lg-9">
+                <!-- Bookings History View -->
+                <div id="bookingsView">
+                    {% if not bookings %}
+                        <div class="text-center p-5 bg-white rounded-4 border border-secondary border-opacity-10 my-4 shadow-sm">
+                            <div class="icon-container bg-light-subtle mx-auto mb-3" style="width: 70px; height: 70px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background-color: #f8f9fa;">
+                                <i class="bi bi-ticket-detailed text-muted fs-1"></i>
+                            </div>
+                            <h5 class="text-navy-dark fw-bold">No bookings found.</h5>
+                            <p class="text-muted mb-4 small">You have not booked any bus tickets yet. Search and book your first journey now!</p>
+                            <a href="{% url 'index' %}" class="btn btn-primary-custom rounded-pill px-4"><i class="bi bi-search me-1"></i>Search Buses</a>
+                        </div>
+                    {% else %}
+                        <!-- Tab Headers -->
+                        <ul class="nav nav-tabs mb-4" id="bookingTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active fw-bold text-navy-dark" id="upcoming-tab" data-bs-toggle="tab" data-bs-target="#upcoming" type="button" role="tab" aria-controls="upcoming" aria-selected="true">
+                                    <i class="bi bi-calendar2-check text-primary me-2"></i>Upcoming trips
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link fw-bold text-navy-dark" id="past-tab" data-bs-toggle="tab" data-bs-target="#past" type="button" role="tab" aria-controls="past" aria-selected="false">
+                                    <i class="bi bi-calendar2-x text-secondary me-2"></i>Past trips
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link fw-bold text-navy-dark" id="cancelled-tab" data-bs-toggle="tab" data-bs-target="#cancelled" type="button" role="tab" aria-controls="cancelled" aria-selected="false">
+                                    <i class="bi bi-x-circle text-danger me-2"></i>Cancelled tickets
+                                </button>
+                            </li>
+                        </ul>
+
+                        <!-- Tab Contents -->
+                        <div class="tab-content" id="bookingTabsContent">
+                            
+                            <!-- Upcoming Trips Panel -->
+                            <div class="tab-pane fade show active" id="upcoming" role="tabpanel" aria-labelledby="upcoming-tab">
+                                <div class="d-flex flex-column gap-3" id="upcomingList">
+                                    {% for booking in upcoming_bookings %}
+                                        <div class="card card-custom shadow-sm border-start border-5 {% if booking.status == 'cancelled' %}border-danger{% elif booking.status == 'completed' %}border-secondary{% else %}border-primary{% endif %}">
+                                            <div class="card-body p-4">
+                                                <div class="row align-items-center">
+                                                    <!-- Bus Image & Details -->
+                                                    <div class="col-md-3 text-center text-md-start mb-3 mb-md-0">
+                                                        <img src="{% if booking.bus.image %}{{ booking.bus.image.url }}{% else %}{% static 'assets/images/hero-bus.png' %}{% endif %}" class="img-fluid rounded shadow-sm mb-2" style="height:100px; width:100%; object-fit:cover;">
+                                                        <h5 class="text-navy-dark fw-bold mb-0">{{ booking.bus.bus_name }}</h5>
+                                                        <small class="text-muted">{{ booking.bus.bus_number }}</small>
+                                                    </div>
+                                                    
+                                                    <!-- Journey Info -->
+                                                    <div class="col-md-5 mb-3 mb-md-0">
+                                                        <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                                                            <div>
+                                                                <h6 class="text-muted small mb-0">Booking ID: BY-{{ booking.id }}</h6>
+                                                                <span class="text-navy-dark fw-bold">{{ booking.bus.source }} → {{ booking.bus.destination }}</span>
+                                                            </div>
+                                                            <div class="text-md-end">
+                                                                {% if booking.payment %}
+                                                                    <span class="badge bg-success-subtle text-success border border-success border-opacity-25 px-2 py-1 rounded">Paid</span>
+                                                                {% else %}
+                                                                    <span class="badge bg-warning-subtle text-warning border border-warning border-opacity-25 px-2 py-1 rounded">Pending</span>
+                                                                {% endif %}
+                                                                {% if booking.status == 'booked' %}
+                                                                    <span class="badge bg-primary-subtle text-primary border border-primary border-opacity-25 px-2 py-1 rounded">Booked</span>
+                                                                {% elif booking.status == 'cancelled' %}
+                                                                    <span class="badge bg-danger-subtle text-danger border border-danger border-opacity-25 px-2 py-1 rounded">Cancelled</span>
+                                                                {% elif booking.status == 'completed' %}
+                                                                    <span class="badge bg-success-subtle text-success border border-success border-opacity-25 px-2 py-1 rounded">Completed</span>
+                                                                {% else %}
+                                                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary border-opacity-25 px-2 py-1 rounded">{{ booking.status|capfirst }}</span>
+                                                                {% endif %}
+                                                            </div>
+                                                        </div>
+                                                        <div class="row g-2 text-navy-dark bg-light p-2 rounded-3 small">
+                                                            <div class="col-6">
+                                                                <span class="text-muted small d-block">Journey Date & Time</span>
+                                                                <span class="fw-semibold">{{ booking.travel_date }} | {{ booking.bus.departure_time }}</span>
+                                                            </div>
+                                                            <div class="col-6">
+                                                                <span class="text-muted small d-block">Seat(s) [{{ booking.num_seats }}]</span>
+                                                                <span class="fw-bold text-primary">{{ booking.seat_numbers_str }}</span>
+                                                            </div>
+                                                            <div class="col-12 border-top pt-1 mt-1">
+                                                                <span class="text-muted small">Passenger(s):</span>
+                                                                <span class="fw-semibold">
+                                                                    {% for p in booking.passengers %}
+                                                                        {{ p.name }} ({{ p.age }}, {{ p.gender|first }}){% if not forloop.last %}, {% endif %}
+                                                                    {% endfor %}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="d-flex justify-content-between align-items-center mt-3 border-top pt-2">
+                                                            <span class="text-muted small">Booked on: <strong>{{ booking.booking_date }}</strong></span>
+                                                            <span class="text-navy-dark fw-bold">Total Fare: <strong class="text-success fs-5">₹{{ booking.total_fare }}</strong></span>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <!-- QR Code / Actions -->
+                                                    <div class="col-md-4 text-center border-start pt-3 pt-md-0">
+                                                        {% if booking.status != 'cancelled' and booking.payment %}
+                                                            <div class="qr-code-box shadow-sm bg-white p-2 border rounded d-inline-block mb-2">
+                                                                <svg width="70" height="70" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                    <rect width="24" height="24" fill="white" />
+                                                                    <path d="M1 1H7V7H1V1ZM2 2V6H6V2H2ZM3 3H5V5H3V3Z" fill="#0F172A" />
+                                                                    <path d="M17 1H23V7H17V1ZM18 2V6H22V2H18ZM19 3H21V5H19V3Z" fill="#0F172A" />
+                                                                    <path d="M1 17H7V23H1V17ZM2 18V22H6V18H2ZM3 19H5V21H3V19Z" fill="#0F172A" />
+                                                                    <rect x="9" y="1" width="2" height="2" fill="#0F172A" />
+                                                                    <rect x="13" y="1" width="2" height="2" fill="#0F172A" />
+                                                                    <rect x="9" y="5" width="2" height="2" fill="#0F172A" />
+                                                                    <rect x="9" y="9" width="6" height="2" fill="#0F172A" />
+                                                                    <rect x="1" y="9" width="2" height="6" fill="#0F172A" />
+                                                                    <rect x="5" y="13" width="2" height="2" fill="#0F172A" />
+                                                                    <rect x="17" y="9" width="2" height="6" fill="#0F172A" />
+                                                                    <rect x="21" y="13" width="2" height="2" fill="#0F172A" />
+                                                                    <rect x="9" y="13" width="2" height="2" fill="#0F172A" />
+                                                                    <rect x="9" y="17" width="2" height="6" fill="#0F172A" />
+                                                                    <rect x="13" y="17" width="2" height="2" fill="#0F172A" />
+                                                                    <rect x="17" y="17" width="6" height="2" fill="#0F172A" />
+                                                                    <rect x="17" y="21" width="6" height="2" fill="#0F172A" />
+                                                                </svg>
+                                                            </div>
+                                                            <div class="d-flex flex-column gap-2 max-width-200 mx-auto">
+                                                                <a href="{% url 'ticket' %}?booking_ids={{ booking.booking_ids_str }}" class="btn btn-sm btn-outline-primary rounded-3"><i class="bi bi-ticket-detailed me-1"></i>View E-Ticket</a>
+                                                                <a href="{% url 'download_ticket_pdf' %}?booking_ids={{ booking.booking_ids_str }}" class="btn btn-sm btn-outline-secondary rounded-3"><i class="bi bi-download me-1"></i>Download PDF</a>
+                                                            </div>
+                                                        {% else %}
+                                                            <div class="text-muted py-4">
+                                                                {% if booking.status == 'cancelled' %}
+                                                                    <i class="bi bi-x-circle text-danger fs-1 mb-1 d-block"></i>
+                                                                    <span class="small fw-semibold text-danger">Ticket Cancelled</span>
+                                                                {% else %}
+                                                                    <i class="bi bi-hourglass-split text-warning fs-1 mb-1 d-block"></i>
+                                                                    <span class="small fw-semibold text-warning d-block mb-2">Payment Pending</span>
+                                                                    <a href="{% url 'payment' %}?booking_ids={{ booking.booking_ids_str }}" class="btn btn-sm btn-warning rounded-3 px-3"><i class="bi bi-credit-card me-1"></i>Pay Now</a>
+                                                                {% endif %}
+                                                            </div>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% empty %}
+                                        <div class="text-center p-5 bg-white rounded-4 border border-secondary border-opacity-10 shadow-sm">
+                                            <i class="bi bi-calendar2-check text-muted fs-1 mb-2 d-block"></i>
+                                            <h6 class="text-navy-dark fw-bold">No Upcoming Trips</h6>
+                                            <p class="text-muted small mb-0">Book a new ticket to see your upcoming journey details here.</p>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <!-- Past Trips Panel -->
+                            <div class="tab-pane fade" id="past" role="tabpanel" aria-labelledby="past-tab">
+                                <div class="d-flex flex-column gap-3">
+                                    {% for booking in past_bookings %}
+                                        <div class="card card-custom shadow-sm border-start border-5 {% if booking.status == 'cancelled' %}border-danger{% elif booking.status == 'completed' %}border-secondary{% else %}border-primary{% endif %}">
+                                            <div class="card-body p-4">
+                                                <div class="row align-items-center">
+                                                    <!-- Bus Image & Details -->
+                                                    <div class="col-md-3 text-center text-md-start mb-3 mb-md-0">
+                                                        <img src="{% if booking.bus.image %}{{ booking.bus.image.url }}{% else %}{% static 'assets/images/hero-bus.png' %}{% endif %}" class="img-fluid rounded shadow-sm mb-2" style="height:100px; width:100%; object-fit:cover;">
+                                                        <h5 class="text-navy-dark fw-bold mb-0">{{ booking.bus.bus_name }}</h5>
+                                                        <small class="text-muted">{{ booking.bus.bus_number }}</small>
+                                                    </div>
+                                                    
+                                                    <!-- Journey Info -->
+                                                    <div class="col-md-5 mb-3 mb-md-0">
+                                                        <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                                                            <div>
+                                                                <h6 class="text-muted small mb-0">Booking ID: BY-{{ booking.id }}</h6>
+                                                                <span class="text-navy-dark fw-bold">{{ booking.bus.source }} → {{ booking.bus.destination }}</span>
+                                                            </div>
+                                                            <div class="text-md-end">
+                                                                {% if booking.payment %}
+                                                                    <span class="badge bg-success-subtle text-success border border-success border-opacity-25 px-2 py-1 rounded">Paid</span>
+                                                                {% else %}
+                                                                    <span class="badge bg-warning-subtle text-warning border border-warning border-opacity-25 px-2 py-1 rounded">Pending</span>
+                                                                {% endif %}
+                                                                {% if booking.status == 'booked' %}
+                                                                    <span class="badge bg-primary-subtle text-primary border border-primary border-opacity-25 px-2 py-1 rounded">Booked</span>
+                                                                {% elif booking.status == 'cancelled' %}
+                                                                    <span class="badge bg-danger-subtle text-danger border border-danger border-opacity-25 px-2 py-1 rounded">Cancelled</span>
+                                                                {% elif booking.status == 'completed' %}
+                                                                    <span class="badge bg-success-subtle text-success border border-success border-opacity-25 px-2 py-1 rounded">Completed</span>
+                                                                {% else %}
+                                                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary border-opacity-25 px-2 py-1 rounded">{{ booking.status|capfirst }}</span>
+                                                                {% endif %}
+                                                            </div>
+                                                        </div>
+                                                        <div class="row g-2 text-navy-dark bg-light p-2 rounded-3 small">
+                                                            <div class="col-6">
+                                                                <span class="text-muted small d-block">Journey Date & Time</span>
+                                                                <span class="fw-semibold">{{ booking.travel_date }} | {{ booking.bus.departure_time }}</span>
+                                                            </div>
+                                                            <div class="col-6">
+                                                                <span class="text-muted small d-block">Seat(s) [{{ booking.num_seats }}]</span>
+                                                                <span class="fw-bold text-primary">{{ booking.seat_numbers_str }}</span>
+                                                            </div>
+                                                            <div class="col-12 border-top pt-1 mt-1">
+                                                                <span class="text-muted small">Passenger(s):</span>
+                                                                <span class="fw-semibold">
+                                                                    {% for p in booking.passengers %}
+                                                                        {{ p.name }} ({{ p.age }}, {{ p.gender|first }}){% if not forloop.last %}, {% endif %}
+                                                                    {% endfor %}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="d-flex justify-content-between align-items-center mt-3 border-top pt-2">
+                                                            <span class="text-muted small">Booked on: <strong>{{ booking.booking_date }}</strong></span>
+                                                            <span class="text-navy-dark fw-bold">Total Fare: <strong class="text-success fs-5">₹{{ booking.total_fare }}</strong></span>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <!-- QR Code / Actions -->
+                                                    <div class="col-md-4 text-center border-start pt-3 pt-md-0">
+                                                        {% if booking.status != 'cancelled' and booking.payment %}
+                                                            <div class="qr-code-box shadow-sm bg-white p-2 border rounded d-inline-block mb-2">
+                                                                <svg width="70" height="70" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                    <rect width="24" height="24" fill="white" />
+                                                                    <path d="M1 1H7V7H1V1ZM2 2V6H6V2H2ZM3 3H5V5H3V3Z" fill="#0F172A" />
+                                                                    <path d="M17 1H23V7H17V1ZM18 2V6H22V2H18ZM19 3H21V5H19V3Z" fill="#0F172A" />
+                                                                    <path d="M1 17H7V23H1V17ZM2 18V22H6V18H2ZM3 19H5V21H3V19Z" fill="#0F172A" />
+                                                                    <rect x="9" y="1" width="2" height="2" fill="#0F172A" />
+                                                                    <rect x="13" y="1" width="2" height="2" fill="#0F172A" />
+                                                                    <rect x="9" y="5" width="2" height="2" fill="#0F172A" />
+                                                                    <rect x="9" y="9" width="6" height="2" fill="#0F172A" />
+                                                                    <rect x="1" y="9" width="2" height="6" fill="#0F172A" />
+                                                                    <rect x="5" y="13" width="2" height="2" fill="#0F172A" />
+                                                                    <rect x="17" y="9" width="2" height="6" fill="#0F172A" />
+                                                                    <rect x="21" y="13" width="2" height="2" fill="#0F172A" />
+                                                                    <rect x="9" y="13" width="2" height="2" fill="#0F172A" />
+                                                                    <rect x="9" y="17" width="2" height="6" fill="#0F172A" />
+                                                                    <rect x="13" y="17" width="2" height="2" fill="#0F172A" />
+                                                                    <rect x="17" y="17" width="6" height="2" fill="#0F172A" />
+                                                                    <rect x="17" y="21" width="6" height="2" fill="#0F172A" />
+                                                                </svg>
+                                                            </div>
+                                                            <div class="d-flex flex-column gap-2 max-width-200 mx-auto">
+                                                                <a href="{% url 'ticket' %}?booking_ids={{ booking.booking_ids_str }}" class="btn btn-sm btn-outline-primary rounded-3"><i class="bi bi-ticket-detailed me-1"></i>View E-Ticket</a>
+                                                                <a href="{% url 'download_ticket_pdf' %}?booking_ids={{ booking.booking_ids_str }}" class="btn btn-sm btn-outline-secondary rounded-3"><i class="bi bi-download me-1"></i>Download PDF</a>
+                                                            </div>
+                                                        {% else %}
+                                                            <div class="text-muted py-4">
+                                                                {% if booking.status == 'cancelled' %}
+                                                                    <i class="bi bi-x-circle text-danger fs-1 mb-1 d-block"></i>
+                                                                    <span class="small fw-semibold text-danger">Ticket Cancelled</span>
+                                                                {% else %}
+                                                                    <i class="bi bi-hourglass-split text-warning fs-1 mb-1 d-block"></i>
+                                                                    <span class="small fw-semibold text-warning d-block mb-2">Payment Pending</span>
+                                                                    <a href="{% url 'payment' %}?booking_ids={{ booking.booking_ids_str }}" class="btn btn-sm btn-warning rounded-3 px-3"><i class="bi bi-credit-card me-1"></i>Pay Now</a>
+                                                                {% endif %}
+                                                            </div>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% empty %}
+                                        <div class="text-center p-5 bg-white rounded-4 border border-secondary border-opacity-10 shadow-sm">
+                                            <i class="bi bi-calendar2-x text-muted fs-1 mb-2 d-block"></i>
+                                            <h6 class="text-navy-dark fw-bold">No Past Trips</h6>
+                                            <p class="text-muted small mb-0">You have no past journey history.</p>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <!-- Cancelled Tickets Panel -->
+                            <div class="tab-pane fade" id="cancelled" role="tabpanel" aria-labelledby="cancelled-tab">
+                                <div class="d-flex flex-column gap-3" id="cancelledList">
+                                    {% for booking in cancelled_bookings %}
+                                        <div class="card card-custom shadow-sm border-start border-5 {% if booking.status == 'cancelled' %}border-danger{% elif booking.status == 'completed' %}border-secondary{% else %}border-primary{% endif %}">
+                                            <div class="card-body p-4">
+                                                <div class="row align-items-center">
+                                                    <!-- Bus Image & Details -->
+                                                    <div class="col-md-3 text-center text-md-start mb-3 mb-md-0">
+                                                        <img src="{% if booking.bus.image %}{{ booking.bus.image.url }}{% else %}{% static 'assets/images/hero-bus.png' %}{% endif %}" class="img-fluid rounded shadow-sm mb-2" style="height:100px; width:100%; object-fit:cover;">
+                                                        <h5 class="text-navy-dark fw-bold mb-0">{{ booking.bus.bus_name }}</h5>
+                                                        <small class="text-muted">{{ booking.bus.bus_number }}</small>
+                                                    </div>
+                                                    
+                                                    <!-- Journey Info -->
+                                                    <div class="col-md-5 mb-3 mb-md-0">
+                                                        <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                                                            <div>
+                                                                <h6 class="text-muted small mb-0">Booking ID: BY-{{ booking.id }}</h6>
+                                                                <span class="text-navy-dark fw-bold">{{ booking.bus.source }} → {{ booking.bus.destination }}</span>
+                                                            </div>
+                                                            <div class="text-md-end">
+                                                                {% if booking.payment %}
+                                                                    <span class="badge bg-success-subtle text-success border border-success border-opacity-25 px-2 py-1 rounded">Paid</span>
+                                                                {% else %}
+                                                                    <span class="badge bg-warning-subtle text-warning border border-warning border-opacity-25 px-2 py-1 rounded">Pending</span>
+                                                                {% endif %}
+                                                                {% if booking.status == 'booked' %}
+                                                                    <span class="badge bg-primary-subtle text-primary border border-primary border-opacity-25 px-2 py-1 rounded">Booked</span>
+                                                                {% elif booking.status == 'cancelled' %}
+                                                                    <span class="badge bg-danger-subtle text-danger border border-danger border-opacity-25 px-2 py-1 rounded">Cancelled</span>
+                                                                {% elif booking.status == 'completed' %}
+                                                                    <span class="badge bg-success-subtle text-success border border-success border-opacity-25 px-2 py-1 rounded">Completed</span>
+                                                                {% else %}
+                                                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary border-opacity-25 px-2 py-1 rounded">{{ booking.status|capfirst }}</span>
+                                                                {% endif %}
+                                                            </div>
+                                                        </div>
+                                                        <div class="row g-2 text-navy-dark bg-light p-2 rounded-3 small">
+                                                            <div class="col-6">
+                                                                <span class="text-muted small d-block">Journey Date & Time</span>
+                                                                <span class="fw-semibold">{{ booking.travel_date }} | {{ booking.bus.departure_time }}</span>
+                                                            </div>
+                                                            <div class="col-6">
+                                                                <span class="text-muted small d-block">Seat(s) [{{ booking.num_seats }}]</span>
+                                                                <span class="fw-bold text-primary">{{ booking.seat_numbers_str }}</span>
+                                                            </div>
+                                                            <div class="col-12 border-top pt-1 mt-1">
+                                                                <span class="text-muted small">Passenger(s):</span>
+                                                                <span class="fw-semibold">
+                                                                    {% for p in booking.passengers %}
+                                                                        {{ p.name }} ({{ p.age }}, {{ p.gender|first }}){% if not forloop.last %}, {% endif %}
+                                                                    {% endfor %}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="d-flex justify-content-between align-items-center mt-3 border-top pt-2">
+                                                            <span class="text-muted small">Booked on: <strong>{{ booking.booking_date }}</strong></span>
+                                                            <span class="text-navy-dark fw-bold">Total Fare: <strong class="text-success fs-5">₹{{ booking.total_fare }}</strong></span>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <!-- QR Code / Actions -->
+                                                    <div class="col-md-4 text-center border-start pt-3 pt-md-0">
+                                                        {% if booking.status != 'cancelled' and booking.payment %}
+                                                            <div class="qr-code-box shadow-sm bg-white p-2 border rounded d-inline-block mb-2">
+                                                                <svg width="70" height="70" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                    <rect width="24" height="24" fill="white" />
+                                                                    <path d="M1 1H7V7H1V1ZM2 2V6H6V2H2ZM3 3H5V5H3V3Z" fill="#0F172A" />
+                                                                    <path d="M17 1H23V7H17V1ZM18 2V6H22V2H18ZM19 3H21V5H19V3Z" fill="#0F172A" />
+                                                                    <path d="M1 17H7V23H1V17ZM2 18V22H6V18H2ZM3 19H5V21H3V19Z" fill="#0F172A" />
+                                                                    <rect x="9" y="1" width="2" height="2" fill="#0F172A" />
+                                                                    <rect x="13" y="1" width="2" height="2" fill="#0F172A" />
+                                                                    <rect x="9" y="5" width="2" height="2" fill="#0F172A" />
+                                                                    <rect x="9" y="9" width="6" height="2" fill="#0F172A" />
+                                                                    <rect x="1" y="9" width="2" height="6" fill="#0F172A" />
+                                                                    <rect x="5" y="13" width="2" height="2" fill="#0F172A" />
+                                                                    <rect x="17" y="9" width="2" height="6" fill="#0F172A" />
+                                                                    <rect x="21" y="13" width="2" height="2" fill="#0F172A" />
+                                                                    <rect x="9" y="13" width="2" height="2" fill="#0F172A" />
+                                                                    <rect x="9" y="17" width="2" height="6" fill="#0F172A" />
+                                                                    <rect x="13" y="17" width="2" height="2" fill="#0F172A" />
+                                                                    <rect x="17" y="17" width="6" height="2" fill="#0F172A" />
+                                                                    <rect x="17" y="21" width="6" height="2" fill="#0F172A" />
+                                                                </svg>
+                                                            </div>
+                                                            <div class="d-flex flex-column gap-2 max-width-200 mx-auto">
+                                                                <a href="{% url 'ticket' %}?booking_ids={{ booking.booking_ids_str }}" class="btn btn-sm btn-outline-primary rounded-3"><i class="bi bi-ticket-detailed me-1"></i>View E-Ticket</a>
+                                                                <a href="{% url 'download_ticket_pdf' %}?booking_ids={{ booking.booking_ids_str }}" class="btn btn-sm btn-outline-secondary rounded-3"><i class="bi bi-download me-1"></i>Download PDF</a>
+                                                            </div>
+                                                        {% else %}
+                                                            <div class="text-muted py-4">
+                                                                {% if booking.status == 'cancelled' %}
+                                                                    <i class="bi bi-x-circle text-danger fs-1 mb-1 d-block"></i>
+                                                                    <span class="small fw-semibold text-danger">Ticket Cancelled</span>
+                                                                {% else %}
+                                                                    <i class="bi bi-hourglass-split text-warning fs-1 mb-1 d-block"></i>
+                                                                    <span class="small fw-semibold text-warning d-block mb-2">Payment Pending</span>
+                                                                    <a href="{% url 'payment' %}?booking_ids={{ booking.booking_ids_str }}" class="btn btn-sm btn-warning rounded-3 px-3"><i class="bi bi-credit-card me-1"></i>Pay Now</a>
+                                                                {% endif %}
+                                                            </div>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% empty %}
+                                        <div class="text-center p-5 bg-white rounded-4 border border-secondary border-opacity-10 shadow-sm">
+                                            <i class="bi bi-x-circle text-muted fs-1 mb-2 d-block"></i>
+                                            <h6 class="text-navy-dark fw-bold">No Cancelled Tickets</h6>
+                                            <p class="text-muted small mb-0">Any ticket cancelled by you will appear here along with refund details.</p>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Profile Details View -->
+                <div id="profileView" class="card card-custom p-4 d-none">
+                    <h5 class="text-navy-dark fw-bold mb-3"><i class="bi bi-person-gear text-primary me-2"></i>My Profile Details</h5>
+                    <form id="editProfileForm">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-secondary small">Full Name</label>
+                                <input type="text" class="form-control rounded-3" id="profileEditName" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-secondary small">Phone Number</label>
+                                <input type="tel" class="form-control rounded-3" id="profileEditPhone" required>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label fw-semibold text-secondary small">Email Address (Cannot be changed)</label>
+                                <input type="email" class="form-control rounded-3 bg-light" id="profileEditEmail" readonly>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary-custom mt-4 rounded-3"><i class="bi bi-check-circle me-1"></i>Save Changes</button>
+                    </form>
+                </div>
+
+                <!-- Wallet View -->
+                <div id="walletView" class="card card-custom p-4 d-none">
+                    <h5 class="text-navy-dark fw-bold mb-3"><i class="bi bi-wallet2 text-primary me-2"></i>BusYatra Wallet Balance</h5>
+                    <div class="p-4 bg-light rounded-4 border mb-4 text-center">
+                        <span class="text-muted small d-block">Available balance</span>
+                        <h2 class="text-success fw-bold mt-1 mb-0" id="walletBalanceBig">₹0</h2>
+                        <small class="text-muted">Use this balance to purchase bus tickets instantly.</small>
+                    </div>
+                    <h6 class="fw-bold mb-2">Recent Transactions</h6>
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Transaction Details</th>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th class="text-end">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><span class="fw-semibold">Welcome Wallet Bonus</span></td>
+                                    <td>Today</td>
+                                    <td><span class="badge bg-success-subtle text-success">Credit</span></td>
+                                    <td class="text-end fw-bold text-success">+₹150</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="fw-semibold">Loyalty Reward Points</span></td>
+                                    <td>Yesterday</td>
+                                    <td><span class="badge bg-success-subtle text-success">Credit</span></td>
+                                    <td class="text-end fw-bold text-success">+₹100</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Cancellation Confirmation Modal -->
+    <div class="modal fade" id="cancelModal" tabindex="-1" aria-labelledby="cancelModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold text-navy-dark" id="cancelModalLabel"><i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Confirm Ticket Cancellation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-navy-dark">
+                    <p>Are you sure you want to cancel booking <strong id="modalBookingId"></strong>? This action cannot be undone.</p>
+                    <div class="bg-danger-subtle text-danger p-3 rounded-3 small">
+                        <h6 class="fw-bold mb-1"><i class="bi bi-info-circle me-1"></i>Cancellation & Refund Policy:</h6>
+                        <ul class="mb-0 ps-3">
+                            <li>Cancellation made 24h prior: 100% Refund</li>
+                            <li>Refund will be credited to original source payment within 3-5 days.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary rounded-3" data-bs-dismiss="modal">Keep Booking</button>
+                    <button type="button" class="btn btn-danger rounded-3" id="btnConfirmCancel">Cancel My Ticket</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer Section -->
+{% endblock %}

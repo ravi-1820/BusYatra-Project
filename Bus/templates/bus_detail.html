@@ -1,0 +1,228 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+    .bus-detail-card {
+        border: 1px solid var(--gray-border);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05) !important;
+        background: #ffffff;
+        margin-bottom: 2rem;
+    }
+    
+    .bus-img-container {
+        position: relative;
+        height: 320px; /* Reduced height */
+        margin: 20px; /* Nested look with spacing */
+        border-radius: 5px; /* Exactly 5px border-radius */
+        overflow: hidden;
+        background-color: #f8fafc;
+        border: 1px solid var(--gray-border);
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .bus-detail-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        border-radius: 5px; /* Exactly 5px border-radius */
+    }
+    
+    .bus-img-container:hover .bus-detail-img {
+        transform: scale(1.06);
+    }
+
+    .bus-img-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(to bottom, rgba(15, 23, 42, 0.02) 0%, rgba(15, 23, 42, 0.5) 100%);
+        pointer-events: none;
+    }
+
+    .bus-badge-floating {
+        position: absolute;
+        top: 15px;
+        left: 15px;
+        z-index: 2;
+    }
+    
+    .bus-specs-badge {
+        position: absolute;
+        bottom: 15px;
+        left: 15px;
+        right: 15px;
+        z-index: 2;
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .border-dashed {
+        border-bottom-style: dashed !important;
+        border-bottom-width: 2px !important;
+        border-bottom-color: #cbd5e1 !important;
+    }
+
+    .bg-blue-light {
+        background-color: var(--blue-light) !important;
+    }
+
+    .bg-green-light {
+        background-color: var(--green-light) !important;
+    }
+
+    .hover-lift {
+        transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+
+    .hover-lift:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(245, 158, 11, 0.3) !important;
+        background-color: var(--amber-hover) !important;
+    }
+
+    @media (max-width: 767.98px) {
+        .bus-img-container {
+            height: 220px;
+            margin: 15px 15px 0 15px;
+        }
+    }
+</style>
+
+<div class="container py-5">
+    <div class="bus-detail-card card">
+        <div class="row g-0 align-items-center">
+            <!-- Left Side: Image Section -->
+            <div class="col-md-5">
+                <div class="bus-img-container">
+                    <!-- Floating Badge -->
+                    <div class="bus-badge-floating">
+                        <span class="badge px-2.5 py-1.5 fs-7 shadow-sm d-flex align-items-center gap-1.5 text-white" 
+                              style="background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;">
+                            <i class="bi bi-shield-check text-warning" style="font-size: 0.85rem;"></i>
+                            <span class="fw-semibold" style="font-size: 0.75rem;">Verified Partner</span>
+                        </span>
+                    </div>
+                    
+                    <!-- Bus Image -->
+                    <img src="{% if bus.image %}{{ bus.image.url }}{% else %}{% static 'assets/images/hero-bus.png' %}{% endif %}"
+                         class="bus-detail-img" alt="{{ bus.bus_name }}">
+                    
+                    <!-- Visual Gradient Overlay -->
+                    <div class="bus-img-overlay"></div>
+                    
+                    <!-- Floating Specs Bottom Badge -->
+                    <div class="bus-specs-badge">
+                        <span class="badge bg-white text-dark shadow-sm py-1.5 px-2.5 d-flex align-items-center gap-1" style="border-radius: 4px; font-weight: 600; font-size: 0.75rem; border: 1px solid #e2e8f0;">
+                            <i class="bi bi-fan text-primary animate-spin"></i> {{ bus.bus_type }}
+                        </span>
+                        <span class="badge bg-white text-dark shadow-sm py-1.5 px-2.5 d-flex align-items-center gap-1" style="border-radius: 4px; font-weight: 600; font-size: 0.75rem; border: 1px solid #e2e8f0;">
+                            <i class="bi bi-shield-fill-check text-success"></i> Safe Travel
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Side: Bus Details & Booking -->
+            <div class="col-md-7 p-4 pe-md-5 ps-md-3 d-flex flex-column justify-content-between">
+                <div>
+                    <!-- Header -->
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                        <h2 class="mb-0 fw-extrabold text-navy-dark" style="font-size: 1.8rem;">{{ bus.bus_name }}</h2>
+                        <span class="badge bg-primary px-3 py-2" style="font-size: 0.8rem; border-radius: 6px;">
+                            {{ bus.bus_type }}
+                        </span>
+                    </div>
+                    
+                    <!-- Route Visualizer -->
+                    <div class="route-timeline d-flex align-items-center justify-content-between gap-3 my-3 p-3.5 rounded-4" style="background-color: #f8fafc; border: 1px solid #f1f5f9;">
+                        <div class="text-start">
+                            <span class="d-block text-muted small text-uppercase fw-bold mb-1" style="font-size: 0.7rem; letter-spacing: 0.05em;">Source</span>
+                            <span class="fw-bold text-navy-dark fs-5">{{ bus.source }}</span>
+                        </div>
+                        <div class="flex-grow-1 border-dashed text-center position-relative mx-3" style="min-width: 60px;">
+                            <i class="bi bi-bus-front text-primary position-absolute start-50 top-50 translate-middle bg-light p-2 rounded-circle border" style="font-size: 1.1rem; background-color: #f8fafc !important;"></i>
+                        </div>
+                        <div class="text-end">
+                            <span class="d-block text-muted small text-uppercase fw-bold mb-1" style="font-size: 0.7rem; letter-spacing: 0.05em;">Destination</span>
+                            <span class="fw-bold text-navy-dark fs-5">{{ bus.destination }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Timings Block -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <div class="p-3 border rounded-3 bg-light d-flex align-items-center gap-3">
+                                <div class="bg-blue-light text-primary rounded-circle p-2 d-inline-flex">
+                                    <i class="bi bi-clock-history fs-5"></i>
+                                </div>
+                                <div>
+                                    <span class="d-block text-muted small" style="font-size: 0.8rem;">Departure</span>
+                                    <span class="fw-bold text-navy-dark fs-6">{{ bus.departure_time }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-3 border rounded-3 bg-light d-flex align-items-center gap-3">
+                                <div class="bg-blue-light text-primary rounded-circle p-2 d-inline-flex">
+                                    <i class="bi bi-clock-fill fs-5"></i>
+                                </div>
+                                <div>
+                                    <span class="d-block text-muted small" style="font-size: 0.8rem;">Arrival</span>
+                                    <span class="fw-bold text-navy-dark fs-6">{{ bus.arrival_time }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Seats Info Block -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <div class="p-3 border rounded-3 bg-light d-flex align-items-center gap-3">
+                                <div class="bg-blue-light text-primary rounded-circle p-2 d-inline-flex">
+                                    <i class="bi bi-grid-3x3-gap fs-5"></i>
+                                </div>
+                                <div>
+                                    <span class="d-block text-muted small" style="font-size: 0.8rem;">Total Seats</span>
+                                    <span class="fw-bold text-navy-dark fs-6">{{ bus.total_seats }} Seats</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-3 border rounded-3 bg-light d-flex align-items-center gap-3">
+                                <div class="bg-green-light text-success rounded-circle p-2 d-inline-flex">
+                                    <i class="bi bi-check-circle fs-5"></i>
+                                </div>
+                                <div>
+                                    <span class="d-block text-muted small" style="font-size: 0.8rem;">Available</span>
+                                    <span class="fw-bold text-success fs-6">{{ bus.available_seats }} Seats</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Price and Action CTA -->
+                <div class="d-flex flex-wrap align-items-center justify-content-between pt-4 mt-3 border-top gap-3">
+                    <div>
+                        <span class="text-muted small d-block mb-1">Ticket Price</span>
+                        <h3 class="text-success fw-bold m-0 fs-2">₹{{ bus.fare }}</h3>
+                    </div>
+                    <a href="{% url 'seat_booking' bus.id %}?from={{ from_city }}&to={{ to_city }}&date={{ travel_date }}&passengers={{ passengers }}"
+                       class="btn btn-warning btn-lg px-4 py-2.5 fw-bold text-white shadow-sm border-0 d-inline-flex align-items-center gap-2 hover-lift"
+                       style="background-color: var(--amber-accent); border-radius: 8px;">
+                        <span>Select Seats</span>
+                        <i class="bi bi-arrow-right-short fs-4"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

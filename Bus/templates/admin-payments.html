@@ -1,0 +1,114 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Payments - BusYatra Admin</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css" rel="stylesheet">
+    <!-- Custom Style Sheet -->
+    <link rel="stylesheet" href="{% static 'assets/css/style.css' %}">
+</head>
+
+<body>
+
+    <div class="admin-wrapper">
+        <!-- Sidebar Navigation -->
+        <nav class="admin-sidebar">
+            <div class="sidebar-header">
+                <a class="navbar-brand text-light fw-bold fs-4 d-flex align-items-center" href="{% url 'index' %}">
+                    <img src="{% static 'assets/images/logo.png' %}" alt="BusYatra Logo" height="42"
+                        class="bg-white p-1 rounded me-2">
+                    <span class="fs-6 text-warning ms-1 opacity-75">Admin</span>
+                </a>
+            </div>
+            <div class="nav flex-column mt-3">
+                <a href="{% url 'admin_dashboard' %}" class="nav-link" id="sidebar-dashboard"><i
+                        class="bi bi-speedometer2"></i>Dashboard</a>
+                <a href="{% url 'admin_users' %}" class="nav-link" id="sidebar-users"><i
+                        class="bi bi-person"></i>Manage Customers</a>
+                <a href="{% url 'admin_managers' %}" class="nav-link" id="sidebar-managers"><i
+                        class="bi bi-people"></i>Manage Managers</a>
+                <a href="{% url 'admin_buses' %}" class="nav-link" id="sidebar-buses"><i
+                        class="bi bi-bus-front"></i>Manage Buses</a>
+                <a href="{% url 'admin_routes' %}" class="nav-link" id="sidebar-routes"><i
+                        class="bi bi-signpost-split"></i>Manage Routes</a>
+                <a href="{% url 'admin_schedules' %}" class="nav-link" id="sidebar-schedules"><i
+                        class="bi bi-calendar-event"></i>Manage Schedules</a>
+                <a href="{% url 'admin_bookings' %}" class="nav-link" id="sidebar-bookings"><i
+                        class="bi bi-card-list"></i>Manage Bookings</a>
+                <a href="{% url 'admin_payments' %}" class="nav-link active" id="sidebar-payments"><i
+                        class="bi bi-credit-card"></i>Manage Payments</a>
+                <a href="{% url 'admin_reports' %}" class="nav-link" id="sidebar-reports"><i
+                        class="bi bi-graph-up-arrow"></i>System Reports</a>
+                <a href="{% url 'admin_settings' %}" class="nav-link" id="sidebar-settings"><i
+                        class="bi bi-gear"></i>Settings</a>
+                <hr class="text-white opacity-25 my-2 mx-3">
+                <a href="{% url 'admin_profile' %}" class="nav-link" id="sidebar-profile"><i
+                        class="bi bi-person-circle"></i>My Profile</a>
+                <a href="{% url 'index' %}" class="nav-link"><i class="bi bi-arrow-left-circle"></i>Client View</a>
+                <a href="{% url 'logout' %}" class="nav-link text-danger mt-auto"><i
+                        class="bi bi-box-arrow-left"></i>Logout</a>
+            </div>
+        </nav>
+
+        <!-- Main Content Panel -->
+        <div class="admin-content d-flex flex-column">
+            <!-- Top Admin Header -->
+            <header class="admin-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 text-navy-dark fw-bold"><i class="bi bi-credit-card text-primary me-2"></i>Payments Log</h5>
+            </header>
+
+            <!-- Body -->
+            <main class="admin-body">
+                <!-- Payments Table Card -->
+                <div class="card card-custom p-4">
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Booking ID</th>
+                                    <th>Passenger Name</th>
+                                    <th class="text-end">Amount</th>
+                                    <th class="text-center">Payment Method</th>
+                                    <th class="text-center">Payment Status</th>
+                                    <th class="text-center">Payment Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for b in bookings %}
+                                <tr>
+                                    <td class="fw-bold">BY-{{ b.id }}</td>
+                                    <td>{{ b.passenger_name }}</td>
+                                    <td class="text-end fw-semibold text-primary">₹{{ b.amount }}</td>
+                                    <td class="text-center">Card / Net Banking</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-success">Success</span>
+                                    </td>
+                                    <td class="text-center">{{ b.booking_date }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-4">No payment logs found.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+
+            <!-- Admin Footer -->
+            <footer class="admin-footer py-3 px-4 mt-auto text-muted small d-flex justify-content-between align-items-center">
+                <div>&copy; 2026 BusYatra Dashboard. All rights reserved.</div>
+                <div>System Status: <span class="text-success"><i class="bi bi-circle-fill fs-8 me-1 align-middle"></i>Optimal</span></div>
+            </footer>
+        </div>
+    </div>
+
+</body>
+</html>

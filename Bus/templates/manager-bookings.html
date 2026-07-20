@@ -1,0 +1,197 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Bookings - BusYatra Operator</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css" rel="stylesheet">
+    <!-- Custom Style Sheet -->
+    <link rel="stylesheet" href="{% static 'assets/css/style.css' %}">
+</head>
+<body>
+
+    <div class="admin-wrapper">
+        <!-- Sidebar Navigation -->
+        <nav class="admin-sidebar">
+            <div class="sidebar-header">
+                <a class="navbar-brand text-light fw-bold fs-4 d-flex align-items-center" href="{% url 'index' %}">
+                    <img src="{% static 'assets/images/logo.png' %}" alt="BusYatra Logo" height="42" class="bg-white p-1 rounded me-2">
+                    <span class="fs-6 text-warning ms-1 opacity-75">Manager</span>
+                </a>
+            </div>
+            <div class="nav flex-column mt-3">
+                <a href="{% url 'manager_dashboard' %}" class="nav-link" id="sidebar-dashboard"><i class="bi bi-speedometer2"></i>Dashboard</a>
+                <a href="{% url 'manager_buses' %}" class="nav-link" id="sidebar-buses"><i class="bi bi-bus-front"></i>Manage Buses</a>
+                <a href="{% url 'manager_routes' %}" class="nav-link" id="sidebar-routes"><i class="bi bi-signpost-split"></i>Manage Routes</a>
+                <a href="{% url 'manager_schedules' %}" class="nav-link" id="sidebar-schedules"><i class="bi bi-calendar-event"></i>Schedules</a>
+                <a href="{% url 'manager_seats' %}" class="nav-link" id="sidebar-seats"><i class="bi bi-grid-3x3-gap"></i>Seat Status</a>
+                <a href="{% url 'manager_bookings' %}" class="nav-link active" id="sidebar-bookings"><i class="bi bi-card-list"></i>Bookings</a>
+                <a href="{% url 'manager_reports' %}" class="nav-link" id="sidebar-reports"><i class="bi bi-graph-up"></i>Reports</a>
+                <hr class="text-white opacity-25 my-2 mx-3">
+                <a href="{% url 'manager_profile' %}" class="nav-link" id="sidebar-profile"><i class="bi bi-person-circle"></i>My Profile</a>
+                <a href="{% url 'index' %}" class="nav-link"><i class="bi bi-arrow-left-circle"></i>Client View</a>
+                <a href="{% url 'logout' %}" class="nav-link text-danger mt-auto"><i class="bi bi-box-arrow-left"></i>Logout</a>
+            </div>
+        </nav>
+
+        <!-- Main Content Panel -->
+        <div class="admin-content d-flex flex-column">
+            <!-- Top Header -->
+            <header class="admin-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 text-navy-dark fw-bold"><i class="bi bi-card-list text-warning me-2"></i>Passenger Reservation Log - <span id="operatorBrandName">Operator Brand</span></h5>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="fw-semibold text-navy-dark">{{ login_user.name }}</span>
+                    {% if login_user.profile and login_user.profile.name %}
+                        <img src="{{ login_user.profile.url }}" width="36" height="36" class="rounded-circle border border-2 object-fit-cover">
+                    {% else %}
+                        <div class="profile-img-container m-0 bg-warning text-dark d-flex align-items-center justify-content-center" style="width:36px; height:36px; font-size:0.95rem; font-weight:700; border-radius: 50%;">{{ login_user.name|slice:":2"|upper }}</div>
+                    {% endif %}
+                </div>
+            </header>
+
+            <!-- Body -->
+            <main class="admin-body">
+                <!-- Search & Filters -->
+                <div class="card card-custom p-3 mb-4">
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <div class="input-group">
+                                <span class="input-group-text bg-white text-muted border-end-0"><i class="bi bi-search"></i></span>
+                                <input type="text" class="form-control border-start-0" id="searchQuery" placeholder="Search by Passenger Name, Booking ID, or Route...">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <select class="form-select" id="statusFilter">
+                                <option value="All">All Reservations</option>
+                                <option value="Confirmed">Confirmed</option>
+                                <option value="Cancelled">Cancelled</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bookings Table -->
+                <div class="card card-custom p-4">
+                    <div class="table-responsive">
+                        <table class="table align-middle" id="bookingsTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Booking ID</th>
+                                    <th>Passenger Name</th>
+                                    <th>Bus Name</th>
+                                    <th>Bus Number</th>
+                                    <th>Route</th>
+                                    <th class="text-center">Seat</th>
+                                    <th class="text-center">Ticket Price</th>
+                                    <th class="text-center">Journey Date</th>
+                                    <th class="text-center">Booking Date</th>
+                                    <th class="text-center">Payment</th>
+                                    <th class="text-center">Booking Status</th>
+                                    <th class="text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bookingsTableBody">
+                                {% for b in bookings %}
+                                <tr>
+                                    <td>BY-{{ b.id }}</td>
+                                    <td><strong>{{ b.passenger_name }}</strong></td>
+                                    <td>{{ b.bus.bus_name }}</td>
+                                    <td>{{ b.bus.bus_number }}</td>
+                                    <td>{{ b.bus.source }} → {{ b.bus.destination }}</td>
+                                    <td class="text-center"><span class="badge bg-secondary">{{ b.seat_number }}</span></td>
+                                    <td class="text-center">₹{{ b.bus.fare }}</td>
+                                    <td class="text-center">{{ b.travel_date }}</td>
+                                    <td class="text-center">{{ b.booking_date }}</td>
+                                    <td class="text-center">
+                                        {% if b.payment %}
+                                            <span class="badge bg-success">Paid</span>
+                                        {% else %}
+                                            <span class="badge bg-warning text-dark">Pending</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if b.status == 'booked' %}
+                                            <span class="badge bg-primary">Booked</span>
+                                        {% elif b.status == 'cancelled' %}
+                                            <span class="badge bg-danger">Cancelled</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ b.get_status_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="d-flex gap-1 justify-content-center">
+                                            <a href="{% url 'manager_booking_detail' b.id %}" class="btn btn-sm btn-outline-primary" title="View details"><i class="bi bi-eye"></i></a>
+                                            {% if b.status != 'cancelled' %}
+                                                <a href="{% url 'manager_cancel_booking' b.id %}" class="btn btn-sm btn-outline-danger" title="Cancel booking" onclick="return confirm('Cancel this booking?')"><i class="bi bi-x-circle"></i></a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="12" class="text-center text-muted">No reservations found.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+
+            <!-- Footer -->
+            <footer class="admin-footer py-3 px-4 mt-auto text-muted small d-flex justify-content-between align-items-center">
+                <div>&copy; 2026 BusYatra Manager Portal. All rights reserved.</div>
+                <div>System Status: <span class="text-success"><i class="bi bi-circle-fill fs-8 me-1 align-middle"></i>Optimal</span></div>
+            </footer>
+        </div>
+    </div>
+
+    <!-- JavaScript Libraries -->
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const searchQuery = document.getElementById("searchQuery");
+            const statusFilter = document.getElementById("statusFilter");
+            const tableBody = document.getElementById("bookingsTableBody");
+            const rows = tableBody.getElementsByTagName("tr");
+    
+            function filterTable() {
+                const query = searchQuery.value.toLowerCase().trim();
+                const status = statusFilter.value.toLowerCase();
+    
+                for (let i = 0; i < rows.length; i++) {
+                    const row = rows[i];
+                    if (row.cells.length < 7) continue; // Skip empty row
+    
+                    const text = row.textContent.toLowerCase();
+                    const statusText = row.cells[6].textContent.toLowerCase();
+    
+                    let matchesQuery = text.includes(query);
+                    let matchesStatus = true;
+    
+                    if (status === "confirmed") {
+                        matchesStatus = statusText.includes("booked") || statusText.includes("completed");
+                    } else if (status === "cancelled") {
+                        matchesStatus = statusText.includes("cancelled");
+                    }
+    
+                    if (matchesQuery && matchesStatus) {
+                        row.style.display = "";
+                    } else {
+                        row.style.display = "none";
+                    }
+                }
+            }
+    
+            if (searchQuery) searchQuery.addEventListener("input", filterTable);
+            if (statusFilter) statusFilter.addEventListener("change", filterTable);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,323 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+
+<style>
+    .bus-card {
+        border: 1px solid #dce5ef;
+        border-radius: 16px;
+        background-color: #ffffff;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+        margin-bottom: 24px;
+        transition: border-color 0.2s ease;
+    }
+    .bus-card:hover {
+        border-color: #b0c9e6;
+    }
+    .bus-img {
+        width: 100%;
+        height: 100px;
+        object-fit: cover;
+        border-radius: 8px;
+    }
+    .bus-rating-badge {
+        background-color: #1081ec;
+        color: #ffffff;
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 4px 8px;
+        border-radius: 4px;
+    }
+    .route-timeline {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+    }
+    .duration-line {
+        position: relative;
+        flex-grow: 1;
+        margin: 0 15px;
+        height: 1px;
+        background-color: #dee2e6;
+        text-align: center;
+    }
+    .duration-text {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: #ffffff;
+        padding: 0 8px;
+        color: #757575;
+        font-size: 0.8rem;
+    }
+    .select-seats-btn {
+        background-color: #0087ff;
+        border-color: #0087ff;
+        color: #ffffff;
+        font-weight: 700;
+        font-size: 14px;
+        letter-spacing: 0.5px;
+        padding: 10px 24px;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+    }
+    .select-seats-btn:hover {
+        background-color: #0076e4;
+        border-color: #0076e4;
+        color: #ffffff;
+    }
+    @media (min-width: 768px) {
+        .col-left-img {
+            flex: 0 0 18%;
+            max-width: 18%;
+        }
+        .col-left-details {
+            flex: 0 0 22%;
+            max-width: 22%;
+        }
+        .col-center-timeline {
+            flex: 0 0 40%;
+            max-width: 40%;
+        }
+        .col-right-action {
+            flex: 0 0 20%;
+            max-width: 20%;
+            border-left: 1px dashed #dee2e6;
+            padding-left: 1.5rem;
+        }
+    }
+</style>
+
+<!-- Active Search Info & Modify Banner -->
+<div class="container my-4">
+    <div class="card shadow-sm border-0 bg-primary bg-gradient text-white p-3 rounded-4">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h5 class="mb-1 text-white"><i class="bi bi-geo-alt-fill me-2"></i>{{ from_city }} to {{ to_city }}</h5>
+                <p class="mb-0 small opacity-75 text-white">
+                    <i class="bi bi-calendar-event me-1"></i> Journey Date: {{ travel_date }} &nbsp;|&nbsp; 
+                    <i class="bi bi-people-fill me-1"></i> Passengers: {{ passengers }}
+                </p>
+            </div>
+            <a href="{% url 'index' %}" class="btn btn-light btn-sm rounded-pill fw-bold text-primary px-3">
+                <i class="bi bi-pencil-square me-1"></i> Modify Search
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <div class="d-flex flex-column gap-4">
+
+    {% for bus in buses %}
+
+    <div class="card bus-card shadow-sm" data-bus-id="{{ bus.id }}" data-dep-time="{{ bus.departure_time|time:'H:i' }}" data-arr-time="{{ bus.arrival_time|time:'H:i' }}" data-available-seats="{{ bus.available_seats }}">
+        <div class="card-body p-4">
+            <div class="row g-4 align-items-center">
+                
+                <!-- Bus Image (18% width) -->
+                <div class="col-12 col-left-img text-center text-md-start">
+                    <img src="{% if bus.image %}{{ bus.image.url }}{% else %}{% static 'assets/images/hero-bus.png' %}{% endif %}" alt="{{ bus.bus_name }}" class="bus-img">
+                </div>
+
+                <!-- Travels Details (22% width) -->
+                <div class="col-12 col-left-details">
+                    <h5 class="fw-bold text-dark mb-1">{{ bus.bus_name }}</h5>
+                    <p class="text-muted small mb-3">{{ bus.bus_type }}</p>
+                    
+                    <div class="d-flex align-items-center">
+                        <span class="bus-rating-badge me-2">
+                            <i class="bi bi-star-fill me-1" style="font-size: 0.75rem;"></i><span class="rating-val">4.4</span>
+                        </span>
+                        <span class="text-muted small reviews-val">200 Reviews</span>
+                    </div>
+                </div>
+
+                <!-- Timeline Section (40% width) -->
+                <div class="col-12 col-center-timeline">
+                    <div class="route-timeline">
+                        <div class="text-start">
+                            <h4 class="fw-bold text-dark mb-0 d-inline-block">{{ bus.departure_time|time:"H:i" }}</h4>
+                            <span class="text-muted small ms-2 dep-date">--</span>
+                        </div>
+
+                        <div class="duration-line">
+                            <span class="duration-text">--h --m</span>
+                        </div>
+
+                        <div class="text-end">
+                            <h4 class="fw-bold text-dark mb-0 d-inline-block">{{ bus.arrival_time|time:"H:i" }}</h4>
+                            <span class="text-muted small ms-2 arr-date">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Action Section (20% width) -->
+                <div class="col-12 col-right-action text-center text-md-end d-flex flex-column align-items-center align-items-md-end justify-content-between">
+                    <div class="mb-3 mb-md-2">
+                        <h3 class="fw-bold text-dark mb-1">₹{{ bus.fare }}</h3>
+                        <p class="text-muted small mb-0">
+                            <span class="fw-semibold text-danger">{{ bus.available_seats }} Seats Left</span>
+                            <span class="text-secondary mx-1">|</span>
+                            <span class="fw-semibold text-secondary single-seats-val">-- Single Seats</span>
+                        </p>
+                    </div>
+                    <a href="{% url 'bus_detail' bus.id %}?from={{ from_city }}&to={{ to_city }}&date={{ travel_date }}&passengers={{ passengers }}" class="btn select-seats-btn w-100 text-uppercase">
+                        SELECT SEATS
+                    </a>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    {% empty %}
+
+    <div class="alert alert-danger text-center py-4 rounded-3">
+        <i class="bi bi-exclamation-triangle-fill fs-3 d-block mb-2"></i>
+        No Bus Available
+    </div>
+
+    {% endfor %}
+
+    </div>
+
+    <!-- Pagination Controls -->
+    {% if buses.paginator.num_pages > 1 %}
+    <nav aria-label="Bus list pagination" class="mt-4">
+        <ul class="pagination justify-content-center shadow-sm rounded-4 bg-white p-2" style="max-width: fit-content; margin: 0 auto;">
+            <!-- Previous Button -->
+            {% if buses.has_previous %}
+                <li class="page-item">
+                    <a class="page-link border-0 text-primary fw-bold" href="?page={{ buses.previous_page_number }}{% if from_city %}&from={{ from_city }}{% endif %}{% if to_city %}&to={{ to_city }}{% endif %}{% if travel_date %}&date={{ travel_date }}{% endif %}{% if passengers %}&passengers={{ passengers }}{% endif %}" aria-label="Previous">
+                        <i class="bi bi-chevron-left me-1"></i>Previous
+                    </a>
+                </li>
+            {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link border-0 text-muted"><i class="bi bi-chevron-left me-1"></i>Previous</span>
+                </li>
+            {% endif %}
+
+            <!-- Page Numbers -->
+            {% for num in buses.paginator.page_range %}
+                {% if buses.number == num %}
+                    <li class="page-item active" aria-current="page">
+                        <span class="page-link border-0 bg-primary text-white rounded-pill px-3 mx-1">{{ num }}</span>
+                    </li>
+                {% else %}
+                    <li class="page-item">
+                        <a class="page-link border-0 text-dark rounded-pill px-3 mx-1" href="?page={{ num }}{% if from_city %}&from={{ from_city }}{% endif %}{% if to_city %}&to={{ to_city }}{% endif %}{% if travel_date %}&date={{ travel_date }}{% endif %}{% if passengers %}&passengers={{ passengers }}{% endif %}">{{ num }}</a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+
+            <!-- Next Button -->
+            {% if buses.has_next %}
+                <li class="page-item">
+                    <a class="page-link border-0 text-primary fw-bold" href="?page={{ buses.next_page_number }}{% if from_city %}&from={{ from_city }}{% endif %}{% if to_city %}&to={{ to_city }}{% endif %}{% if travel_date %}&date={{ travel_date }}{% endif %}{% if passengers %}&passengers={{ passengers }}{% endif %}" aria-label="Next">
+                        Next<i class="bi bi-chevron-right ms-1"></i>
+                    </a>
+                </li>
+            {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link border-0 text-muted">Next<i class="bi bi-chevron-right ms-1"></i></span>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const monthNames = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+    
+    // Parse journey/travel date Safely
+    const travelDateStr = "{{ travel_date }}";
+    let baseDate = new Date();
+    if (travelDateStr) {
+        const parts = travelDateStr.split('-');
+        if (parts.length === 3) {
+            baseDate = new Date(parts[0], parts[1] - 1, parts[2]);
+        }
+    }
+
+    const cards = document.querySelectorAll('.bus-card');
+    cards.forEach(card => {
+        const id = card.getAttribute('data-bus-id');
+        const depTimeStr = card.getAttribute('data-dep-time') || "00:00";
+        const arrTimeStr = card.getAttribute('data-arr-time') || "00:00";
+        const availableSeats = parseInt(card.getAttribute('data-available-seats')) || 0;
+
+        // 1. Calculate duration and check if trip spans to next day
+        const [depH, depM] = depTimeStr.split(':').map(Number);
+        const [arrH, arrM] = arrTimeStr.split(':').map(Number);
+        
+        let depMin = depH * 60 + depM;
+        let arrMin = arrH * 60 + arrM;
+        let diffMin = arrMin - depMin;
+        let nextDay = false;
+        
+        if (diffMin < 0) {
+            diffMin += 24 * 60;
+            nextDay = true;
+        }
+        
+        const durH = Math.floor(diffMin / 60);
+        const durM = diffMin % 60;
+        
+        const durationText = card.querySelector('.duration-text');
+        if (durationText) {
+            durationText.textContent = `${durH}h ${durM}m`;
+        }
+
+        // 2. Format departure date text
+        const depDateEl = card.querySelector('.dep-date');
+        if (depDateEl) {
+            const day = baseDate.getDate();
+            const month = monthNames[baseDate.getMonth()];
+            depDateEl.textContent = `${day} ${month}`;
+        }
+
+        // 3. Format arrival date and add next-day indicator if applicable
+        const arrDateEl = card.querySelector('.arr-date');
+        if (arrDateEl) {
+            const arrDate = new Date(baseDate);
+            if (nextDay) {
+                arrDate.setDate(arrDate.getDate() + 1);
+            }
+            const day = arrDate.getDate();
+            const month = monthNames[arrDate.getMonth()];
+            let arrText = `${day} ${month}`;
+            if (nextDay) {
+                arrText += ` <sup class="text-danger fw-semibold" style="font-size: 0.7rem;">+1 day</sup>`;
+            }
+            arrDateEl.innerHTML = arrText;
+        }
+
+        // 4. Dynamic Rating & Review values based on deterministic bus ID
+        const busId = parseInt(id) || 1;
+        const rating = (4.0 + (busId % 8) * 0.1).toFixed(1);
+        const reviews = (busId * 43) % 250 + 50;
+        
+        const ratingValEl = card.querySelector('.rating-val');
+        if (ratingValEl) ratingValEl.textContent = rating;
+        
+        const reviewsValEl = card.querySelector('.reviews-val');
+        if (reviewsValEl) reviewsValEl.textContent = `${reviews} Reviews`;
+
+        // 5. Dynamic single seats count (fraction of remaining seats)
+        const singleSeats = Math.max(0, Math.floor(availableSeats / 3));
+        const singleSeatsEl = card.querySelector('.single-seats-val');
+        if (singleSeatsEl) {
+            singleSeatsEl.textContent = `${singleSeats} Single Seats`;
+        }
+    });
+});
+</script>
+
+{% endblock %}

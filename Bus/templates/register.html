@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<!-- Main Content -->
+<main class="flex-grow-1 d-flex align-items-center justify-content-center py-5">
+    <div class="auth-card" style="max-width: 500px;">
+        {% if msg %}
+        <div class="alert alert-danger" role="alert">
+            {{msg}}
+        </div>
+        {% elif msg1 %}
+        <div class="alert alert-success" role="alert">
+            {{msg1}}
+        </div>
+        {% endif %}
+
+        <div class="auth-header">
+            <a href="{% url 'index' %}" class="auth-logo d-flex align-items-center justify-content-center">
+                <img src="{% static 'assets/images/logo.png' %}" alt="BusYatra Logo" height="60">
+            </a>
+            <h4 class="text-navy-dark mt-2 mb-1">Create your Account</h4>
+            <p class="text-muted small">Sign up now to earn ₹150 wallet bonus and enjoy easy travel booking</p>
+        </div>
+
+        <!-- Alert Message Container -->
+        <div id="alertContainer"></div>
+
+        <form method="POST" action="{% url 'register' %}" id="registerForm" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="col-md-12">
+                <div class="form-floating">
+                    <select class="form-select" id="usertype" name="usertype" aria-label="Usertype">
+                        <option value="usertype" hidden>---Usertype---</option>
+                        <option value="customer">Customer</option>
+                        <option value="manager">Manager</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                    <label for="usertype">Usertype</label>
+                </div>
+            </div>
+
+            <!-- Full Name Field -->
+            <div class="mb-3">
+                <label for="fullName" class="form-label fw-semibold text-secondary small">Full Name</label>
+                <div class="input-group-custom">
+                    <i class="bi bi-person text-muted"></i>
+                    <input type="text" class="form-control" id="fullName" name="name" placeholder="Your Full Name"
+                        required>
+                </div>
+            </div>
+
+            <!-- Email Field -->
+            <div class="mb-3">
+                <label for="email" class="form-label fw-semibold text-secondary small">Email Address</label>
+                <div class="input-group-custom">
+                    <i class="bi bi-envelope text-muted"></i>
+                    <input type="email" class="form-control" id="email" name="email" placeholder="Enter your email"
+                        required>
+                </div>
+            </div>
+
+            <!-- Phone Number Field -->
+            <div class="mb-3">
+                <label for="phoneNumber" class="form-label fw-semibold text-secondary small">Phone Number</label>
+                <div class="input-group-custom">
+                    <i class="bi bi-phone text-muted"></i>
+                    <input type="tel" class="form-control" id="phoneNumber" name="mobile"
+                        placeholder="Enter your phone number" required>
+                </div>
+            </div>
+
+            <!-- Password Field -->
+            <div class="mb-3">
+                <label for="password" class="form-label fw-semibold text-secondary small">Password</label>
+                <div class="input-group-custom">
+                    <i class="bi bi-lock text-muted"></i>
+                    <input type="password" class="form-control" id="password" name="password"
+                        placeholder="Enter your password" required>
+                </div>
+            </div>
+
+            <!-- Password Field -->
+            <div class="mb-3">
+                <label for="password" class="form-label fw-semibold text-secondary small">Confirm Password</label>
+                <div class="input-group-custom">
+                    <i class="bi bi-lock text-muted"></i>
+                    <input type="password" class="form-control" id="confirmPassword" name="confirm_password"
+                        placeholder="Confirm your password" required>
+                </div>
+            </div>
+
+            <!-- profile Field -->
+            <div class="mb-3">
+                <label for="profile" class="form-label fw-semibold text-secondary small">Profile Picture</label>
+                <div class="input-group-custom">
+                    <i class="bi bi-person text-muted"></i>
+                    <input type="file" class="form-control" id="profile" name="profile">
+                </div>
+            </div>
+
+            <!-- Terms and Conditions Checkbox -->
+            <div class="mb-4">
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="termsCheck" required>
+                    <label class="form-check-label text-muted small" for="termsCheck">
+                        I agree to the <a href="#" class="text-primary text-decoration-none">Terms of Service</a> & <a
+                            href="#" class="text-primary text-decoration-none">Privacy Policy</a>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="btn btn-primary-custom w-100 py-2.5 fs-6 mb-3" id="signUpBtn">
+                <span class="spinner-border spinner-border-sm me-2 d-none" id="loadingSpinner" role="status"
+                    aria-hidden="true"></span>
+                <span id="btnText">Create Account</span>
+            </button>
+
+            <!-- Login Redirect -->
+            <p class="text-center text-muted small mb-0">
+                Already have an account? <a href="{% url 'login' %}"
+                    class="text-primary text-decoration-none fw-bold">Log In</a>
+            </p>
+        </form>
+
+
+
+        <div class="text-center mt-4">
+            <a href="{% url 'index' %}" class="text-muted text-decoration-none small"><i
+                    class="bi bi-arrow-left me-1"></i> Back to Homepage</a>
+        </div>
+    </div>
+</main>
+
+<!-- Footer Section -->
+{% endblock %}

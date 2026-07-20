@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+
+<div class="container mt-5 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        BusYatra Payment
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <table class="table">
+                        <tr>
+                            <th>Bus</th>
+                            <td>{{ bus.bus_name }}</td>
+                        </tr>
+                        <tr>
+                            <th>Route</th>
+                            <td>{{ bus.source }} → {{ bus.destination }}</td>
+                        </tr>
+                        <tr>
+                            <th>Journey Date</th>
+                            <td>{{ travel_date }}</td>
+                        </tr>
+                        <tr>
+                            <th>Seats</th>
+                            <td>{{ seats }}</td>
+                        </tr>
+                        <tr>
+                            <th>Subtotal</th>
+                            <td>₹{{ subtotal }}</td>
+                        </tr>
+                        <tr>
+                            <th>GST</th>
+                            <td>₹{{ gst_fees }}</td>
+                        </tr>
+                        <tr>
+                            <th>Convenience Fee</th>
+                            <td>₹{{ convenience_fee }}</td>
+                        </tr>
+                        <tr class="table-success">
+                            <th>Total</th>
+                            <th>₹{{ total_price }}</th>
+                        </tr>
+                    </table>
+                    <button id="rzp-button" class="btn btn-success w-100">
+                        Pay ₹{{ total_price }}
+                    </button>
+                    {% if is_mock %}
+                    <div class="text-center mt-2">
+                        <small class="text-muted">
+                            <i class="bi bi-info-circle me-1"></i> Running in Test Checkout Mode
+                        </small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+<script>
+
+    var options = {
+
+        key: "{{ razorpay_key }}",
+
+        amount: "{{ payment.amount }}",
+
+        currency: "INR",
+
+        name: "BusYatra",
+
+        description: "Bus Ticket Booking",
+
+        image: "{% static 'images/logo.png' %}",
+
+        {% if payment.id and not is_mock %}
+        order_id: "{{ payment.id }}",
+        {% endif %}
+
+        handler: function (response) {
+
+            window.location.href =
+                "{% url 'ticket' %}?booking_ids={{ booking_ids }}"
+                + "&razorpay_payment_id=" + (response.razorpay_payment_id || "mock_pay_id")
+                + "&razorpay_order_id=" + (response.razorpay_order_id || "mock_order_id")
+                + "&razorpay_signature=" + (response.razorpay_signature || "mock_sig");
+
+        },
+        prefill: {
+            name: "{{ request.session.name }}",
+            email: "{{ request.session.email }}",
+            contact: "{{ request.session.phone }}"
+        },
+        theme: {
+            color: "#0d6efd"
+        }
+    };
+    var rzp = new Razorpay(options);
+    document.getElementById("rzp-button").onclick = function (e) {
+        rzp.open();
+        e.preventDefault();
+    };
+</script>
+{% endblock %}

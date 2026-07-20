@@ -1,0 +1,96 @@
+BusYatra User Flow:- 
+
+┌─────────────────────┐
+│   User Visit Site   │
+└──────────┬──────────┘
+           ↓
+┌─────────────────────┐
+│  Search Bus         │
+└──────────┬──────────┘
+           ↓
+┌─────────────────────┐
+│  Bus List           │
+└──────────┬──────────┘
+           ↓
+      View Details
+           ↓
+   Is User Logged In?
+      ↙           ↘
+    NO             YES
+     ↓              ↓
+ Login Page     Bus Details
+     ↓              ↓
+ OTP Verify    Seat Selection
+     ↓              ↓
+ Redirect to   Booking Details
+ Bus Details       ↓
+                   ↓
+              Payment
+                   ↓
+        ┌──────────┴──────────┐
+        ↓                     ↓
+   Payment Failed       Payment Success
+        ↓                     ↓
+  Try Again / Cancel    Generate Ticket
+                              ↓
+                      Save Ticket in Database
+                              ↓
+                       Generate E-Ticket
+                              ↓
+                       Send to User Email
+                              ↓
+                       Booking Completed
+
+
+Manager Flow:- 
+
+                    ┌─────────────────┐
+                    │  Manager Login  │
+                    └────────┬────────┘
+                             ↓
+                    ┌─────────────────┐
+                    │    Dashboard    │
+                    └────────┬────────┘
+                             ↓
+      ┌──────────┬───────────┼───────────┬───────────┐
+      ↓          ↓           ↓           ↓           ↓
+   Profile     Buses       Routes     Schedules   Bookings
+      ↓          ↓           ↓           ↓           ↓
+  Update      Add/View    Add/View    Create      Manage
+  Profile     Update      Update      Schedule    Booking
+              Delete      Delete
+                             ↓
+                       Seat Status
+                             ↓
+                    Available / Booked
+
+Admin Flow:- 
+
+                         ADMIN
+                           ↓
+                    Admin Dashboard
+                           ↓
+ ┌──────────┬──────────┬──────────┬──────────┬──────────┐
+ ↓          ↓          ↓          ↓          ↓
+Customer   Manager    Bus       Route    Schedule
+Manage     Manage     Manage    Manage    Manage
+                                      ↓
+                               Customer Search
+                                      ↓
+                                  Booking
+                                      ↓
+                                  Payment
+                                      ↓
+                            Ticket Generation
+                                      ↓
+                              Booking Database
+                                      ↓
+                       ┌──────────────┴──────────────┐
+                       ↓                             ↓
+                 Manage Bookings              Manage Payments
+                       ↓                             ↓
+                       └──────────────┬──────────────┘
+                                      ↓
+                              System Reports
+                                      ↓
+                               Total Revenue

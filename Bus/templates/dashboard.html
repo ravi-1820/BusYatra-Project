@@ -1,0 +1,341 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<!-- Top Account Banner -->
+    <section class="modify-banner shadow-sm py-4">
+        <div class="container">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="position-relative" style="width: 75px; height: 75px;">
+                        <div class="profile-img-container m-0 bg-primary text-white w-100 h-100 rounded-circle d-flex align-items-center justify-content-center overflow-hidden border border-2 border-white shadow" style="font-size:1.75rem;" id="profileAvatarContainer">
+                            <span id="profileInitials">AD</span>
+                        </div>
+                        <label for="profilePhotoInput" class="position-absolute bottom-0 end-0 bg-warning text-dark rounded-circle d-flex align-items-center justify-content-center shadow-sm cursor-pointer hover-scale transition-all" style="width: 26px; height: 26px; font-size: 0.8rem; cursor: pointer; border: 2px solid white;" title="Change Profile Picture">
+                            <i class="bi bi-camera-fill"></i>
+                        </label>
+                        <input type="file" id="profilePhotoInput" accept="image/*" class="d-none">
+                    </div>
+                    <div>
+                        <h4 class="mb-0 text-white fw-bold" id="profileName">Loading User...</h4>
+                        <small class="text-white-50" id="profileContact"><i class="bi bi-envelope me-1"></i>loading... | <i class="bi bi-phone me-1"></i>loading...</small>
+                    </div>
+                </div>
+                <div class="text-md-end text-start">
+                    <span class="badge bg-white text-primary px-3 py-2 rounded-pill shadow-sm"><i class="bi bi-patch-check-fill me-1 text-warning"></i>Verified Prime Member</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Dashboard Body -->
+    <main class="container my-5">
+        <div class="row g-4">
+            
+            <!-- Left Navigation Menu -->
+            <aside class="col-lg-3">
+                <div class="dashboard-sidebar mb-4">
+                    <div class="text-center border-bottom pb-3 mb-3">
+                        <h6 class="text-navy-dark fw-bold mb-1">Total Savings</h6>
+                        <h4 class="text-success fw-bold mb-0" id="profileSavingsAmount">₹0</h4>
+                        <small class="text-muted">Saved using coupon codes</small>
+                    </div>
+                    
+                    <div class="nav flex-column gap-1">
+                        <a href="{% url 'my_orders' %}" class="dashboard-menu-link" id="menuBookings"><i class="bi bi-ticket-perforated"></i>My Orders</a>
+                        <a href="{% url 'dashboard' %}" class="dashboard-menu-link active" id="menuProfile"><i class="bi bi-person-gear"></i>Profile Details</a>
+                        <a href="{% url 'dashboard' %}" class="dashboard-menu-link" id="menuWallet"><i class="bi bi-wallet2"></i>BusYatra Wallet (<span id="profileWalletBalance">₹0</span>)</a>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Right Side Dashboard Views -->
+            <section class="col-lg-9">
+                <!-- Bookings History View -->
+                <div id="bookingsView" class="d-none">
+                    <!-- Tab Headers -->
+                    <ul class="nav nav-tabs mb-4" id="bookingTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active fw-bold text-navy-dark" id="upcoming-tab" data-bs-toggle="tab" data-bs-target="#upcoming" type="button" role="tab" aria-controls="upcoming" aria-selected="true">
+                                <i class="bi bi-calendar2-check text-primary me-2"></i>Upcoming trips
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link fw-bold text-navy-dark" id="past-tab" data-bs-toggle="tab" data-bs-target="#past" type="button" role="tab" aria-controls="past" aria-selected="false">
+                                <i class="bi bi-calendar2-x text-secondary me-2"></i>Past trips
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link fw-bold text-navy-dark" id="cancelled-tab" data-bs-toggle="tab" data-bs-target="#cancelled" type="button" role="tab" aria-controls="cancelled" aria-selected="false">
+                                <i class="bi bi-x-circle text-danger me-2"></i>Cancelled tickets
+                            </button>
+                        </li>
+                    </ul>
+
+                    <!-- Tab Contents -->
+                    <div class="tab-content" id="bookingTabsContent">
+                        
+                        <!-- Upcoming Trips Panel -->
+                        <div class="tab-pane fade show active" id="upcoming" role="tabpanel" aria-labelledby="upcoming-tab">
+                            <div class="d-flex flex-column gap-3" id="upcomingList">
+                                <!-- Dynamically loaded from localStorage or fallback -->
+                            </div>
+                        </div>
+
+                        <!-- Past Trips Panel -->
+                        <div class="tab-pane fade" id="past" role="tabpanel" aria-labelledby="past-tab">
+                            <div class="d-flex flex-column gap-3">
+                                
+                                <!-- Past Trip 1 -->
+                                <div class="card card-custom shadow-sm border-start border-5 border-success">
+                                    <div class="card-body p-4">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <div>
+                                                <h6 class="text-muted small mb-0">Booking ID: GB109403</h6>
+                                                <span class="text-navy-dark fw-bold">Mumbai to Pune</span>
+                                            </div>
+                                            <span class="badge bg-success-subtle text-success px-3 py-1.5 rounded-pill fw-bold">Completed</span>
+                                        </div>
+                                        <div class="row g-2 text-navy-dark mb-3">
+                                            <div class="col-sm-4">
+                                                <span class="text-muted small d-block">Operator</span>
+                                                <span class="fw-semibold">VRL Travels</span>
+                                            </div>
+                                            <div class="col-sm-4">
+                                                <span class="text-muted small d-block">Date & Time</span>
+                                                <span class="fw-semibold">12 May 2026 | 08:30 AM</span>
+                                            </div>
+                                            <div class="col-sm-4">
+                                                <span class="text-muted small d-block">Seat Numbers</span>
+                                                <span class="fw-bold">S3, S4</span>
+                                            </div>
+                                        </div>
+                                        <div class="border-top pt-3 d-flex justify-content-between align-items-center">
+                                            <span class="text-muted small">Total Paid: <strong>₹850</strong></span>
+                                            <span class="text-muted small"><i class="bi bi-star-fill text-warning me-1"></i>Rated 4.0</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <!-- Cancelled Tickets Panel -->
+                        <div class="tab-pane fade" id="cancelled" role="tabpanel" aria-labelledby="cancelled-tab">
+                            <div class="d-flex flex-column gap-3" id="cancelledList">
+                                <!-- Cancelled list from localstorage or fallback -->
+                                <div class="text-center p-5 bg-white rounded-4 border border-secondary border-opacity-10">
+                                    <i class="bi bi-x-circle text-muted fs-1 mb-2 d-block"></i>
+                                    <h6 class="text-navy-dark">No Cancelled Tickets</h6>
+                                    <p class="text-muted small mb-0">Any ticket cancelled by you will appear here along with refund details.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Profile Details View -->
+                <div id="profileView" class="card card-custom p-4">
+                    <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
+                        <h5 class="text-navy-dark fw-bold mb-0"><i class="bi bi-person-gear text-primary me-2"></i>My Profile Details</h5>
+                        <span class="badge bg-primary-subtle text-primary px-3 py-1.5 rounded-pill fw-semibold" id="profileBadgeRole">Customer</span>
+                    </div>
+
+                    <form id="editProfileForm">
+                        <div id="profileAlertContainer"></div>
+                        <div class="row g-4">
+                            <!-- User Type Field -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-secondary small">User Account Type</label>
+                                <div class="input-group-custom bg-light rounded-3">
+                                    <i class="bi bi-shield-lock text-muted"></i>
+                                    <input type="text" class="form-control bg-light" id="profileEditUserType" readonly value="Customer">
+                                </div>
+                                <small class="text-muted" style="font-size:0.75rem;"><i class="bi bi-info-circle me-1"></i>Contact support to change your account role.</small>
+                            </div>
+
+                            <!-- Full Name Field -->
+                            <div class="col-md-6">
+                                <label for="profileEditName" class="form-label fw-semibold text-secondary small">Full Name</label>
+                                <div class="input-group-custom">
+                                    <i class="bi bi-person text-muted"></i>
+                                    <input type="text" class="form-control rounded-3" id="profileEditName" placeholder="Enter full name" required disabled>
+                                </div>
+                            </div>
+
+                            <!-- Email Field -->
+                            <div class="col-md-6">
+                                <label for="profileEditEmail" class="form-label fw-semibold text-secondary small">Email Address <span class="badge bg-secondary-subtle text-secondary ms-1 small"><i class="bi bi-lock-fill me-1"></i>Locked</span></label>
+                                <div class="input-group-custom bg-light rounded-3">
+                                    <i class="bi bi-envelope text-muted"></i>
+                                    <input type="email" class="form-control bg-light" id="profileEditEmail" readonly>
+                                </div>
+                                <small class="text-muted" style="font-size:0.75rem;"><i class="bi bi-info-circle me-1"></i>Email address cannot be modified.</small>
+                            </div>
+
+                            <!-- Phone Number Field -->
+                            <div class="col-md-6">
+                                <label for="profileEditPhone" class="form-label fw-semibold text-secondary small">Phone Number</label>
+                                <div class="input-group-custom">
+                                    <i class="bi bi-phone text-muted"></i>
+                                    <input type="tel" class="form-control rounded-3" id="profileEditPhone" placeholder="Enter phone number" required disabled>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex justify-content-end gap-2 mt-4" id="profileActionBtns">
+                            <button type="button" class="btn btn-outline-primary rounded-3 px-4 transition-all" id="btnEditProfile"><i class="bi bi-pencil-square me-1"></i>Edit Profile</button>
+                            <button type="button" class="btn btn-outline-secondary rounded-3 px-4 d-none transition-all" id="btnCancelEdit"><i class="bi bi-x-circle me-1"></i>Cancel</button>
+                            <button type="submit" class="btn btn-primary-custom rounded-3 px-4 d-none transition-all" id="btnSaveProfile"><span class="spinner-border spinner-border-sm me-2 d-none" id="saveSpinner" role="status"></span><i class="bi bi-check-circle me-1" id="saveIcon"></i>Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Security & Password Card -->
+                <div class="card card-custom p-4 mt-4" id="passwordSecurityView">
+                    <h5 class="text-navy-dark fw-bold border-bottom pb-3 mb-4"><i class="bi bi-shield-check text-primary me-2"></i>Security & Password</h5>
+                    <form id="changePasswordForm">
+                        <div id="passwordAlertContainer"></div>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold text-secondary small">Current Password</label>
+                                <div class="input-group-custom">
+                                    <i class="bi bi-lock text-muted"></i>
+                                    <input type="password" class="form-control rounded-3" id="currentPassword" placeholder="••••••••" required>
+                                    <button type="button" class="password-toggle-btn p-0" id="btnToggleCurrentPass">
+                                        <i class="bi bi-eye-slash" id="currentPassIcon"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold text-secondary small">New Password</label>
+                                <div class="input-group-custom">
+                                    <i class="bi bi-shield-lock text-muted"></i>
+                                    <input type="password" class="form-control rounded-3" id="newPassword" placeholder="Enter new password" required>
+                                    <button type="button" class="password-toggle-btn p-0" id="btnToggleNewPass">
+                                        <i class="bi bi-eye-slash" id="newPassIcon"></i>
+                                    </button>
+                                </div>
+                                <div class="progress mt-2" style="height: 5px;">
+                                    <div class="progress-bar bg-danger" id="passwordStrengthBar" role="progressbar" style="width: 0%;"></div>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mt-1">
+                                    <small class="text-muted small" id="passwordStrengthText" style="font-size:0.75rem;">Strength: Weak</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold text-secondary small">Confirm New Password</label>
+                                <div class="input-group-custom">
+                                    <i class="bi bi-shield-fill-check text-muted"></i>
+                                    <input type="password" class="form-control rounded-3" id="confirmNewPassword" placeholder="Confirm new password" required>
+                                    <button type="button" class="password-toggle-btn p-0" id="btnToggleConfirmPass">
+                                        <i class="bi bi-eye-slash" id="confirmPassIcon"></i>
+                                    </button>
+                                </div>
+                                <div class="mt-1">
+                                    <small class="text-danger d-none small" id="passwordMatchError" style="font-size:0.75rem;"><i class="bi bi-x-circle me-1"></i>Passwords do not match</small>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-outline-primary mt-4 rounded-3 px-4 transition-all" id="btnUpdatePassword"><span class="spinner-border spinner-border-sm me-2 d-none" id="passwordSpinner" role="status"></span><i class="bi bi-key me-1" id="passwordIcon"></i>Update Password</button>
+                    </form>
+                </div>
+
+                <!-- Account Preferences Card -->
+                <div class="card card-custom p-4 mt-4" id="preferencesCard">
+                    <h5 class="text-navy-dark fw-bold border-bottom pb-3 mb-4"><i class="bi bi-sliders text-primary me-2"></i>Account Preferences</h5>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center justify-content-between p-3 border rounded-3 bg-light transition-all hover-shadow-sm">
+                                <div class="pe-2">
+                                    <h6 class="mb-1 text-navy-dark fw-bold" style="font-size:0.875rem;">Email Notifications</h6>
+                                    <p class="text-muted mb-0" style="font-size:0.75rem;">Receive booking confirmations and invoices via email.</p>
+                                </div>
+                                <div class="form-check form-switch fs-5 mb-0">
+                                    <input class="form-check-input" type="checkbox" id="emailNotifications" checked>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center justify-content-between p-3 border rounded-3 bg-light transition-all hover-shadow-sm">
+                                <div class="pe-2">
+                                    <h6 class="mb-1 text-navy-dark fw-bold" style="font-size:0.875rem;">SMS & WhatsApp Alerts</h6>
+                                    <p class="text-muted mb-0" style="font-size:0.75rem;">Receive real-time trip status alerts and ticket updates.</p>
+                                </div>
+                                <div class="form-check form-switch fs-5 mb-0">
+                                    <input class="form-check-input" type="checkbox" id="smsNotifications" checked>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Wallet View -->
+                <div id="walletView" class="card card-custom p-4 d-none">
+                    <h5 class="text-navy-dark fw-bold mb-3"><i class="bi bi-wallet2 text-primary me-2"></i>BusYatra Wallet Balance</h5>
+                    <div class="p-4 bg-light rounded-4 border mb-4 text-center">
+                        <span class="text-muted small d-block">Available balance</span>
+                        <h2 class="text-success fw-bold mt-1 mb-0" id="walletBalanceBig">₹0</h2>
+                        <small class="text-muted">Use this balance to purchase bus tickets instantly.</small>
+                    </div>
+                    <h6 class="fw-bold mb-2">Recent Transactions</h6>
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Transaction Details</th>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th class="text-end">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><span class="fw-semibold">Welcome Wallet Bonus</span></td>
+                                    <td>Today</td>
+                                    <td><span class="badge bg-success-subtle text-success">Credit</span></td>
+                                    <td class="text-end fw-bold text-success">+₹150</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="fw-semibold">Loyalty Reward Points</span></td>
+                                    <td>Yesterday</td>
+                                    <td><span class="badge bg-success-subtle text-success">Credit</span></td>
+                                    <td class="text-end fw-bold text-success">+₹100</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Cancellation Confirmation Modal -->
+    <div class="modal fade" id="cancelModal" tabindex="-1" aria-labelledby="cancelModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold text-navy-dark" id="cancelModalLabel"><i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Confirm Ticket Cancellation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-navy-dark">
+                    <p>Are you sure you want to cancel booking <strong id="modalBookingId"></strong>? This action cannot be undone.</p>
+                    <div class="bg-danger-subtle text-danger p-3 rounded-3 small">
+                        <h6 class="fw-bold mb-1"><i class="bi bi-info-circle me-1"></i>Cancellation & Refund Policy:</h6>
+                        <ul class="mb-0 ps-3">
+                            <li>Cancellation made 24h prior: 100% Refund</li>
+                            <li>Refund will be credited to original source payment within 3-5 days.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary rounded-3" data-bs-dismiss="modal">Keep Booking</button>
+                    <button type="button" class="btn btn-danger rounded-3" id="btnConfirmCancel">Cancel My Ticket</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer Section -->
+{% endblock %}

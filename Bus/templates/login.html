@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<!-- Main Content -->
+<main class="flex-grow-1 d-flex align-items-center justify-content-center py-5">
+    <div class="auth-card">
+        {% if msg %}
+        <div class="alert alert-danger" role="alert">
+            {{msg}}
+        </div>
+        {% endif %}
+        {% if success %}
+        <div class="alert alert-success" role="alert">
+            {{success}}
+        </div>
+        {% endif %}
+        <div class="auth-header">
+            <a href="{% url 'index' %}" class="auth-logo d-flex align-items-center justify-content-center">
+                <img src="{% static 'assets/images/logo.png' %}" alt="BusYatra Logo" height="60">
+            </a>
+            <h4 class="text-navy-dark mt-2 mb-1">Welcome Back!</h4>
+            <p class="text-muted small">Enter your credentials to access your ticket bookings</p>
+        </div>
+
+        <!-- Alert Message Container -->
+        <div id="alertContainer"></div>
+
+        <form method="POST" action="{% url 'login' %}">
+            {% csrf_token %}
+            <!-- Email Field -->
+            <div class="mb-3">
+                <label for="email" class="form-label fw-semibold text-secondary small">Email Address</label>
+                <div class="input-group-custom">
+                    <i class="bi bi-envelope text-muted"></i>
+                    <input type="email" class="form-control" id="email" name="email" placeholder="Enter your email"
+                        required>
+                </div>
+            </div>
+
+            <!-- Password Field -->
+            <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <label for="password" class="form-label fw-semibold text-secondary mb-0 small">Password</label>
+                    <a href="{% url 'forgot_password' %}" class="text-primary text-decoration-none small fw-semibold"
+                        id="forgotPasswordLink">Forgot Password?</a>
+                </div>
+                <div class="input-group-custom">
+                    <i class="bi bi-lock text-muted"></i>
+                    <input type="password" class="form-control" id="password" name="password"
+                        placeholder="Enter your password" required>
+                    <button type="submit" class="password-toggle-btn" id="togglePassword">
+                        <i class="bi bi-eye-slash" id="toggleIcon"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Remember Me -->
+            <div class="mb-4 d-flex justify-content-between align-items-center">
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="rememberMe">
+                    <label class="form-check-label text-muted small" for="rememberMe">Remember me</label>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="btn btn-primary-custom w-100 py-2.5 fs-6 mb-3" id="signInBtn">
+                <span class="spinner-border spinner-border-sm me-2 d-none" id="loadingSpinner" role="status"
+                    aria-hidden="true"></span>
+                <span id="btnText">Login</span>
+            </button>
+
+            <!-- Register Redirect -->
+            <p class="text-center text-muted small mb-3">
+                Don't have an account? <a href="{% url 'register' %}"
+                    class="text-primary text-decoration-none fw-bold">Register Now</a>
+            </p>
+            <!-- <div class="mt-4 pt-3 border-top text-center">
+                <p class="text-secondary small fw-bold mb-2">Quick Login Roles (Demo):</p>
+                <div class="d-flex justify-content-center gap-2 flex-wrap">
+                    <button type="button" class="btn btn-sm btn-outline-primary px-3 rounded-pill" onclick="quickLogin('customer')">Customer</button>
+                    <button type="button" class="btn btn-sm btn-outline-warning text-dark px-3 rounded-pill" onclick="quickLogin('manager')">Manager</button>
+                    <button type="button" class="btn btn-sm btn-outline-danger px-3 rounded-pill" onclick="quickLogin('admin')">Admin</button>
+                </div>
+            </div> -->
+        </form>
+
+
+
+        <div class="text-center mt-4">
+            <a href="{% url 'index' %}" class="text-muted text-decoration-none small"><i
+                    class="bi bi-arrow-left me-1"></i> Back to Homepage</a>
+        </div>
+    </div>
+</main>
+
+<!-- Footer Section -->
+{% endblock %}
