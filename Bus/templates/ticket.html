@@ -154,67 +154,17 @@
 
         <!-- Action Buttons -->
         <div class="text-center mt-4 print-hide action-buttons">
-            <button class="btn btn-primary-custom px-4 py-2 me-2" onclick="window.print();"><i
-                    class="bi bi-printer me-2"></i>Print Ticket</button>
-            <button onclick="downloadPDF();" class="btn btn-outline-primary px-4 py-2 me-2" id="btnDownload"><i
-                    class="bi bi-download me-2"></i>Download PDF</button>
+            <!-- Print Ticket uses backend PDF inline view (which opens in native browser print-friendly viewer) -->
+            <a href="{% url 'download_ticket_pdf' %}?booking_ids={{ booking_ids_str }}&inline=1" target="_blank" class="btn btn-primary-custom px-4 py-2 me-2" id="btnPrint"><i
+                    class="bi bi-printer me-2"></i>Print Ticket</a>
+            
+            <!-- Download PDF triggers backend PDF attachment download -->
+            <a href="{% url 'download_ticket_pdf' %}?booking_ids={{ booking_ids_str }}" class="btn btn-outline-primary px-4 py-2 me-2" id="btnDownload"><i
+                    class="bi bi-download me-2"></i>Download PDF</a>
+            
             <a href="{% url 'index' %}" class="btn btn-amber-custom px-4 py-2"><i class="bi bi-house-door me-2"></i>Book Another Ticket</a>
         </div>
     </main>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script>
-    function downloadPDF() {
-        // Select the ticket container element
-        const element = document.querySelector('.ticket-container');
-        
-        // Store original styles to restore after rendering
-        const originalWidth = element.style.width;
-        const originalMaxWidth = element.style.maxWidth;
-        const originalMargin = element.style.margin;
-        const originalBoxShadow = element.style.boxShadow;
-        const originalBorder = element.style.border;
-        
-        // Force A4 optimized dimensions and remove shadows for clean PDF output
-        element.style.width = '100%';
-        element.style.maxWidth = '680px';
-        element.style.margin = '0 auto';
-        element.style.boxShadow = 'none';
-        element.style.border = '1px solid #cbd5e1';
-        
-        // Configure options for pixel-perfect high-resolution A4 rendering
-        const opt = {
-            margin:       [10, 10, 10, 10], // 10mm margins on all sides
-            filename:     'BusYatra_Ticket.pdf',
-            image:        { type: 'jpeg', quality: 1.0 },
-            html2canvas:  { 
-                scale: 2.5, // High resolution scale
-                useCORS: true, 
-                logging: false,
-                scrollY: 0,
-                scrollX: 0
-            },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        };
-        
-        // Generate and download the PDF, then restore original visual styles
-        html2pdf().set(opt).from(element).save().then(() => {
-            element.style.width = originalWidth;
-            element.style.maxWidth = originalMaxWidth;
-            element.style.margin = originalMargin;
-            element.style.boxShadow = originalBoxShadow;
-            element.style.border = originalBorder;
-        }).catch((err) => {
-            console.error('PDF Generation Error:', err);
-            // Restore styles in case of error
-            element.style.width = originalWidth;
-            element.style.maxWidth = originalMaxWidth;
-            element.style.margin = originalMargin;
-            element.style.boxShadow = originalBoxShadow;
-            element.style.border = originalBorder;
-        });
-    }
-    </script>
 
     <!-- Footer Section -->
 {% endblock %}

@@ -133,22 +133,42 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* User Account Dropdown/Menu on Header */
+/* Profile Dropdown */
+
+.profile-dropdown .dropdown-toggle {
+    cursor: pointer;
+}
+
+.profile-dropdown .dropdown-toggle::after {
+    margin-left: 8px;
+    vertical-align: middle;
+}
+
 .header-profile-menu {
-    border-radius: 12px;
-    border: 1px solid var(--gray-border);
-    box-shadow: var(--shadow-lg);
-    padding: 0.5rem;
+    width: 200px;
+    background-color: #ffffff !important;
+    border: 1px solid var(--gray-border) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08) !important;
+    padding: 8px !important;
 }
+
+.header-profile-menu li:not(:last-child) {
+    margin-bottom: 4px;
+}
+
 .header-profile-menu .dropdown-item {
-    border-radius: 8px;
+    color: var(--navy-light) !important;
+    border-radius: 8px !important;
+    padding: 10px 16px !important;
     font-weight: 500;
-    padding: 0.5rem 1rem;
-    color: var(--text-main);
-    transition: var(--transition-smooth);
+    transition: background-color 0.3s ease, color 0.3s ease;
+    text-decoration: none !important;
 }
+
 .header-profile-menu .dropdown-item:hover {
-    background-color: var(--blue-light);
-    color: var(--blue-primary);
+    background-color: var(--blue-light) !important;
+    color: var(--blue-hover) !important;
 }
 
 /* Hero Section - Soft Light Gradient */

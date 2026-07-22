@@ -76,49 +76,140 @@ def get_customer_bookings(customer, booking_ids):
         return Booking.objects.none()
     return Booking.objects.filter(id__in=ids, user=customer)
 
+def is_valid_date(date_str):
+    """
+    Checks if a string is a valid date in YYYY-MM-DD format and not 'None', 'null' or empty.
+    """
+    if not date_str or not isinstance(date_str, str):
+        return False
+    if date_str.strip().lower() in ("none", "null", ""):
+        return False
+    from datetime import datetime
+    try:
+        datetime.strptime(date_str.strip(), "%Y-%m-%d")
+        return True
+    except ValueError:
+        return False
+
+def is_valid_city(city_str):
+    """
+    Checks if a city string is valid (not None, not empty, not 'None'/'null').
+    """
+    if not city_str or not isinstance(city_str, str):
+        return False
+    if city_str.strip().lower() in ("none", "null", ""):
+        return False
+    return True
+
+def is_valid_passengers(passengers_str):
+    """
+    Checks if a passenger count is a positive integer.
+    """
+    if not passengers_str:
+        return False
+    try:
+        val = int(passengers_str)
+        return val > 0
+    except ValueError:
+        return False
+
 def get_search_details(request):
     """
     Search values GET se lo. Agar GET me value nahi hai to session se lo.
+    GET aur session values ko rigorously validate karo.
     """
-    fields = {
-        'from': 'journey_from',
-        'to': 'journey_to',
-        'date': 'journey_date',
-        'passengers': 'num_passengers',
-    }
+    raw_from = request.GET.get('from')
+    raw_to = request.GET.get('to')
+    raw_date = request.GET.get('date')
+    raw_passengers = request.GET.get('passengers')
 
-    data = {}
-    for query_name, session_name in fields.items():
-        default = '1' if query_name == 'passengers' else None
-        value = request.GET.get(query_name)
-
-        if query_name in request.GET:
-            request.session[session_name] = value
+    # Determine source city
+    if 'from' in request.GET:
+        if is_valid_city(raw_from):
+            from_city = raw_from.strip()
+            request.session['journey_from'] = from_city
         else:
-            value = request.session.get(session_name, default)
+            if raw_from == "":
+                from_city = ""
+                request.session['journey_from'] = ""
+            else:
+                session_from = request.session.get('journey_from')
+                from_city = session_from.strip() if is_valid_city(session_from) else ""
+    else:
+        session_from = request.session.get('journey_from')
+        from_city = session_from.strip() if is_valid_city(session_from) else ""
 
-        data[query_name] = value
+    # Determine destination city
+    if 'to' in request.GET:
+        if is_valid_city(raw_to):
+            to_city = raw_to.strip()
+            request.session['journey_to'] = to_city
+        else:
+            if raw_to == "":
+                to_city = ""
+                request.session['journey_to'] = ""
+            else:
+                session_to = request.session.get('journey_to')
+                to_city = session_to.strip() if is_valid_city(session_to) else ""
+    else:
+        session_to = request.session.get('journey_to')
+        to_city = session_to.strip() if is_valid_city(session_to) else ""
+
+    # Determine travel date
+    if 'date' in request.GET:
+        if is_valid_date(raw_date):
+            travel_date = raw_date.strip()
+            request.session['journey_date'] = travel_date
+        else:
+            if raw_date == "":
+                travel_date = date.today().strftime("%Y-%m-%d")
+                request.session['journey_date'] = travel_date
+            else:
+                session_date = request.session.get('journey_date')
+                travel_date = session_date.strip() if is_valid_date(session_date) else date.today().strftime("%Y-%m-%d")
+    else:
+        session_date = request.session.get('journey_date')
+        travel_date = session_date.strip() if is_valid_date(session_date) else date.today().strftime("%Y-%m-%d")
+
+    # Determine passengers count
+    if 'passengers' in request.GET:
+        if is_valid_passengers(raw_passengers):
+            passengers = raw_passengers.strip()
+            request.session['num_passengers'] = passengers
+        else:
+            if raw_passengers == "":
+                passengers = "1"
+                request.session['num_passengers'] = "1"
+            else:
+                session_passengers = request.session.get('num_passengers')
+                passengers = session_passengers.strip() if is_valid_passengers(session_passengers) else "1"
+    else:
+        session_passengers = request.session.get('num_passengers')
+        passengers = session_passengers.strip() if is_valid_passengers(session_passengers) else "1"
 
     return {
-        'from_city': data['from'],
-        'to_city': data['to'],
-        'travel_date': data['date'],
-        'passengers': data['passengers'],
+        'from_city': from_city,
+        'to_city': to_city,
+        'travel_date': travel_date,
+        'passengers': passengers,
     }
 
 def travel_date_or_today(travel_date):
     """
-    Seat count ke liye date chahiye. Date na mile to aaj ki date use hoti hai.
+    Seat count ke liye date chahiye. Date na mile ya invalid ho to aaj ki date use hoti hai.
     """
-    return travel_date or date.today().strftime("%Y-%m-%d")
+    if is_valid_date(travel_date):
+        return travel_date
+    return date.today().strftime("%Y-%m-%d")
 
 def booked_seat_count(bus, travel_date):
     """
     Sirf successful paid bookings ko booked seat maana gaya hai.
     """
+    date_to_use = travel_date_or_today(travel_date)
     return Booking.objects.filter(
         bus=bus,
-        travel_date=travel_date,
+        travel_date=date_to_use,
         payment=True,
         payment_status="success",
         booking_status="booked"
@@ -136,10 +227,11 @@ def get_booked_seats(bus, travel_date):
     """
     Seat map ke liye blocked seat numbers ki list.
     """
+    date_to_use = travel_date_or_today(travel_date)
     return list(
         SeatBooking.objects.filter(
             bus=bus,
-            journey_date=travel_date
+            journey_date=date_to_use
         ).values_list("seat_number", flat=True)
     )
 
@@ -304,11 +396,27 @@ def about(request):
     """
     return render(request, 'about.html')
 
+def travel_guidelines(request):
+    """
+    Renders the travel guidelines page.
+    """
+    try:
+        return render(request, 'travel_guidelines.html')
+    except Exception as e:
+        logger.error(f"Error rendering travel guidelines page: {e}")
+        return HttpResponse("An error occurred loading the travel guidelines page.")
+
 def contact(request):
     """
     Handles user contact form submission.
     """
     if request.method == 'POST':
+        # print(request.POST)  # Debug
+        # print("Name:", request.POST.get('name'))
+        # print("Email:", request.POST.get('email'))
+        # print("Phone:", request.POST.get('phone'))
+        # print("Subject:", request.POST.get('subject'))
+        # print("Message:", request.POST.get('message'))
         try:
             name = request.POST.get('name', '').strip()
             email = request.POST.get('email', '').strip()
@@ -326,6 +434,25 @@ def contact(request):
                 subject=subject,
                 message=message
             )
+            send_mail(
+    subject=f"New Contact Message: {subject}",
+    message=f"""
+New Contact Form Submission
+
+Name: {name}
+Email: {email}
+Phone: {phone}
+
+Subject:
+{subject}
+
+Message:
+{message}
+""",
+    from_email=settings.EMAIL_HOST_USER,
+    recipient_list=[settings.EMAIL_HOST_USER],   # Admin Email
+    fail_silently=False,
+)
             success_msg = "Message Sent! Our support team will get back to you within 24 hours."
             return render(request, 'contact.html', {'msg': success_msg})
         except Exception as e:
@@ -335,6 +462,34 @@ def contact(request):
 
     return render(request, 'contact.html')
 
+def contact_message(request):
+    """
+    Display all contact messages for Admin and Manager.
+    """
+    # Login Check
+    if 'email' not in request.session:
+        return redirect('login')
+    try:
+        user = User.objects.get(email=request.session['email'])
+        if user.usertype not in ['admin', 'manager']:
+            return redirect('index')
+        contacts = Contact.objects.all().order_by('-id')
+        context = {
+            'user': user,
+            'contacts': contacts,
+        }
+        return render(request, 'contact_messages.html', context)
+    except User.DoesNotExist:
+        return redirect('login')
+    except Exception as e:
+        logger.error(f"Error loading contact messages: {e}")
+        context = {
+            'user': None,
+            'contacts': [],
+            'msg': "Something went wrong. Please try again."
+        }
+        return render(request, 'contact_messages.html', context)
+      
 def register(request):
     """
     Handles new user registration with email and mobile uniqueness validations.
@@ -372,7 +527,7 @@ def register(request):
 
             # Send welcome email notification
             welcome_subject = "Welcome to BusYatra"
-            welcome_message = f"Hello {name},\n\nWelcome to BusYatra!\nYour account has been created successfully.\nLogin Email: {email}\n\nRegards,\nTeam BusYatra"
+            welcome_message = f"Hello {name},\nWelcome to BusYatra!\nYour account has been created successfully For BusYatra.\nLogin Email: {email}\nRegards,\nBusYatra Team"
             try:
                 send_mail(
                     welcome_subject,
@@ -414,7 +569,7 @@ def login(request):
                 try:
                     send_mail(
                         "BusYatra Login OTP",
-                        f"Hello {user.name},\n\nYour Login OTP is: {otp}\n\nDo not share this OTP with anyone.\n\nBusYatra Team",
+                        f"Hello {user.name},\nYour Login OTP  for verify email please enter otp: {otp}\nDo not share this OTP with anyone.\n\nBusYatra Team",
                         settings.EMAIL_HOST_USER,
                         [user.email],
                         fail_silently=False,
@@ -700,8 +855,10 @@ def seat_booking(request, pk=None):
         if not bus:
             return redirect("bus_list")
 
-        travel_date = request.GET.get("date") or request.session.get("journey_date")
-        if not travel_date:
+        raw_date = request.GET.get("date") or request.session.get("journey_date")
+        if is_valid_date(raw_date):
+            travel_date = raw_date
+        else:
             travel_date = (date.today() + timedelta(days=1)).strftime("%Y-%m-%d")
         request.session["journey_date"] = travel_date
 
@@ -822,10 +979,14 @@ def payment(request):
     except Exception as e:
         logger.error(f"Payment Initialization Error: {e}")
         return HttpResponse(f"Error occurred: {e}")
+    
 def generate_ticket_pdf_bytes(bookings):
     """
-    Generates PDF binary stream for list of bookings using ReportLab.
+    Generates a professional, premium PDF binary stream for a list of bookings.
+    Uses a clean, modern grid style matching the BusYatra template.
     """
+    import qrcode
+
     def format_time(t):
         if not t: return ""
         if isinstance(t, str): return t
@@ -839,6 +1000,8 @@ def generate_ticket_pdf_bytes(bookings):
         except Exception: return str(d)
 
     buffer = BytesIO()
+    
+    # 0.5 inch margins (36 points) for maximum space utilization and clean framing
     doc = SimpleDocTemplate(
         buffer,
         pagesize=letter,
@@ -849,112 +1012,251 @@ def generate_ticket_pdf_bytes(bookings):
     )
 
     styles = getSampleStyleSheet()
-    title_style = ParagraphStyle(
-        'DocTitle', parent=styles['Heading1'], fontName='Helvetica-Bold', fontSize=24, leading=28, textColor=HexColor('#0F172A')
+    
+    # Custom styles to establish beautiful visual hierarchy
+    brand_style = ParagraphStyle(
+        'BrandTitle', parent=styles['Heading1'], fontName='Helvetica-Bold', fontSize=22, leading=26, textColor=HexColor('#0F172A')
     )
-    header_right_style = ParagraphStyle(
-        'HeaderRight', parent=styles['Normal'], fontName='Helvetica', fontSize=10, leading=14, alignment=2, textColor=HexColor('#475569')
+    tagline_style = ParagraphStyle(
+        'BrandTagline', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=11, textColor=HexColor('#475569')
+    )
+    receipt_title_style = ParagraphStyle(
+        'ReceiptTitle', parent=styles['Heading1'], fontName='Helvetica-Bold', fontSize=18, leading=22, alignment=2, textColor=HexColor('#3B82F6')
+    )
+    receipt_meta_style = ParagraphStyle(
+        'ReceiptMeta', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=12, alignment=2, textColor=HexColor('#64748B')
     )
     section_heading_style = ParagraphStyle(
-        'SectionHeading', parent=styles['Heading2'], fontName='Helvetica-Bold', fontSize=14, leading=18, textColor=HexColor('#0D6EFD'), spaceAfter=6
+        'SectionHeading', parent=styles['Heading2'], fontName='Helvetica-Bold', fontSize=12, leading=16, textColor=HexColor('#0F172A'), spaceBefore=8, spaceAfter=4
     )
     label_style = ParagraphStyle(
-        'Label', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=14, textColor=HexColor('#475569')
+        'Label', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9, leading=12, textColor=HexColor('#475569')
     )
     value_style = ParagraphStyle(
-        'Value', parent=styles['Normal'], fontName='Helvetica', fontSize=10, leading=14, textColor=HexColor('#0F172A')
+        'Value', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=12, textColor=HexColor('#0F172A')
+    )
+    route_style = ParagraphStyle(
+        'RouteStyle', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=13, alignment=0, textColor=HexColor('#0F172A')
+    )
+    qr_text_style = ParagraphStyle(
+        'QRText', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=7, leading=9, alignment=1, textColor=HexColor('#64748B')
     )
     table_header_style = ParagraphStyle(
-        'TableHeader', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=12, alignment=1, textColor=colors.white
+        'TableHeader', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=8, leading=10, alignment=0, textColor=colors.white
     )
     table_cell_style = ParagraphStyle(
-        'TableCell', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=12, alignment=1
+        'TableCell', parent=styles['Normal'], fontName='Helvetica', fontSize=8, leading=11, alignment=0, textColor=HexColor('#0F172A')
     )
-    footer_style = ParagraphStyle(
-        'FooterText', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=14, alignment=1, textColor=HexColor('#0F172A')
+    footer_text_style = ParagraphStyle(
+        'FooterText', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=12, alignment=1, textColor=HexColor('#475569')
+    )
+    thankyou_style = ParagraphStyle(
+        'ThankYouText', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=14, alignment=1, textColor=HexColor('#0F172A'), spaceBefore=10, spaceAfter=5
+    )
+    terms_style = ParagraphStyle(
+        'TermsText', parent=styles['Normal'], fontName='Helvetica', fontSize=7.5, leading=11, textColor=HexColor('#475569')
     )
 
     elements = []
-
+    first_b = bookings.first()
+    bus = first_b.bus
+    
+    # 1. Company Branding Header Section
     logo_path = finders.find('assets/images/logo.png')
     if logo_path:
         try:
-            logo_element = Image(logo_path, width=120, height=40)
+            logo_element = Image(logo_path, width=110, height=35)
         except Exception:
-            logo_element = Paragraph("<b>BusYatra</b>", title_style)
+            logo_element = Paragraph("<b>BusYatra</b>", brand_style)
     else:
-        logo_element = Paragraph("<b>BusYatra</b>", title_style)
+        logo_element = Paragraph("<b>BusYatra</b>", brand_style)
 
-    booking_date_str = format_date(bookings.first().booking_date)
-    header_right_text = f"<b>E-Ticket Receipt</b><br/>Booking Date: {booking_date_str}"
-    header_right_p = Paragraph(header_right_text, header_right_style)
+    # Wrap logo with tagline below it
+    header_left_data = [
+        [logo_element],
+        [Paragraph("Premium Bus Ticket Reservation", tagline_style)]
+    ]
+    header_left_table = Table(header_left_data, colWidths=[270])
+    header_left_table.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+        ('TOPPADDING', (0,0), (-1,-1), 0),
+    ]))
 
-    header_table = Table([[logo_element, header_right_p]], colWidths=[270, 270])
+    booking_date_str = format_date(first_b.booking_date)
+    header_right_text = f"<b>E-Ticket Receipt</b><br/><font color='#64748B'>Booking Date: {booking_date_str}</font>"
+    header_right_p = Paragraph(header_right_text, receipt_meta_style)
+    
+    header_right_data = [
+        [Paragraph("E-Ticket Receipt", receipt_title_style)],
+        [Paragraph(f"Booking Date: {booking_date_str}", receipt_meta_style)]
+    ]
+    header_right_table = Table(header_right_data, colWidths=[270])
+    header_right_table.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+        ('TOPPADDING', (0,0), (-1,-1), 0),
+    ]))
+
+    header_table = Table([[header_left_table, header_right_table]], colWidths=[270, 270])
     header_table.setStyle(TableStyle([
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
     ]))
     elements.append(header_table)
 
-    line_table = Table([['']], colWidths=[540])
-    line_table.setStyle(TableStyle([
-        ('LINEBELOW', (0, 0), (-1, -1), 1.5, HexColor('#E2E8F0')),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+    # Professional divider line
+    divider = Table([['']], colWidths=[540])
+    divider.setStyle(TableStyle([
+        ('LINEBELOW', (0, 0), (-1, -1), 1, HexColor('#E2E8F0')),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
     ]))
-    elements.append(line_table)
-    elements.append(Spacer(1, 10))
+    elements.append(divider)
+    elements.append(Spacer(1, 8))
 
-    elements.append(Paragraph("Journey Details", section_heading_style))
-    first_b = bookings.first()
-    bus = first_b.bus
-
+    # 2. Journey Details & QR Code (Side-by-Side)
     departure_time_str = format_time(bus.departure_time)
     arrival_time_str = format_time(bus.arrival_time)
     travel_date_str = format_date(first_b.travel_date)
 
-    journey_data = [
-        [Paragraph("Bus Name:", label_style), Paragraph(bus.bus_name, value_style), Paragraph("Bus Number:", label_style), Paragraph(bus.bus_number, value_style)],
-        [Paragraph("Source:", label_style), Paragraph(bus.source, value_style), Paragraph("Destination:", label_style), Paragraph(bus.destination, value_style)],
-        [Paragraph("Departure Time:", label_style), Paragraph(departure_time_str, value_style), Paragraph("Arrival Time:", label_style), Paragraph(arrival_time_str, value_style)],
-        [Paragraph("Travel Date:", label_style), Paragraph(travel_date_str, value_style), Paragraph("", label_style), Paragraph("", value_style)]
+    # Route display: Source ↓ Destination
+    route_html = f"<font size=11><b>{bus.source}</b></font><br/><font size=10 color='#3B82F6'><b>↓</b></font><br/><font size=11><b>{bus.destination}</b></font>"
+    route_p = Paragraph(route_html, route_style)
+
+    journey_left_data = [
+        [Paragraph("<b>Route:</b>", label_style), route_p],
+        [Paragraph("<b>Bus Name:</b>", label_style), Paragraph(bus.bus_name, value_style)],
+        [Paragraph("<b>Bus Number:</b>", label_style), Paragraph(bus.bus_number, value_style)],
+        [Paragraph("<b>Travel Date:</b>", label_style), Paragraph(travel_date_str, value_style)],
+        [Paragraph("<b>Departure:</b>", label_style), Paragraph(departure_time_str, value_style)],
+        [Paragraph("<b>Arrival:</b>", label_style), Paragraph(arrival_time_str, value_style)],
     ]
-
-    journey_table = Table(journey_data, colWidths=[100, 170, 100, 170])
-    journey_table.setStyle(TableStyle([
+    journey_left_table = Table(journey_left_data, colWidths=[100, 260])
+    journey_left_table.setStyle(TableStyle([
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('TOPPADDING', (0, 0), (-1, -1), 4),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ('TOPPADDING', (0, 0), (-1, -1), 3),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
     ]))
-    elements.append(journey_table)
-    elements.append(Spacer(1, 15))
 
-    elements.append(Paragraph("Transaction Details", section_heading_style))
+    # Generate QR Code details
+    booking_ids_list = [f"BY-{b.id}" for b in bookings]
+    seat_numbers_list = [b.seat_number for b in bookings]
+    passenger_names_list = [b.passenger_name for b in bookings]
+    
     payment_status_str = getattr(first_b, 'payment_status', 'SUCCESS' if first_b.payment else 'FAILED').upper()
     booking_status_str = getattr(first_b, 'booking_status', first_b.status).upper()
-    payment_id_val = first_b.payment_id or "N/A"
 
+    qr_data = (
+        f"Booking ID: {', '.join(booking_ids_list)}\n"
+        f"Passenger: {', '.join(passenger_names_list)}\n"
+        f"Bus: {bus.bus_number}\n"
+        f"Date: {travel_date_str}\n"
+        f"Seat: {', '.join(seat_numbers_list)}\n"
+        f"Payment: {payment_status_str}\n"
+        f"Booking: {booking_status_str}"
+    )
+    
+    qr = qrcode.QRCode(version=1, box_size=3, border=1)
+    qr.add_data(qr_data)
+    qr.make(fit=True)
+    qr_img = qr.make_image(fill_color="#0F172A", back_color="white")
+    
+    qr_buffer = BytesIO()
+    qr_img.save(qr_buffer, format="PNG")
+    qr_buffer.seek(0)
+    
+    qr_flowable = Image(qr_buffer, width=105, height=105)
+    
+    # Package QR Code and subtitle
+    journey_right_data = [
+        [qr_flowable],
+        [Paragraph("Show QR while Boarding", qr_text_style)]
+    ]
+    journey_right_table = Table(journey_right_data, colWidths=[150])
+    journey_right_table.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
+        ('TOPPADDING', (0, 0), (-1, -1), 2),
+    ]))
+
+    # Outer Section Table for Journey & QR
+    journey_section_table = Table([[journey_left_table, journey_right_table]], colWidths=[380, 160])
+    journey_section_table.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
+    ]))
+
+    elements.append(Paragraph("Journey Details", section_heading_style))
+    elements.append(journey_section_table)
+    elements.append(Spacer(1, 10))
+
+    # 3. Status Badges and Transaction Details
+    def make_badge(text, badge_type):
+        if badge_type == 'success':
+            bg = HexColor('#ECFDF5')
+            fg = HexColor('#047857')
+        elif badge_type == 'warning':
+            bg = HexColor('#FEF3C7')
+            fg = HexColor('#B45309')
+        else: # danger
+            bg = HexColor('#FEE2E2')
+            fg = HexColor('#B91C1C')
+            
+        badge_p_style = ParagraphStyle(
+            'BadgeP',
+            parent=styles['Normal'],
+            fontName='Helvetica-Bold',
+            fontSize=8,
+            leading=10,
+            alignment=1, # Center
+            textColor=fg
+        )
+        b_table = Table([[Paragraph(text, badge_p_style)]], colWidths=[70], rowHeights=[16])
+        b_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), bg),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 1),
+            ('TOPPADDING', (0, 0), (-1, -1), 1),
+        ]))
+        return b_table
+
+    # Build Badges
+    p_badge_type = 'success' if payment_status_str in ['PAID', 'SUCCESS'] else ('warning' if payment_status_str == 'PENDING' else 'danger')
+    b_badge_type = 'success' if booking_status_str in ['BOOKED', 'SUCCESS', 'COMPLETED'] else 'danger'
+    
+    pay_badge = make_badge(payment_status_str, p_badge_type)
+    book_badge = make_badge(booking_status_str, b_badge_type)
+
+    payment_id_val = first_b.payment_id or "N/A"
     subtotal = sum(b.amount for b in bookings)
     gst_fees = int((subtotal * 5) / 100)
     convenience_fee = 40 * len(bookings)
     total_amount = subtotal + gst_fees + convenience_fee
 
     payment_data = [
-        [Paragraph("Payment ID:", label_style), Paragraph(payment_id_val, value_style), Paragraph("Payment Status:", label_style), Paragraph(f"<b>{payment_status_str}</b>", value_style)],
-        [Paragraph("Booking Status:", label_style), Paragraph(f"<b>{booking_status_str}</b>", value_style), Paragraph("Total Paid Amount:", label_style), Paragraph(f"₹{total_amount} (incl. GST & fees)", value_style)]
+        [Paragraph("<b>Payment ID:</b>", label_style), Paragraph(payment_id_val, value_style), Paragraph("<b>Payment Status:</b>", label_style), pay_badge],
+        # Display the total paid amount using "Rs." instead of "₹" to prevent rendering issues in PDF readers
+        [Paragraph("<b>Booking Status:</b>", label_style), book_badge, Paragraph("<b>Total Paid:</b>", label_style), Paragraph(f"Rs. {total_amount:.2f} (incl. GST & fees)", value_style)],
+        [Paragraph("<b>Payment Method:</b>", label_style), Paragraph("Online (Razorpay)", value_style), Paragraph("", label_style), Paragraph("", value_style)]
     ]
     payment_table = Table(payment_data, colWidths=[100, 170, 100, 170])
     payment_table.setStyle(TableStyle([
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ('TOPPADDING', (0, 0), (-1, -1), 4),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
     ]))
-    elements.append(payment_table)
-    elements.append(Spacer(1, 15))
 
-    elements.append(Paragraph("Passenger & Seat Details", section_heading_style))
+    elements.append(Paragraph("Transaction Details", section_heading_style))
+    elements.append(payment_table)
+    elements.append(Spacer(1, 10))
+
+    # 4. Passenger Details Table
     table_data = [[
         Paragraph("Booking ID", table_header_style),
         Paragraph("Passenger Name", table_header_style),
+        Paragraph("Email", table_header_style),
         Paragraph("Age", table_header_style),
         Paragraph("Gender", table_header_style),
         Paragraph("Seat No", table_header_style),
@@ -965,24 +1267,63 @@ def generate_ticket_pdf_bytes(bookings):
         table_data.append([
             Paragraph(f"BY-{b.id}", table_cell_style),
             Paragraph(b.passenger_name, table_cell_style),
+            Paragraph(b.user.email, table_cell_style), # booking.user.email
             Paragraph(str(b.passenger_age), table_cell_style),
             Paragraph(b.passenger_gender, table_cell_style),
             Paragraph(b.seat_number, table_cell_style),
-            Paragraph(f"₹{b.amount}", table_cell_style)
+            # Display passenger fare using "Rs." instead of "₹" to prevent rendering issues in PDF readers
+            Paragraph(f"Rs. {b.amount:.2f}", table_cell_style)
         ])
 
-    passenger_table = Table(table_data, colWidths=[80, 160, 45, 65, 80, 110])
+    passenger_table = Table(table_data, colWidths=[75, 100, 140, 30, 50, 65, 80])
     passenger_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), HexColor('#0F172A')),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ('GRID', (0, 0), (-1, -1), 0.5, HexColor('#CBD5E1')),
-        ('TOPPADDING', (0, 0), (-1, -1), 6),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ('TOPPADDING', (0, 0), (-1, -1), 5),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+        ('LEFTPADDING', (0, 0), (-1, -1), 6),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 6),
     ]))
+    
+    elements.append(Paragraph("Passenger & Seat Details", section_heading_style))
     elements.append(passenger_table)
-    elements.append(Spacer(1, 30))
+    elements.append(Spacer(1, 10))
 
-    elements.append(Paragraph("Thank you for choosing BusYatra.", footer_style))
+    # 5. Thank You & Have a Safe Journey Section
+    elements.append(Paragraph("Thank you for choosing BusYatra. Have a Safe Journey!", thankyou_style))
+    elements.append(Spacer(1, 5))
+
+    # 6. Terms & Conditions Section Box
+    terms_html = (
+        "<b>Terms & Conditions:</b><br/>"
+        "• Carry a valid Government ID.<br/>"
+        "• Reach boarding point at least 30 minutes before departure.<br/>"
+        "• Keep this ticket until journey completion.<br/>"
+        "• Ticket is non-transferable.<br/>"
+        "• Cancellation and refund are subject to BusYatra policy.<br/>"
+        "• BusYatra is not responsible for delays caused by weather or traffic.<br/>"
+        "• Show this QR Code while boarding.<br/>"
+        "• Contact Support: <b>support@busyatra.com</b>"
+    )
+    terms_p = Paragraph(terms_html, terms_style)
+    terms_table = Table([[terms_p]], colWidths=[540])
+    terms_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, -1), HexColor('#F8FAFC')),
+        ('BOX', (0, 0), (-1, -1), 0.5, HexColor('#E2E8F0')),
+        ('TOPPADDING', (0, 0), (-1, -1), 8),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ('LEFTPADDING', (0, 0), (-1, -1), 12),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 12),
+    ]))
+    elements.append(terms_table)
+    elements.append(Spacer(1, 12))
+
+    # 7. Footer
+    footer_html = "BusYatra  •  Premium Bus Ticket Reservation  •  www.busyatra.com  •  support@busyatra.com"
+    elements.append(Paragraph(footer_html, footer_text_style))
+
+    # Build the document
     doc.build(elements)
     buffer.seek(0)
     return buffer.getvalue()
@@ -1034,9 +1375,9 @@ def ticket(request):
 
                 email_msg = EmailMessage(
                     subject="BusYatra Ticket Confirmation",
-                    body=f"Dear {customer.name},\n\nThank you for choosing BusYatra. Your booking has been successfully confirmed!\n\nPassenger(s): {passenger_names}\nSeat(s): {seat_numbers}\n\nPlease find your attached e-ticket PDF containing details and guidelines.\n\nWarm regards,\nTeam BusYatra",
+                    body=f"Dear {customer.name},\nThank you for choosing BusYatra. Your booking has been successfully confirmed!\nPassenger(s): {passenger_names}\nSeat(s): {seat_numbers}\nPlease find your attached e-ticket PDF containing details and guidelines.\nWarm regards,\nBusYatra Team",
                     from_email=settings.EMAIL_HOST_USER,
-                    to=[customer.email]
+                    to=[bookings.first().user.email]
                 )
                 email_msg.attach('BusYatra_Ticket.pdf', pdf_bytes, 'application/pdf')
                 email_msg.send()
@@ -1061,7 +1402,8 @@ def ticket(request):
 
 def download_ticket_pdf(request):
     """
-    Logged-in customer ke ticket ka PDF download karata hai.
+    Logged-in customer ke ticket ka PDF download karata hai ya inline render karta hai print ke liye.
+    Uses the same single PDF generator function generate_ticket_pdf_bytes.
     """
     customer = get_customer_user(request)
     if not customer:
@@ -1075,11 +1417,21 @@ def download_ticket_pdf(request):
 
         pdf_bytes = generate_ticket_pdf_bytes(bookings)
         response = HttpResponse(pdf_bytes, content_type='application/pdf')
-        response['Content-Disposition'] = 'attachment; filename="BusYatra_Ticket.pdf"'
+        
+        # Check if the ticket should be displayed inline for printing
+        inline = request.GET.get("inline")
+        if inline == "1" or inline == "true":
+            response['Content-Disposition'] = 'inline; filename="BusYatra_Ticket.pdf"'
+        else:
+            response['Content-Disposition'] = 'attachment; filename="BusYatra_Ticket.pdf"'
         return response
     except Exception as e:
         logger.error(f"PDF Download Error: {e}")
         return HttpResponse("Error generating PDF")
+
+#==========================================================================
+#    Manager Views
+#==========================================================================
 
 def manager_bookings(request):
     """

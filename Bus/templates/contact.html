@@ -128,28 +128,28 @@
 
                 <!-- Success Message -->
                 {% if msg %}
-                <div class="alert alert-danger" role="alert">
+                <div class="alert alert-success" role="alert">
                     {{msg}}
                 </div>
                 {% endif %}
 
                 <div class="contact-form-card">
 
-                    <form id="contactForm" action="{% url 'contact' %}" id="contactForm" enctype="multipart/form-data">
+                    <form id="contactForm" method="POST" action="{% url 'contact' %}">
                         {% csrf_token %}
                         <div class="row g-3 mb-3">
                             <div class="col-sm-6">
                                 <label for="contactName" class="form-label fw-semibold text-secondary small">Full Name
                                     <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control form-control-contact" id="contactName"
-                                    placeholder="Your Name" required>
+                                    name="name" placeholder="Your Name" required>
                                 <div class="invalid-feedback">Please enter your name.</div>
                             </div>
                             <div class="col-sm-6">
                                 <label for="contactEmail" class="form-label fw-semibold text-secondary small">Email
                                     Address <span class="text-danger">*</span></label>
                                 <input type="email" class="form-control form-control-contact" id="contactEmail"
-                                    placeholder="Your Email" required>
+                                    name="email" placeholder="Your Email" required>
                                 <div class="invalid-feedback">Please enter a valid email.</div>
                             </div>
                         </div>
@@ -159,12 +159,13 @@
                                 <label for="contactPhone" class="form-label fw-semibold text-secondary small">Phone
                                     Number</label>
                                 <input type="tel" class="form-control form-control-contact" id="contactPhone"
-                                    placeholder="Phone Number">
+                                    name="phone" placeholder="Phone Number" required>
                             </div>
                             <div class="col-sm-6">
                                 <label for="contactSubject" class="form-label fw-semibold text-secondary small">Subject
                                     <span class="text-danger">*</span></label>
-                                <select class="form-select form-control-contact" id="contactSubject" required>
+                                <select class="form-select form-control-contact" id="contactSubject" name="subject"
+                                    required>
                                     <option value="">Select a topic...</option>
                                     <option value="booking">Booking Issue</option>
                                     <option value="cancellation">Cancellation / Refund</option>
@@ -182,14 +183,14 @@
                             <label for="contactBookingId" class="form-label fw-semibold text-secondary small">Booking ID
                                 (if applicable)</label>
                             <input type="text" class="form-control form-control-contact" id="contactBookingId"
-                                placeholder="Booking Id">
+                                name="booking_id" placeholder="Booking Id">
                         </div>
 
                         <div class="mb-4">
                             <label for="contactMessage" class="form-label fw-semibold text-secondary small">Message
                                 <span class="text-danger">*</span></label>
-                            <textarea class="form-control form-control-contact" id="contactMessage" rows="5"
-                                placeholder="Describe your issue or query in detail..." required></textarea>
+                            <textarea class="form-control form-control-contact" id="contactMessage" name="message"
+                                rows="5" placeholder="Describe your issue or query in detail..." required></textarea>
                             <div class="invalid-feedback">Please write your message.</div>
                         </div>
 

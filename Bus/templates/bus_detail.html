@@ -214,7 +214,7 @@
                         <span class="text-muted small d-block mb-1">Ticket Price</span>
                         <h3 class="text-success fw-bold m-0 fs-2">₹{{ bus.fare }}</h3>
                     </div>
-                    <a href="{% url 'seat_booking' bus.id %}?from={{ from_city }}&to={{ to_city }}&date={{ travel_date }}&passengers={{ passengers }}"
+                    <a href="{% url 'seat_booking' bus.id %}?from={{ from_city|default:'' }}&to={{ to_city|default:'' }}&date={{ travel_date|default:'' }}&passengers={{ passengers|default:'1' }}"
                        class="btn btn-warning btn-lg px-4 py-2.5 fw-bold text-white shadow-sm border-0 d-inline-flex align-items-center gap-2 hover-lift"
                        style="background-color: var(--amber-accent); border-radius: 8px;">
                         <span>Select Seats</span>

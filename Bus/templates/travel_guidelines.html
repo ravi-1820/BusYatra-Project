@@ -1,0 +1,439 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<!-- Custom CSS for Guidelines Page -->
+<style>
+    .guidelines-container {
+        font-family: 'Outfit', sans-serif;
+    }
+    .hover-card {
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .hover-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-lg) !important;
+    }
+    .icon-box {
+        transition: transform 0.3s ease;
+    }
+    .hover-card:hover .icon-box {
+        transform: scale(1.1);
+    }
+    .accordion-button:not(.collapsed) {
+        background-color: var(--blue-light) !important;
+        color: var(--blue-hover) !important;
+    }
+    .accordion-button:focus {
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25) !important;
+    }
+</style>
+
+<div class="guidelines-container bg-light min-vh-100 pb-5">
+    
+    <!-- SECTION 1: Professional Hero Banner -->
+    <section class="hero-section py-5 mb-5" style="background: linear-gradient(135deg, #F8FAFC 0%, #EFF6FF 100%); border-bottom: 1px solid var(--gray-border);">
+        <div class="container">
+            <div class="row align-items-center gy-4">
+                <div class="col-lg-7 text-center text-lg-start">
+                    <span class="badge bg-primary-subtle text-primary mb-3 px-3 py-2 rounded-pill fw-semibold text-uppercase">
+                        <i class="bi bi-shield-fill-check me-1"></i> Safe Travel
+                    </span>
+                    <h1 class="hero-title mb-3 text-navy-dark display-5 fw-bold" style="line-height: 1.2;">
+                        Travel Safely with <br><span>BusYatra</span>
+                    </h1>
+                    <p class="hero-subtitle fs-5 text-muted mb-4">
+                        Follow these travel guidelines for a safe, comfortable and hassle-free journey.
+                    </p>
+                    <div class="d-flex flex-wrap justify-content-center justify-content-lg-start gap-3">
+                        <a href="{% url 'bus_list' %}" class="btn btn-primary-custom btn-lg shadow-sm">
+                            <i class="bi bi-search me-2"></i>Book Tickets
+                        </a>
+                    </div>
+                </div>
+                <div class="col-lg-5 text-center d-none d-lg-block">
+                    <div class="position-relative d-inline-block py-4">
+                        <div class="guideline-badge-circle bg-primary-subtle text-primary shadow rounded-circle d-flex align-items-center justify-content-center mx-auto" style="width: 180px; height: 180px;">
+                            <i class="bi bi-shield-check" style="font-size: 5.5rem;"></i>
+                        </div>
+                        <div class="position-absolute bg-warning-subtle text-warning shadow rounded-circle d-flex align-items-center justify-content-center" style="width: 90px; height: 90px; bottom: 0px; left: -20px; border: 4px solid white;">
+                            <i class="bi bi-bus-front" style="font-size: 2.5rem;"></i>
+                        </div>
+                        <div class="position-absolute bg-success-subtle text-success shadow rounded-circle d-flex align-items-center justify-content-center" style="width: 80px; height: 80px; top: 10px; right: -20px; border: 4px solid white;">
+                            <i class="bi bi-geo-alt-fill" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="container">
+        <!-- Main Section Title -->
+        <div class="text-center mb-5">
+            <h2 class="fw-bold text-navy-dark">Essential Travel Policies & Guidelines</h2>
+            <p class="text-muted">Important instructions to note before and during your journey</p>
+        </div>
+
+        <!-- SECTIONS 2-7: Policy & Guideline Cards Grid -->
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-5">
+            
+            <!-- SECTION 2: Before You Travel -->
+            <div class="col">
+                <div class="card h-100 border-0 shadow-sm rounded-4 hover-card">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center gap-3 mb-4">
+                            <div class="icon-box rounded-circle d-flex align-items-center justify-content-center bg-primary-subtle text-primary" style="width: 56px; height: 56px; flex-shrink: 0;">
+                                <i class="bi bi-card-checklist fs-4"></i>
+                            </div>
+                            <h4 class="card-title text-navy-dark mb-0 fs-5">Before You Travel</h4>
+                        </div>
+                        <ul class="list-unstyled mb-0">
+                            <li class="d-flex gap-3 mb-3 text-secondary align-items-start">
+                                <i class="bi bi-check-circle-fill text-primary mt-1" style="font-size: 0.9rem; flex-shrink: 0;"></i>
+                                <span>Reach boarding point at least 15–30 minutes before departure.</span>
+                            </li>
+                            <li class="d-flex gap-3 mb-3 text-secondary align-items-start">
+                                <i class="bi bi-check-circle-fill text-primary mt-1" style="font-size: 0.9rem; flex-shrink: 0;"></i>
+                                <span>Carry a valid Government ID.</span>
+                            </li>
+                            <li class="d-flex gap-3 mb-3 text-secondary align-items-start">
+                                <i class="bi bi-check-circle-fill text-primary mt-1" style="font-size: 0.9rem; flex-shrink: 0;"></i>
+                                <span>Keep your e-ticket ready.</span>
+                            </li>
+                            <li class="d-flex gap-3 mb-3 text-secondary align-items-start">
+                                <i class="bi bi-check-circle-fill text-primary mt-1" style="font-size: 0.9rem; flex-shrink: 0;"></i>
+                                <span>Verify boarding location before departure.</span>
+                            </li>
+                            <li class="d-flex gap-3 mb-0 text-secondary align-items-start">
+                                <i class="bi bi-check-circle-fill text-primary mt-1" style="font-size: 0.9rem; flex-shrink: 0;"></i>
+                                <span>Keep your phone charged.</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 3: Baggage Policy -->
+            <div class="col">
+                <div class="card h-100 border-0 shadow-sm rounded-4 hover-card">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center gap-3 mb-4">
+                            <div class="icon-box rounded-circle d-flex align-items-center justify-content-center bg-success-subtle text-success" style="width: 56px; height: 56px; flex-shrink: 0;">
+                                <i class="bi bi-luggage fs-4"></i>
+                            </div>
+                            <h4 class="card-title text-navy-dark mb-0 fs-5">Baggage Policy</h4>
+                        </div>
+                        <ul class="list-unstyled mb-0">
+                            <li class="d-flex gap-3 mb-3 text-secondary align-items-start">
+                                <i class="bi bi-check-circle-fill text-success mt-1" style="font-size: 0.9rem; flex-shrink: 0;"></i>
+                                <span>One medium luggage allowed.</span>
+                            </li>
+                            <li class="d-flex gap-3 mb-3 text-secondary align-items-start">
+                                <i class="bi bi-check-circle-fill text-success mt-1" style="font-size: 0.9rem; flex-shrink: 0;"></i>
+                                <span>Keep valuables with yourself.</span>
+                            </li>
+                            <li class="d-flex gap-3 mb-3 text-secondary align-items-start">
+                                <i class="bi bi-check-circle-fill text-success mt-1" style="font-size: 0.9rem; flex-shrink: 0;"></i>
+                                <span>Do not carry prohibited items.</span>
+                            </li>
+                            <li class="d-flex gap-3 mb-0 text-secondary align-items-start">
+                                <i class="bi bi-check-circle-fill text-success mt-1" style="font-size: 0.9rem; flex-shrink: 0;"></i>
+                                <span>BusYatra is not responsible for lost luggage.</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 4: During the Journey -->
+            <div class="col">
+                <div class="card h-100 border-0 shadow-sm rounded-4 hover-card">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center gap-3 mb-4">
+                            <div class="icon-box rounded-circle d-flex align-items-center justify-content-center bg-dark-subtle text-dark" style="width: 56px; height: 56px; flex-shrink: 0;">
+                                <i class="bi bi-shield-shaded fs-4"></i>
+                            </div>
+                            <h4 class="card-title text-navy-dark mb-0 fs-5">During the Journey</h4>
+                        </div>
+                        <ul class="list-unstyled mb-0">
+                            <li class="d-flex gap-3 mb-3 text-secondary align-items-start">
+                                <i class="bi bi-check-circle-fill text-dark mt-1" style="font-size: 0.9rem; flex-shrink: 0;"></i>
+                                <span>Follow driver instructions.</span>
+                            </li>
+                            <li class="d-flex gap-3 mb-3 text-secondary align-items-start">
+                                <i class="bi bi-check-circle-fill text-dark mt-1" style="font-size: 0.9rem; flex-shrink: 0;"></i>
+                                <span>Keep bus clean.</span>
+                            </li>
+                            <li class="d-flex gap-3 mb-3 text-secondary align-items-start">
+                                <i class="bi bi-check-circle-fill text-dark mt-1" style="font-size: 0.9rem; flex-shrink: 0;"></i>
+                                <span>Respect fellow passengers.</span>
+                            </li>
+                            <li class="d-flex gap-3 mb-3 text-secondary align-items-start">
+                                <i class="bi bi-check-circle-fill text-dark mt-1" style="font-size: 0.9rem; flex-shrink: 0;"></i>
+                                <span>Smoking prohibited.</span>
+                            </li>
+                            <li class="d-flex gap-3 mb-0 text-secondary align-items-start">
+                                <i class="bi bi-check-circle-fill text-dark mt-1" style="font-size: 0.9rem; flex-shrink: 0;"></i>
+                                <span>Alcohol prohibited.</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 5: Women's Safety -->
+            <div class="col">
+                <div class="card h-100 border-0 shadow-sm rounded-4 hover-card">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center gap-3 mb-4">
+                            <div class="icon-box rounded-circle d-flex align-items-center justify-content-center bg-danger-subtle text-danger" style="width: 56px; height: 56px; flex-shrink: 0;">
+                                <i class="bi bi-shield-lock-fill fs-4"></i>
+                            </div>
+                            <h4 class="card-title text-navy-dark mb-0 fs-5">Women's Safety</h4>
+                        </div>
+                        <ul class="list-unstyled mb-0">
+                            <li class="d-flex gap-3 mb-3 text-secondary align-items-start">
+                                <i class="bi bi-check-circle-fill text-danger mt-1" style="font-size: 0.9rem; flex-shrink: 0;"></i>
+                                <span>Travel with verified operators.</span>
+                            </li>
+                            <li class="d-flex gap-3 mb-3 text-secondary align-items-start">
+                                <i class="bi bi-check-circle-fill text-danger mt-1" style="font-size: 0.9rem; flex-shrink: 0;"></i>
+                                <span>Share live location with family.</span>
+                            </li>
+                            <li class="d-flex gap-3 mb-0 text-secondary align-items-start">
+                                <i class="bi bi-check-circle-fill text-danger mt-1" style="font-size: 0.9rem; flex-shrink: 0;"></i>
+                                <span>Contact support whenever required.</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 6: Health & Hygiene -->
+            <div class="col">
+                <div class="card h-100 border-0 shadow-sm rounded-4 hover-card">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center gap-3 mb-4">
+                            <div class="icon-box rounded-circle d-flex align-items-center justify-content-center bg-info-subtle text-info" style="width: 56px; height: 56px; flex-shrink: 0;">
+                                <i class="bi bi-droplet-half fs-4"></i>
+                            </div>
+                            <h4 class="card-title text-navy-dark mb-0 fs-5">Health & Hygiene</h4>
+                        </div>
+                        <ul class="list-unstyled mb-0">
+                            <li class="d-flex gap-3 mb-3 text-secondary align-items-start">
+                                <i class="bi bi-check-circle-fill text-info mt-1" style="font-size: 0.9rem; flex-shrink: 0;"></i>
+                                <span>Maintain hygiene.</span>
+                            </li>
+                            <li class="d-flex gap-3 mb-3 text-secondary align-items-start">
+                                <i class="bi bi-check-circle-fill text-info mt-1" style="font-size: 0.9rem; flex-shrink: 0;"></i>
+                                <span>Carry personal medicines.</span>
+                            </li>
+                            <li class="d-flex gap-3 mb-0 text-secondary align-items-start">
+                                <i class="bi bi-check-circle-fill text-info mt-1" style="font-size: 0.9rem; flex-shrink: 0;"></i>
+                                <span>Report any emergency immediately.</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 7: Cancellation & Refund -->
+            <div class="col">
+                <div class="card h-100 border-0 shadow-sm rounded-4 hover-card">
+                    <div class="card-body p-4 d-flex flex-column justify-content-between">
+                        <div>
+                            <div class="d-flex align-items-center gap-3 mb-4">
+                                <div class="icon-box rounded-circle d-flex align-items-center justify-content-center bg-warning-subtle text-warning" style="width: 56px; height: 56px; flex-shrink: 0;">
+                                    <i class="bi bi-cash-coin fs-4"></i>
+                                </div>
+                                <h4 class="card-title text-navy-dark mb-0 fs-5">Cancellation & Refund</h4>
+                            </div>
+                            <ul class="list-unstyled mb-4">
+                                <li class="d-flex gap-3 mb-3 text-secondary align-items-start">
+                                    <i class="bi bi-check-circle-fill text-warning mt-1" style="font-size: 0.9rem; flex-shrink: 0;"></i>
+                                    <span>Cancellation depends upon operator policy.</span>
+                                </li>
+                                <li class="d-flex gap-3 mb-3 text-secondary align-items-start">
+                                    <i class="bi bi-check-circle-fill text-warning mt-1" style="font-size: 0.9rem; flex-shrink: 0;"></i>
+                                    <span>Refund is processed through original payment method.</span>
+                                </li>
+                                <li class="d-flex gap-3 mb-0 text-secondary align-items-start">
+                                    <i class="bi bi-check-circle-fill text-warning mt-1" style="font-size: 0.9rem; flex-shrink: 0;"></i>
+                                    <span>Convenience fee may not be refundable.</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div>
+                            <a href="#" class="btn btn-outline-warning w-100 rounded-3 py-2 fw-semibold">
+                                <i class="bi bi-file-earmark-text me-1"></i>View Cancellation Policy
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- SECTION 8: Emergency Support -->
+        <div class="mb-5">
+            <h3 class="fw-bold text-navy-dark mb-4 text-center">Emergency Support</h3>
+            <div class="row row-cols-1 row-cols-md-3 g-4">
+                
+                <!-- Card 1: Customer Support -->
+                <div class="col">
+                    <div class="card border-0 shadow-sm rounded-4 text-center p-4 hover-card h-100 bg-white">
+                        <div class="mx-auto rounded-circle d-flex align-items-center justify-content-center bg-primary-subtle text-primary mb-3" style="width: 64px; height: 64px;">
+                            <i class="bi bi-headset fs-3"></i>
+                        </div>
+                        <h5 class="text-navy-dark mb-2">Customer Support</h5>
+                        <p class="text-muted small mb-3">Reach out to our 24/7 dedicated helpline for any reservation issues.</p>
+                        <a href="tel:+919999988888" class="text-decoration-none fw-semibold text-primary">
+                            <i class="bi bi-telephone me-1"></i>+91 99999 88888
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Card 2: Bus Operator -->
+                <div class="col">
+                    <div class="card border-0 shadow-sm rounded-4 text-center p-4 hover-card h-100 bg-white">
+                        <div class="mx-auto rounded-circle d-flex align-items-center justify-content-center bg-success-subtle text-success mb-3" style="width: 64px; height: 64px;">
+                            <i class="bi bi-bus-front-fill fs-3"></i>
+                        </div>
+                        <h5 class="text-navy-dark mb-2">Bus Operator</h5>
+                        <p class="text-muted small mb-3">Direct contact details of the bus crew are printed on your e-ticket.</p>
+                        <span class="text-secondary fw-semibold">
+                            <i class="bi bi-ticket-detailed me-1"></i>Refer to E-Ticket
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Card 3: Email Support -->
+                <div class="col">
+                    <div class="card border-0 shadow-sm rounded-4 text-center p-4 hover-card h-100 bg-white">
+                        <div class="mx-auto rounded-circle d-flex align-items-center justify-content-center bg-warning-subtle text-warning mb-3" style="width: 64px; height: 64px;">
+                            <i class="bi bi-envelope-at-fill fs-3"></i>
+                        </div>
+                        <h5 class="text-navy-dark mb-2">Email Support</h5>
+                        <p class="text-muted small mb-3">Write to us for any booking escalations, refund status or feedback.</p>
+                        <a href="mailto:support@busyatra.com" class="text-decoration-none fw-semibold text-warning">
+                            <i class="bi bi-envelope me-1"></i>support@busyatra.com
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- SECTION 9: Frequently Asked Questions -->
+        <div class="mb-5">
+            <h3 class="fw-bold text-navy-dark mb-4 text-center">Frequently Asked Questions</h3>
+            <div class="row justify-content-center">
+                <div class="col-lg-9">
+                    <div class="accordion accordion-flush shadow-sm rounded-4 overflow-hidden border bg-white" id="faqAccordion">
+                        
+                        <!-- Question 1 -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="faqHeadingOne">
+                                <button class="accordion-button collapsed fw-semibold text-navy-dark" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapseOne" aria-expanded="false" aria-controls="faqCollapseOne">
+                                    Can I cancel my ticket?
+                                </button>
+                            </h2>
+                            <div id="faqCollapseOne" class="accordion-collapse collapse" aria-labelledby="faqHeadingOne" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body text-secondary">
+                                    Yes, ticket cancellation is fully supported on BusYatra. You can cancel your ticket directly through the 'History' tab under your user profile. Please note that refund eligibility, deadlines, and charges depend strictly on the respective bus operator's cancellation policy.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Question 2 -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="faqHeadingTwo">
+                                <button class="accordion-button collapsed fw-semibold text-navy-dark" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapseTwo" aria-expanded="false" aria-controls="faqCollapseTwo">
+                                    Can I travel without ID?
+                                </button>
+                            </h2>
+                            <div id="faqCollapseTwo" class="accordion-collapse collapse" aria-labelledby="faqHeadingTwo" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body text-secondary">
+                                    No, carrying a valid physical or digital Government-issued ID (such as Aadhaar Card, PAN Card, Driving License, Voter ID, or Passport) is mandatory for boarding. The operator representative or driver will verify your ID along with your e-ticket before boarding.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Question 3 -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="faqHeadingThree">
+                                <button class="accordion-button collapsed fw-semibold text-navy-dark" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapseThree" aria-expanded="false" aria-controls="faqCollapseThree">
+                                    How much luggage is allowed?
+                                </button>
+                            </h2>
+                            <div id="faqCollapseThree" class="accordion-collapse collapse" aria-labelledby="faqHeadingThree" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body text-secondary">
+                                    Passengers are typically allowed to bring one piece of medium-sized personal luggage (up to 15-20 kg) to be placed in the bus luggage hold, and one small hand baggage to keep inside the cabin. Heavy or oversized luggage may attract additional charges depending on the operator.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Question 4 -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="faqHeadingFour">
+                                <button class="accordion-button collapsed fw-semibold text-navy-dark" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapseFour" aria-expanded="false" aria-controls="faqCollapseFour">
+                                    Can I change boarding point?
+                                </button>
+                            </h2>
+                            <div id="faqCollapseFour" class="accordion-collapse collapse" aria-labelledby="faqHeadingFour" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body text-secondary">
+                                    Yes, some operators allow boarding point modifications up to a certain hours (usually 4 to 8 hours) before departure. Please check the specific booking terms or contact our support team to verify if your boarding point can be changed.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Question 5 -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="faqHeadingFive">
+                                <button class="accordion-button collapsed fw-semibold text-navy-dark" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapseFive" aria-expanded="false" aria-controls="faqCollapseFive">
+                                    How do I contact support?
+                                </button>
+                            </h2>
+                            <div id="faqCollapseFive" class="accordion-collapse collapse" aria-labelledby="faqHeadingFive" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body text-secondary">
+                                    You can reach our 24/7 customer support via phone at <strong>+91 99999 88888</strong>, email at <strong>support@busyatra.com</strong>, or by submitting a ticket on our Contact page.
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION 10: Important Notice -->
+        <div class="alert alert-warning border-0 rounded-4 shadow-sm p-4 d-flex align-items-start gap-3 mb-5" role="alert">
+            <i class="bi bi-exclamation-triangle-fill text-warning fs-3 mt-1 flex-shrink-0"></i>
+            <div>
+                <h5 class="alert-heading fw-bold text-navy-dark">Important Notice</h5>
+                <p class="mb-0 text-secondary">
+                    BusYatra is an online ticket booking platform. Bus timings and onboard services are managed by the respective bus operators. Passengers should follow operator guidelines throughout the journey.
+                </p>
+            </div>
+        </div>
+
+        <!-- SECTION 11: Bottom CTA -->
+        <section class="cta-section py-5 rounded-4 shadow mb-2 text-center text-white" style="background: linear-gradient(135deg, var(--navy-light) 0%, var(--navy-dark) 100%);">
+            <div class="container">
+                <h2 class="fw-bold mb-2 text-white">Need Assistance?</h2>
+                <p class="mb-4 text-white-50">Our support team is always ready to help you.</p>
+                <div class="d-flex flex-wrap justify-content-center gap-3">
+                    <a href="{% url 'contact' %}" class="btn btn-warning fw-bold px-4 py-2 rounded-3 shadow-sm">
+                        <i class="bi bi-headset me-2"></i>Contact Support
+                    </a>
+                    <a href="{% url 'bus_list' %}" class="btn btn-outline-light fw-bold px-4 py-2 rounded-3">
+                        <i class="bi bi-search me-2"></i>Book Tickets
+                    </a>
+                </div>
+            </div>
+        </section>
+
+    </div>
+</div>
+{% endblock %}

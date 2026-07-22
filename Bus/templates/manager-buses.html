@@ -20,11 +20,7 @@
         <!-- Sidebar Navigation -->
         <nav class="admin-sidebar">
             <div class="sidebar-header">
-                <a class="navbar-brand text-light fw-bold fs-4 d-flex align-items-center" href="{% url 'index' %}">
-                    <img src="{% static 'assets/images/logo.png' %}" alt="BusYatra Logo" height="42"
-                        class="bg-white p-1 rounded me-2">
-                    <span class="fs-6 text-warning ms-1 opacity-75">Manager</span>
-                </a>
+                <span class="fs-6 text-warning ms-1 opacity-75">Manager</span>
             </div>
             <div class="nav flex-column mt-3">
                 <a href="{% url 'manager_dashboard' %}" class="nav-link" id="sidebar-dashboard"><i
@@ -39,12 +35,16 @@
                         class="bi bi-grid-3x3-gap"></i>Seat Status</a>
                 <a href="{% url 'manager_bookings' %}" class="nav-link" id="sidebar-bookings"><i
                         class="bi bi-card-list"></i>Bookings</a>
+                <a href="{% url 'contact_message' %}" class="nav-link active" id="sidebar-bookings"><i
+                        class="bi bi-card-list"></i>Contact-Message</a>
                 <a href="{% url 'manager_reports' %}" class="nav-link" id="sidebar-reports"><i
                         class="bi bi-graph-up"></i>Reports</a>
                 <hr class="text-white opacity-25 my-2 mx-3">
-                <a href="{% url 'manager_profile' %}" class="nav-link" id="sidebar-profile"><i class="bi bi-person-circle"></i>My Profile</a>
+                <a href="{% url 'manager_profile' %}" class="nav-link" id="sidebar-profile"><i
+                        class="bi bi-person-circle"></i>My Profile</a>
                 <a href="{% url 'index' %}" class="nav-link"><i class="bi bi-arrow-left-circle"></i>Client View</a>
-                <a href="{% url 'logout' %}" class="nav-link text-danger mt-auto"><i class="bi bi-box-arrow-left"></i>Logout</a>
+                <a href="{% url 'logout' %}" class="nav-link text-danger mt-auto"><i
+                        class="bi bi-box-arrow-left"></i>Logout</a>
             </div>
         </nav>
 
@@ -52,7 +52,8 @@
         <div class="admin-content d-flex flex-column">
             <!-- Top Header -->
             <header class="admin-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0 text-navy-dark fw-bold"><i class="bi bi-bus-front text-warning me-2"></i>Fleet Management - <span id="operatorBrandName">Operator Fleet</span></h5>
+                <h5 class="mb-0 text-navy-dark fw-bold"><i class="bi bi-bus-front text-warning me-2"></i>Fleet
+                    Management - <span id="operatorBrandName">Operator Fleet</span></h5>
                 <div class="d-flex align-items-center gap-3">
                     <a href="{% url 'add_bus' %}" class="btn btn-primary-custom btn-sm rounded-3 py-2 px-3 fw-semibold">
                         <i class="bi bi-plus-circle-fill me-1"></i>Add Brand Bus
@@ -60,16 +61,21 @@
                     <div class="d-flex align-items-center gap-2">
                         <span class="fw-semibold text-navy-dark">{{ login_user.name }}</span>
                         {% if login_user.profile and login_user.profile.name %}
-                            <img src="{{ login_user.profile.url }}" width="36" height="36" class="rounded-circle border border-2 object-fit-cover">
+                        <img src="{{ login_user.profile.url }}" width="36" height="36"
+                            class="rounded-circle border border-2 object-fit-cover">
                         {% else %}
-                            <div class="profile-img-container m-0 bg-warning text-dark d-flex align-items-center justify-content-center" style="width:36px; height:36px; font-size:0.95rem; font-weight:700; border-radius: 50%;">{{ login_user.name|slice:":2"|upper }}</div>
+                        <div class="profile-img-container m-0 bg-warning text-dark d-flex align-items-center justify-content-center"
+                            style="width:36px; height:36px; font-size:0.95rem; font-weight:700; border-radius: 50%;">{{
+                            login_user.name|slice:":2"|upper }}</div>
                         {% endif %}
                     </div>
                 </div>
             </header>
 
             <!-- Buses Body -->
-            <h2> <center>My Buses</center></h2>
+            <h2>
+                <center>My Buses</center>
+            </h2>
             <table class="table table-bordered">
                 <thead>
                     <tr>

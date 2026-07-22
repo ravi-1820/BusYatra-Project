@@ -20,11 +20,7 @@
         <!-- Sidebar Navigation -->
         <nav class="admin-sidebar">
             <div class="sidebar-header">
-                <a class="navbar-brand text-light fw-bold fs-4 d-flex align-items-center" href="{% url 'index' %}">
-                    <img src="{% static 'assets/images/logo.png' %}" alt="BusYatra Logo" height="42"
-                        class="bg-white p-1 rounded me-2">
-                    <span class="fs-6 text-warning ms-1 opacity-75">Manager</span>
-                </a>
+                <span class="fs-6 text-warning ms-1 opacity-75">Manager</span>
             </div>
             <div class="nav flex-column mt-3">
                 <a href="{% url 'manager_dashboard' %}" class="nav-link" id="sidebar-dashboard"><i
@@ -39,13 +35,16 @@
                         class="bi bi-grid-3x3-gap"></i>Seat Status</a>
                 <a href="{% url 'manager_bookings' %}" class="nav-link" id="sidebar-bookings"><i
                         class="bi bi-card-list"></i>Bookings</a>
+                <a href="{% url 'contact_message' %}" class="nav-link active" id="sidebar-bookings"><i
+                        class="bi bi-card-list"></i>Contact-Message</a>
                 <a href="{% url 'manager_reports' %}" class="nav-link" id="sidebar-reports"><i
                         class="bi bi-graph-up"></i>Reports</a>
                 <hr class="text-white opacity-25 my-2 mx-3">
                 <a href="{% url 'manager_profile' %}" class="nav-link active" id="sidebar-profile"><i
                         class="bi bi-person-circle"></i>My Profile</a>
                 <a href="{% url 'index' %}" class="nav-link"><i class="bi bi-arrow-left-circle"></i>Client View</a>
-                <a href="{% url 'logout' %}" class="nav-link text-danger mt-auto"><i class="bi bi-box-arrow-left"></i>Logout</a>
+                <a href="{% url 'logout' %}" class="nav-link text-danger mt-auto"><i
+                        class="bi bi-box-arrow-left"></i>Logout</a>
             </div>
         </nav>
 
@@ -53,13 +52,17 @@
         <div class="admin-content d-flex flex-column">
             <!-- Top Header -->
             <header class="admin-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0 text-navy-dark fw-bold"><i class="bi bi-person-circle text-warning me-2"></i>My Operator Profile</h5>
+                <h5 class="mb-0 text-navy-dark fw-bold"><i class="bi bi-person-circle text-warning me-2"></i>My Operator
+                    Profile</h5>
                 <div class="d-flex align-items-center gap-2">
                     <span class="fw-semibold text-navy-dark">{{ login_user.name }}</span>
                     {% if login_user.profile and login_user.profile.name %}
-                        <img src="{{ login_user.profile.url }}" width="36" height="36" class="rounded-circle border border-2 object-fit-cover">
+                    <img src="{{ login_user.profile.url }}" width="36" height="36"
+                        class="rounded-circle border border-2 object-fit-cover">
                     {% else %}
-                        <div class="profile-img-container m-0 bg-warning text-dark d-flex align-items-center justify-content-center" style="width:36px; height:36px; font-size:0.95rem; font-weight:700; border-radius: 50%;">{{ login_user.name|slice:":2"|upper }}</div>
+                    <div class="profile-img-container m-0 bg-warning text-dark d-flex align-items-center justify-content-center"
+                        style="width:36px; height:36px; font-size:0.95rem; font-weight:700; border-radius: 50%;">{{
+                        login_user.name|slice:":2"|upper }}</div>
                     {% endif %}
                 </div>
             </header>
@@ -67,7 +70,7 @@
             <!-- Body -->
             <main class="admin-body">
                 <div class="container-fluid p-0" style="max-width: 900px; margin: 0 auto;">
-                    
+
                     <!-- Alert Messages -->
                     {% if msg %}
                     <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-4" role="alert">
@@ -93,13 +96,17 @@
                         <!-- Left Column: Profile Card -->
                         <div class="col-md-6">
                             <div class="card card-custom p-4 shadow-sm border-0 h-100">
-                                <h5 class="fw-bold text-navy-dark mb-4"><i class="bi bi-person text-primary me-2"></i>Profile Details</h5>
-                                
+                                <h5 class="fw-bold text-navy-dark mb-4"><i
+                                        class="bi bi-person text-primary me-2"></i>Profile Details</h5>
+
                                 <div class="text-center mb-4">
                                     {% if login_user.profile and login_user.profile.name %}
-                                        <img src="{{ login_user.profile.url }}" width="100" height="100" class="rounded-circle border border-3 border-warning object-fit-cover mb-2 shadow-sm">
+                                    <img src="{{ login_user.profile.url }}" width="100" height="100"
+                                        class="rounded-circle border border-3 border-warning object-fit-cover mb-2 shadow-sm">
                                     {% else %}
-                                        <div class="bg-warning text-dark d-flex align-items-center justify-content-center mx-auto mb-2 shadow-sm" style="width:100px; height:100px; font-size:2.5rem; font-weight:700; border-radius: 50%;">{{ login_user.name|slice:":2"|upper }}</div>
+                                    <div class="bg-warning text-dark d-flex align-items-center justify-content-center mx-auto mb-2 shadow-sm"
+                                        style="width:100px; height:100px; font-size:2.5rem; font-weight:700; border-radius: 50%;">
+                                        {{ login_user.name|slice:":2"|upper }}</div>
                                     {% endif %}
                                     <h6 class="fw-bold mb-0">{{ login_user.name }}</h6>
                                     <small class="text-muted">{{ login_user.email }}</small>
@@ -111,17 +118,20 @@
 
                                     <div class="mb-3">
                                         <label class="form-label small fw-semibold">Full Name</label>
-                                        <input type="text" name="name" class="form-control" value="{{ login_user.name }}" required>
+                                        <input type="text" name="name" class="form-control"
+                                            value="{{ login_user.name }}" required>
                                     </div>
 
                                     <div class="mb-3">
                                         <label class="form-label small fw-semibold">Email Address</label>
-                                        <input type="email" name="email" class="form-control" value="{{ login_user.email }}" required>
+                                        <input type="email" name="email" class="form-control"
+                                            value="{{ login_user.email }}" required>
                                     </div>
 
                                     <div class="mb-3">
                                         <label class="form-label small fw-semibold">Phone Number</label>
-                                        <input type="tel" name="phone" class="form-control" value="{{ login_user.phone }}" required>
+                                        <input type="tel" name="phone" class="form-control"
+                                            value="{{ login_user.phone }}" required>
                                     </div>
 
                                     <div class="mb-3">
@@ -129,7 +139,9 @@
                                         <input type="file" name="profile" class="form-control">
                                     </div>
 
-                                    <button type="submit" class="btn btn-primary-custom w-100 py-2 mt-2 fw-semibold text-white">Save Changes</button>
+                                    <button type="submit"
+                                        class="btn btn-primary-custom w-100 py-2 mt-2 fw-semibold text-white">Save
+                                        Changes</button>
                                 </form>
                             </div>
                         </div>
@@ -137,28 +149,34 @@
                         <!-- Right Column: Change Password Card -->
                         <div class="col-md-6">
                             <div class="card card-custom p-4 shadow-sm border-0 h-100">
-                                <h5 class="fw-bold text-navy-dark mb-4"><i class="bi bi-shield-lock text-primary me-2"></i>Change Password</h5>
-                                
+                                <h5 class="fw-bold text-navy-dark mb-4"><i
+                                        class="bi bi-shield-lock text-primary me-2"></i>Change Password</h5>
+
                                 <form method="POST">
                                     {% csrf_token %}
                                     <input type="hidden" name="action" value="change_password">
 
                                     <div class="mb-3">
                                         <label class="form-label small fw-semibold">Current Password</label>
-                                        <input type="password" name="old_password" class="form-control" required placeholder="Enter current password">
+                                        <input type="password" name="old_password" class="form-control" required
+                                            placeholder="Enter current password">
                                     </div>
 
                                     <div class="mb-3">
                                         <label class="form-label small fw-semibold">New Password</label>
-                                        <input type="password" name="new_password" class="form-control" required placeholder="Enter new password">
+                                        <input type="password" name="new_password" class="form-control" required
+                                            placeholder="Enter new password">
                                     </div>
 
                                     <div class="mb-3">
                                         <label class="form-label small fw-semibold">Confirm New Password</label>
-                                        <input type="password" name="confirm_password" class="form-control" required placeholder="Retype new password">
+                                        <input type="password" name="confirm_password" class="form-control" required
+                                            placeholder="Retype new password">
                                     </div>
 
-                                    <button type="submit" class="btn btn-warning w-100 py-2 mt-4 fw-semibold text-dark">Change Password</button>
+                                    <button type="submit"
+                                        class="btn btn-warning w-100 py-2 mt-4 fw-semibold text-dark">Change
+                                        Password</button>
                                 </form>
                             </div>
                         </div>
@@ -167,9 +185,11 @@
             </main>
 
             <!-- Footer -->
-            <footer class="admin-footer py-3 px-4 mt-auto text-muted small d-flex justify-content-between align-items-center">
+            <footer
+                class="admin-footer py-3 px-4 mt-auto text-muted small d-flex justify-content-between align-items-center">
                 <div>&copy; 2026 BusYatra Manager Portal. All rights reserved.</div>
-                <div>System Status: <span class="text-success"><i class="bi bi-circle-fill fs-8 me-1 align-middle"></i>Optimal</span></div>
+                <div>System Status: <span class="text-success"><i
+                            class="bi bi-circle-fill fs-8 me-1 align-middle"></i>Optimal</span></div>
             </footer>
         </div>
     </div>

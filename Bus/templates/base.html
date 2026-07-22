@@ -35,7 +35,7 @@
                         <a class="nav-link" href="{% url 'bus_list' %}">Search Buses</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'my_orders' %}">My Orders</a>
+                        <a class="nav-link" href="{% url 'my_orders' %}">History</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'about' %}">About Us</a>
@@ -51,27 +51,48 @@
                     </li> -->
                     <li class="nav-item ms-lg-3 mt-2 mt-lg-0 d-flex align-items-center gap-2" id="navUserArea">
                         {% if request.session.email %}
-                        <a href="{% url 'logout' %}" class="btn btn-outline-nav btn-sm"><i
-                                class="bi bi-box-arrow-left me-1"></i>Logout</a>
-                        {% if login_user.profile and login_user.profile.name %}
-                        <a href="{% url 'account' %}"
-                            class="ms-2 d-inline-flex align-items-center gap-2 text-dark text-decoration-none"
-                            title="{{ login_user.name }}">
-                            <img src="{{ login_user.profile.url }}" width="42" height="42"
-                                class="rounded-circle border border-2 object-fit-cover">
-                            <span class="fw-semibold text-black" style="color: #000 !important;">{{ login_user.name }}</span>
-                        </a>
+                        <div class="dropdown profile-dropdown">
+                            {% if login_user.profile and login_user.profile.name %}
+                            <!-- Dropdown toggle button for users with custom profile photos -->
+                            <a href="#"
+                                class="dropdown-toggle ms-2 d-inline-flex align-items-center gap-2 text-dark text-decoration-none"
+                                role="button" data-bs-toggle="dropdown" data-bs-offset="0,8" aria-expanded="false"
+                                title="{{ login_user.name }}">
+                                <img src="{{ login_user.profile.url }}" width="42" height="42"
+                                    class="rounded-circle border border-2 object-fit-cover">
+                                <span class="fw-semibold text-black" style="color: #000 !important;">{{ login_user.name }}</span>
+                            </a>
+                            {% else %}
+                            <!-- Dropdown toggle button for users without profile photos (default icon) -->
+                            <a href="#"
+                                class="dropdown-toggle ms-2 d-inline-flex align-items-center gap-2 text-dark text-decoration-none"
+                                role="button" data-bs-toggle="dropdown" data-bs-offset="0,8" aria-expanded="false"
+                                title="{{ login_user.name }}">
+                                <i class="bi bi-person-circle fs-2 text-dark"></i>
+                                <span class="fw-semibold text-black" style="color: #000 !important;">{{ login_user.name }}</span>
+                            </a>
+                            {% endif %}
+                            <!-- Redesigned profile menu list -->
+                            <ul class="dropdown-menu dropdown-menu-end header-profile-menu">
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'account' %}">
+                                        View Profile
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'logout' %}">
+                                        Logout
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
                         {% else %}
-                        <a href="{% url 'account' %}"
-                            class="ms-2 d-inline-flex align-items-center gap-2 text-dark text-decoration-none"
-                            title="{{ login_user.name }}">
-                            <i class="bi bi-person-circle fs-2 text-dark"></i>
-                            <span class="fw-semibold text-black" style="color: #000 !important;">{{ login_user.name }}</span>
+                        <a href="{% url 'login' %}" class="btn btn-outline-nav btn-sm">
+                            <i class="bi bi-box-arrow-in-right me-1"></i>Login
                         </a>
-                        {% endif %}
-                        {% else %}
-                        <a href="{% url 'login' %}" class="btn btn-outline-nav btn-sm"><i
-                                class="bi bi-box-arrow-in-right me-1"></i>Login</a>
+                        <!-- <a href="{% url 'register' %}" class="btn btn-outline-nav btn-sm">
+                            <i class="bi bi-person-plus me-1"></i>Register
+                        </a> -->
                         {% endif %}
                     </li>
                 </ul>
@@ -163,8 +184,8 @@
     </footer>
 
     <!-- JavaScript Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
     <!-- Synchronize Django User details with LocalStorage for Customer Dashboard -->
     {% if request.session.email and login_user %}

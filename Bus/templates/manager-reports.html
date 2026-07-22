@@ -1,6 +1,7 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,29 +13,38 @@
     <!-- Custom Style Sheet -->
     <link rel="stylesheet" href="{% static 'assets/css/style.css' %}">
 </head>
+
 <body>
 
     <div class="admin-wrapper">
         <!-- Sidebar Navigation -->
         <nav class="admin-sidebar">
             <div class="sidebar-header">
-                <a class="navbar-brand text-light fw-bold fs-4 d-flex align-items-center" href="{% url 'index' %}">
-                    <img src="{% static 'assets/images/logo.png' %}" alt="BusYatra Logo" height="42" class="bg-white p-1 rounded me-2">
-                    <span class="fs-6 text-warning ms-1 opacity-75">Manager</span>
-                </a>
+                <span class="fs-6 text-warning ms-1 opacity-75">Manager</span>
             </div>
             <div class="nav flex-column mt-3">
-                <a href="{% url 'manager_dashboard' %}" class="nav-link" id="sidebar-dashboard"><i class="bi bi-speedometer2"></i>Dashboard</a>
-                <a href="{% url 'manager_buses' %}" class="nav-link" id="sidebar-buses"><i class="bi bi-bus-front"></i>Manage Buses</a>
-                <a href="{% url 'manager_routes' %}" class="nav-link" id="sidebar-routes"><i class="bi bi-signpost-split"></i>Manage Routes</a>
-                <a href="{% url 'manager_schedules' %}" class="nav-link" id="sidebar-schedules"><i class="bi bi-calendar-event"></i>Schedules</a>
-                <a href="{% url 'manager_seats' %}" class="nav-link" id="sidebar-seats"><i class="bi bi-grid-3x3-gap"></i>Seat Status</a>
-                <a href="{% url 'manager_bookings' %}" class="nav-link" id="sidebar-bookings"><i class="bi bi-card-list"></i>Bookings</a>
-                <a href="{% url 'manager_reports' %}" class="nav-link active" id="sidebar-reports"><i class="bi bi-graph-up"></i>Reports</a>
+                <a href="{% url 'manager_dashboard' %}" class="nav-link" id="sidebar-dashboard"><i
+                        class="bi bi-speedometer2"></i>Dashboard</a>
+                <a href="{% url 'manager_buses' %}" class="nav-link" id="sidebar-buses"><i
+                        class="bi bi-bus-front"></i>Manage Buses</a>
+                <a href="{% url 'manager_routes' %}" class="nav-link" id="sidebar-routes"><i
+                        class="bi bi-signpost-split"></i>Manage Routes</a>
+                <a href="{% url 'manager_schedules' %}" class="nav-link" id="sidebar-schedules"><i
+                        class="bi bi-calendar-event"></i>Schedules</a>
+                <a href="{% url 'manager_seats' %}" class="nav-link" id="sidebar-seats"><i
+                        class="bi bi-grid-3x3-gap"></i>Seat Status</a>
+                <a href="{% url 'manager_bookings' %}" class="nav-link" id="sidebar-bookings"><i
+                        class="bi bi-card-list"></i>Bookings</a>
+                <a href="{% url 'contact_message' %}" class="nav-link active" id="sidebar-bookings"><i
+                        class="bi bi-card-list"></i>Contact-Message</a>
+                <a href="{% url 'manager_reports' %}" class="nav-link active" id="sidebar-reports"><i
+                        class="bi bi-graph-up"></i>Reports</a>
                 <hr class="text-white opacity-25 my-2 mx-3">
-                <a href="{% url 'manager_profile' %}" class="nav-link" id="sidebar-profile"><i class="bi bi-person-circle"></i>My Profile</a>
+                <a href="{% url 'manager_profile' %}" class="nav-link" id="sidebar-profile"><i
+                        class="bi bi-person-circle"></i>My Profile</a>
                 <a href="{% url 'index' %}" class="nav-link"><i class="bi bi-arrow-left-circle"></i>Client View</a>
-                <a href="{% url 'logout' %}" class="nav-link text-danger mt-auto"><i class="bi bi-box-arrow-left"></i>Logout</a>
+                <a href="{% url 'logout' %}" class="nav-link text-danger mt-auto"><i
+                        class="bi bi-box-arrow-left"></i>Logout</a>
             </div>
         </nav>
 
@@ -42,22 +52,27 @@
         <div class="admin-content d-flex flex-column">
             <!-- Top Header -->
             <header class="admin-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0 text-navy-dark fw-bold"><i class="bi bi-graph-up text-warning me-2"></i>Operator Performance & Revenue Analytics</h5>
+                <h5 class="mb-0 text-navy-dark fw-bold"><i class="bi bi-graph-up text-warning me-2"></i>Operator
+                    Performance & Revenue Analytics</h5>
                 <div class="d-flex align-items-center gap-3">
                     <div class="d-flex gap-2">
-                        <button class="btn btn-outline-warning text-dark btn-sm rounded-3 py-2 px-3 fw-semibold" onclick="simulateExport('PDF')">
+                        <button class="btn btn-outline-warning text-dark btn-sm rounded-3 py-2 px-3 fw-semibold"
+                            onclick="simulateExport('PDF')">
                             <i class="bi bi-file-earmark-pdf-fill me-1 text-danger"></i>Export PDF
                         </button>
-                        <button class="btn btn-outline-warning text-dark btn-sm rounded-3 py-2 px-3 fw-semibold" onclick="simulateExport('CSV')">
+                        <button class="btn btn-outline-warning text-dark btn-sm rounded-3 py-2 px-3 fw-semibold"
+                            onclick="simulateExport('CSV')">
                             <i class="bi bi-file-earmark-spreadsheet-fill me-1 text-success"></i>Export CSV
                         </button>
                     </div>
                     <div class="d-flex align-items-center gap-2">
                         <span class="fw-semibold text-navy-dark">{{ login_user.name }}</span>
                         {% if login_user.profile and login_user.profile.name %}
-                            <img src="{{ login_user.profile.url }}" width="36" height="36" class="rounded-circle border border-2 object-fit-cover">
+                        <img src="{{ login_user.profile.url }}" width="36" height="36"
+                            class="rounded-circle border border-2 object-fit-cover">
                         {% else %}
-                            <div class="profile-img-container m-0 bg-warning text-dark d-flex align-items-center justify-content-center" style="width:36px; height:36px; font-size:0.95rem; font-weight:700; border-radius: 50%;">{{ login_user.name|slice:":2"|upper }}</div>
+                        <div class="profile-img-container m-0 bg-warning text-dark d-flex align-items-center justify-content-center"
+                            style="width:36px; height:36px; font-size:0.95rem; font-weight:700; border-radius: 50%;">{{ login_user.name|slice:":2"|upper }}</div>
                         {% endif %}
                     </div>
                 </div>
@@ -89,19 +104,19 @@
                     <div class="col-md-3">
                         <div class="card card-custom p-3 text-center border-start border-5 border-warning">
                             <span class="text-muted small fw-semibold">Brand Earnings</span>
-                            <h3 class="fw-bold text-navy-dark mt-1 mb-0" id="earningsText">₹1,84,500</h3>
+                            <h3 class="fw-bold text-navy-dark mt-1 mb-0" id="earningsText">₹{{ total_revenue }}</h3>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="card card-custom p-3 text-center border-start border-5 border-primary">
                             <span class="text-muted small fw-semibold">Tickets Booked</span>
-                            <h3 class="fw-bold text-navy-dark mt-1 mb-0" id="ticketsText">1,245</h3>
+                            <h3 class="fw-bold text-navy-dark mt-1 mb-0" id="ticketsText">{{ total_tickets }}</h3>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="card card-custom p-3 text-center border-start border-5 border-success">
                             <span class="text-muted small fw-semibold">Buses Running</span>
-                            <h3 class="fw-bold text-navy-dark mt-1 mb-0" id="busesText">8 Buses</h3>
+                            <h3 class="fw-bold text-navy-dark mt-1 mb-0" id="busesText">{{ total_buses }} Buses</h3>
                         </div>
                     </div>
                     <div class="col-md-3">
@@ -117,29 +132,32 @@
                     <!-- Weekly Brand Income -->
                     <div class="col-lg-8">
                         <div class="card card-custom p-4 h-100">
-                            <h6 class="text-navy-dark fw-bold mb-3"><i class="bi bi-cash-stack text-warning me-2"></i>Weekly Revenue Trends (₹)</h6>
-                            <div class="bg-light p-3 rounded-3 d-flex flex-column align-items-center justify-content-center" style="height: 250px;">
+                            <h6 class="text-navy-dark fw-bold mb-3"><i
+                                    class="bi bi-cash-stack text-warning me-2"></i>Weekly Revenue Trends (₹)</h6>
+                            <div class="bg-light p-3 rounded-3 d-flex flex-column align-items-center justify-content-center"
+                                style="height: 250px;">
                                 <svg width="100%" height="200" viewBox="0 0 600 200" class="w-100">
                                     <!-- Grid lines -->
-                                    <line x1="40" y1="20" x2="580" y2="20" stroke="#E2E8F0" stroke-width="1"/>
-                                    <line x1="40" y1="70" x2="580" y2="70" stroke="#E2E8F0" stroke-width="1"/>
-                                    <line x1="40" y1="120" x2="580" y2="120" stroke="#E2E8F0" stroke-width="1"/>
-                                    <line x1="40" y1="170" x2="580" y2="170" stroke="#CBD5E1" stroke-width="1.5"/>
+                                    <line x1="40" y1="20" x2="580" y2="20" stroke="#E2E8F0" stroke-width="1" />
+                                    <line x1="40" y1="70" x2="580" y2="70" stroke="#E2E8F0" stroke-width="1" />
+                                    <line x1="40" y1="120" x2="580" y2="120" stroke="#E2E8F0" stroke-width="1" />
+                                    <line x1="40" y1="170" x2="580" y2="170" stroke="#CBD5E1" stroke-width="1.5" />
 
                                     <text x="5" y="25" fill="#64748B" font-size="10">₹40K</text>
                                     <text x="5" y="75" fill="#64748B" font-size="10">₹20K</text>
                                     <text x="5" y="125" fill="#64748B" font-size="10">₹5K</text>
 
                                     <!-- Trend lines -->
-                                    <path d="M 70 140 L 140 120 L 210 110 L 280 80 L 350 90 L 420 50 L 490 35" fill="none" stroke="#F59E0B" stroke-width="3"/>
+                                    <path d="M 70 140 L 140 120 L 210 110 L 280 80 L 350 90 L 420 50 L 490 35"
+                                        fill="none" stroke="#F59E0B" stroke-width="3" />
                                     <!-- Nodes -->
-                                    <circle cx="70" cy="140" r="5" fill="#F59E0B"/>
-                                    <circle cx="140" cy="120" r="5" fill="#F59E0B"/>
-                                    <circle cx="210" cy="110" r="5" fill="#F59E0B"/>
-                                    <circle cx="280" cy="80" r="5" fill="#F59E0B"/>
-                                    <circle cx="350" cy="90" r="5" fill="#F59E0B"/>
-                                    <circle cx="420" cy="50" r="5" fill="#F59E0B"/>
-                                    <circle cx="490" cy="35" r="5" fill="#F59E0B"/>
+                                    <circle cx="70" cy="140" r="5" fill="#F59E0B" />
+                                    <circle cx="140" cy="120" r="5" fill="#F59E0B" />
+                                    <circle cx="210" cy="110" r="5" fill="#F59E0B" />
+                                    <circle cx="280" cy="80" r="5" fill="#F59E0B" />
+                                    <circle cx="350" cy="90" r="5" fill="#F59E0B" />
+                                    <circle cx="420" cy="50" r="5" fill="#F59E0B" />
+                                    <circle cx="490" cy="35" r="5" fill="#F59E0B" />
 
                                     <!-- X Labels -->
                                     <text x="55" y="190" fill="#64748B" font-size="11">Mon</text>
@@ -157,15 +175,18 @@
                     <!-- Routes Performance -->
                     <div class="col-lg-4">
                         <div class="card card-custom p-4 h-100">
-                            <h6 class="text-navy-dark fw-bold mb-3"><i class="bi bi-compass text-warning me-2"></i>Route Productivity</h6>
-                            <div class="bg-light p-3 rounded-3 d-flex flex-column align-items-center justify-content-center" style="height: 250px;">
+                            <h6 class="text-navy-dark fw-bold mb-3"><i class="bi bi-compass text-warning me-2"></i>Route
+                                Productivity</h6>
+                            <div class="bg-light p-3 rounded-3 d-flex flex-column align-items-center justify-content-center"
+                                style="height: 250px;">
                                 <div class="w-100 mb-3 text-navy-dark">
                                     <div class="d-flex justify-content-between small fw-bold mb-1">
                                         <span>Mumbai ↔ Goa</span>
                                         <span>70% Profit</span>
                                     </div>
                                     <div class="progress" style="height: 8px;">
-                                        <div class="progress-bar bg-warning" role="progressbar" style="width: 70%;" aria-valuenow="70" aria-valuemin="0" aria-valuemax="100"></div>
+                                        <div class="progress-bar bg-warning" role="progressbar" style="width: 70%;"
+                                            aria-valuenow="70" aria-valuemin="0" aria-valuemax="100"></div>
                                     </div>
                                 </div>
                                 <div class="w-100 text-navy-dark">
@@ -174,7 +195,8 @@
                                         <span>30% Profit</span>
                                     </div>
                                     <div class="progress" style="height: 8px;">
-                                        <div class="progress-bar bg-primary" role="progressbar" style="width: 30%;" aria-valuenow="30" aria-valuemin="0" aria-valuemax="100"></div>
+                                        <div class="progress-bar bg-primary" role="progressbar" style="width: 30%;"
+                                            aria-valuenow="30" aria-valuemin="0" aria-valuemax="100"></div>
                                     </div>
                                 </div>
                             </div>
@@ -184,9 +206,11 @@
             </main>
 
             <!-- Footer -->
-            <footer class="admin-footer py-3 px-4 mt-auto text-muted small d-flex justify-content-between align-items-center">
+            <footer
+                class="admin-footer py-3 px-4 mt-auto text-muted small d-flex justify-content-between align-items-center">
                 <div>&copy; 2026 BusYatra Manager Portal. All rights reserved.</div>
-                <div>System Status: <span class="text-success"><i class="bi bi-circle-fill fs-8 me-1 align-middle"></i>Optimal</span></div>
+                <div>System Status: <span class="text-success"><i
+                            class="bi bi-circle-fill fs-8 me-1 align-middle"></i>Optimal</span></div>
             </footer>
         </div>
     </div>
@@ -198,4 +222,5 @@
     <!-- Template Javascript -->
     <script src="{% static 'assets/js/main.js' %}"></script>
 </body>
+
 </html>

@@ -139,6 +139,7 @@
                 <div class="col-12 col-center-timeline">
                     <div class="route-timeline">
                         <div class="text-start">
+                            <p class="fw-semibold text-dark mb-1">{{ bus.source }}</p>
                             <h4 class="fw-bold text-dark mb-0 d-inline-block">{{ bus.departure_time|time:"H:i" }}</h4>
                             <span class="text-muted small ms-2 dep-date">--</span>
                         </div>
@@ -148,6 +149,7 @@
                         </div>
 
                         <div class="text-end">
+                            <p class="fw-semibold text-dark mb-1">{{ bus.destination }}</p>
                             <h4 class="fw-bold text-dark mb-0 d-inline-block">{{ bus.arrival_time|time:"H:i" }}</h4>
                             <span class="text-muted small ms-2 arr-date">--</span>
                         </div>
@@ -164,8 +166,8 @@
                             <span class="fw-semibold text-secondary single-seats-val">-- Single Seats</span>
                         </p>
                     </div>
-                    <a href="{% url 'bus_detail' bus.id %}?from={{ from_city }}&to={{ to_city }}&date={{ travel_date }}&passengers={{ passengers }}" class="btn select-seats-btn w-100 text-uppercase">
-                        SELECT SEATS
+                    <a href="{% url 'bus_detail' bus.id %}?from={{ from_city|default:'' }}&to={{ to_city|default:'' }}&date={{ travel_date|default:'' }}&passengers={{ passengers|default:'1' }}" class="btn select-seats-btn w-100 text-uppercase">
+                        BUS DETAILS
                     </a>
                 </div>
 

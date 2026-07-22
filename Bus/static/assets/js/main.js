@@ -15,19 +15,19 @@
  * FAQ Accordion Toggle
  * Handles slide and icon rotation for FAQ items
  */
-window.toggleFaq = function(id) {
+window.toggleFaq = function (id) {
     const item = document.getElementById(id);
     const answer = document.getElementById(id + '-answer');
     const icon = document.getElementById(id + '-icon');
-    
+
     if (item && answer && icon) {
         const isOpen = answer.classList.contains('open');
-        
+
         // Close all other FAQs
         document.querySelectorAll('.faq-answer').forEach(el => el.classList.remove('open'));
         document.querySelectorAll('.faq-toggle-icon').forEach(el => el.classList.remove('rotated'));
         document.querySelectorAll('.faq-item').forEach(el => el.classList.remove('open'));
-        
+
         // Toggle current FAQ
         if (!isOpen) {
             answer.classList.add('open');
@@ -40,8 +40,8 @@ window.toggleFaq = function(id) {
 // ----------------------------------------------------
 // Main Initialization and DOM Ready Routing
 // ----------------------------------------------------
-document.addEventListener("DOMContentLoaded", function() {
-    
+document.addEventListener("DOMContentLoaded", function () {
+
     // Determine the current page name from URL path
     let path = window.location.pathname.replace(/\/$/, "");
     let page = path.split("/").pop().toLowerCase();
@@ -58,7 +58,7 @@ document.addEventListener("DOMContentLoaded", function() {
     // Password Show/Hide Toggle
     const togglePassword = document.getElementById("togglePassword");
     if (togglePassword) {
-        togglePassword.addEventListener("click", function() {
+        togglePassword.addEventListener("click", function () {
             const passInput = document.getElementById("password");
             const toggleIcon = document.getElementById("toggleIcon");
             if (passInput && toggleIcon) {
@@ -74,7 +74,7 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     // Navbar Scroll Animation
-    window.addEventListener("scroll", function() {
+    window.addEventListener("scroll", function () {
         const navbar = document.querySelector(".navbar");
         if (navbar) {
             if (window.scrollY > 50) {
@@ -88,14 +88,14 @@ document.addEventListener("DOMContentLoaded", function() {
     // Back-to-top button animation
     const backToTopBtn = document.getElementById("backToTop") || document.querySelector(".back-to-top");
     if (backToTopBtn) {
-        window.addEventListener("scroll", function() {
+        window.addEventListener("scroll", function () {
             if (window.scrollY > 300) {
                 backToTopBtn.classList.add("show");
             } else {
                 backToTopBtn.classList.remove("show");
             }
         });
-        backToTopBtn.addEventListener("click", function(e) {
+        backToTopBtn.addEventListener("click", function (e) {
             e.preventDefault();
             window.scrollTo({ top: 0, behavior: "smooth" });
         });
@@ -108,7 +108,7 @@ document.addEventListener("DOMContentLoaded", function() {
     // Contact Form loading feedback
     const contactForm = document.getElementById("contactForm");
     if (contactForm) {
-        contactForm.addEventListener("submit", function() {
+        contactForm.addEventListener("submit", function () {
             if (document.getElementById("sendBtnText")) document.getElementById("sendBtnText").textContent = "Sending...";
             if (document.getElementById("sendSpinner")) document.getElementById("sendSpinner").classList.remove("d-none");
             if (document.getElementById("sendIcon")) document.getElementById("sendIcon").classList.add("d-none");
@@ -118,7 +118,7 @@ document.addEventListener("DOMContentLoaded", function() {
     // Login Form loading feedback
     const loginForm = document.getElementById("loginForm");
     if (loginForm) {
-        loginForm.addEventListener("submit", function() {
+        loginForm.addEventListener("submit", function () {
             if (document.getElementById("btnText")) document.getElementById("btnText").textContent = "Verifying...";
             if (document.getElementById("loadingSpinner")) document.getElementById("loadingSpinner").classList.remove("d-none");
         });
@@ -127,7 +127,7 @@ document.addEventListener("DOMContentLoaded", function() {
     // Register Form loading feedback
     const registerForm = document.getElementById("registerForm");
     if (registerForm) {
-        registerForm.addEventListener("submit", function() {
+        registerForm.addEventListener("submit", function () {
             if (document.getElementById("btnText")) document.getElementById("btnText").textContent = "Registering...";
             if (document.getElementById("loadingSpinner")) document.getElementById("loadingSpinner").classList.remove("d-none");
         });
@@ -142,15 +142,24 @@ document.addEventListener("DOMContentLoaded", function() {
         const travelDate = document.getElementById("travelDate");
         if (travelDate) {
             const today = new Date();
-            const tomorrow = new Date(today);
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            travelDate.value = tomorrow.toISOString().split("T")[0];
-            travelDate.min = today.toISOString().split("T")[0];
+
+            // Local timezone ke according date format
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, "0");
+            const day = String(today.getDate()).padStart(2, "0");
+
+            const formattedDate = `${year}-${month}-${day}`;
+
+            // Default value = Today
+            travelDate.value = formattedDate;
+
+            // User past date select na kar sake
+            travelDate.min = formattedDate;
         }
 
         const swapBtn = document.getElementById("swapBtn");
         if (swapBtn) {
-            swapBtn.addEventListener("click", function() {
+            swapBtn.addEventListener("click", function () {
                 const from = document.getElementById("fromCity");
                 const to = document.getElementById("toCity");
                 if (from && to) {
@@ -171,33 +180,33 @@ document.addEventListener("DOMContentLoaded", function() {
         const to = params.get('to') || 'Goa';
         const date = params.get('date') || new Date(Date.now() + 86400000).toISOString().split('T')[0];
         const passengers = params.get('passengers') || '1';
-        
+
         const formattedDate = new Date(date).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
-        
+
         if (document.getElementById('searchRouteHeading')) document.getElementById('searchRouteHeading').innerText = `${from} to ${to}`;
         if (document.getElementById('metaDate')) document.getElementById('metaDate').innerHTML = `<i class="bi bi-calendar-event me-1"></i>${formattedDate}`;
         if (document.getElementById('metaPassengers')) document.getElementById('metaPassengers').innerHTML = `<i class="bi bi-people me-1"></i>${passengers} Passenger(s)`;
-        
+
         if (document.getElementById('modifyFrom')) document.getElementById('modifyFrom').value = from;
         if (document.getElementById('modifyTo')) document.getElementById('modifyTo').value = to;
         if (document.getElementById('modifyDate')) document.getElementById('modifyDate').value = date;
         if (document.getElementById('modifyPassengers')) document.getElementById('modifyPassengers').value = passengers;
-        
+
         for (let i = 1; i <= 4; i++) {
             if (document.getElementById('originLabel' + i)) document.getElementById('originLabel' + i).innerText = from;
             if (document.getElementById('destLabel' + i)) document.getElementById('destLabel' + i).innerText = to;
         }
-        
+
         const priceRange = document.getElementById("priceRange");
         const priceVal = document.getElementById("priceVal");
         if (priceRange && priceVal) {
-            priceRange.addEventListener("input", function() {
+            priceRange.addEventListener("input", function () {
                 priceVal.innerText = '₹' + parseInt(this.value).toLocaleString('en-IN');
             });
         }
-        
+
         document.querySelectorAll(".btn-select-seats").forEach(btn => {
-            btn.addEventListener("click", function() {
+            btn.addEventListener("click", function () {
                 sessionStorage.setItem("selectedBusName", this.getAttribute("data-bus"));
                 sessionStorage.setItem("selectedBusType", this.getAttribute("data-type"));
                 sessionStorage.setItem("selectedBusPrice", this.getAttribute("data-price"));
@@ -232,7 +241,7 @@ document.addEventListener("DOMContentLoaded", function() {
         const isSleeper = busType.toLowerCase().includes("sleeper");
         const deckSelector = document.getElementById("deckSelector");
         const cabinGrid = document.getElementById("cabinGrid");
-        
+
         let currentDeck = "lower"; // default
         const selectedSeats = new Set();
         let couponDiscount = 0;
@@ -261,7 +270,7 @@ document.addEventListener("DOMContentLoaded", function() {
         }
 
         // Show toast helper
-        window.showToast = function(msg) {
+        window.showToast = function (msg) {
             const toast = document.getElementById("customToast");
             const toastMsg = document.getElementById("toastMsg");
             if (toast && toastMsg) {
@@ -274,7 +283,7 @@ document.addEventListener("DOMContentLoaded", function() {
         };
 
         // Switch Decks (for sleepers)
-        window.switchDeck = function(deck) {
+        window.switchDeck = function (deck) {
             currentDeck = deck;
             document.getElementById("lowerDeckBtn").classList.toggle("active", deck === "lower");
             document.getElementById("upperDeckBtn").classList.toggle("active", deck === "upper");
@@ -373,7 +382,7 @@ document.addEventListener("DOMContentLoaded", function() {
             }
 
             if (!seat.classList.contains("occupied") && !seat.classList.contains("ladies-occupied")) {
-                seat.addEventListener("click", function() {
+                seat.addEventListener("click", function () {
                     if (selectedSeats.has(seatCode)) {
                         selectedSeats.delete(seatCode);
                         seat.classList.remove("selected");
@@ -427,20 +436,20 @@ document.addEventListener("DOMContentLoaded", function() {
 
             const baseFare = selectedSeats.size * busPrice;
             const gstFee = Math.round(baseFare * 0.05 + 40 * selectedSeats.size);
-            
+
             let discountValue = 0;
             if (activeCoupon === "BUSYATRA100") {
                 discountValue = 100;
             } else if (activeCoupon === "YATRA150") {
                 discountValue = 150;
             }
-            
+
             discountValue = Math.min(discountValue, baseFare);
             const totalToPay = Math.max(0, baseFare + gstFee - discountValue);
 
             if (calcBase) calcBase.innerText = `₹${baseFare}`;
             if (calcTaxes) calcTaxes.innerText = `₹${gstFee}`;
-            
+
             if (discountValue > 0) {
                 if (calcDiscount) calcDiscount.innerText = `-₹${discountValue}`;
                 if (discountRow) discountRow.classList.remove("d-none");
@@ -494,7 +503,7 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         }
 
-        window.applyPromo = function() {
+        window.applyPromo = function () {
             const promoCodeInput = document.getElementById("promoCodeInput");
             const promoMessage = document.getElementById("promoMessage");
             if (!promoCodeInput || !promoMessage) return;
@@ -509,7 +518,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 activeCoupon = code;
                 promoMessage.className = "small mt-1 text-success fw-bold";
                 promoMessage.innerHTML = `<i class="bi bi-patch-check-fill me-1"></i>Promo applied successfully!`;
-                
+
                 document.querySelectorAll(".coupon-badge").forEach(el => {
                     el.style.background = "";
                     el.style.color = "";
@@ -530,7 +539,7 @@ document.addEventListener("DOMContentLoaded", function() {
             updateBookingSummary();
         };
 
-        window.selectPromo = function(code) {
+        window.selectPromo = function (code) {
             const promoCodeInput = document.getElementById("promoCodeInput");
             if (promoCodeInput) {
                 promoCodeInput.value = code;
@@ -538,9 +547,9 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         };
 
-        window.handleProceedCheckout = function(e) {
+        window.handleProceedCheckout = function (e) {
             e.preventDefault();
-            
+
             const email = document.getElementById("primaryEmail").value;
             const mobile = document.getElementById("primaryMobile").value;
             const travelers = [];
@@ -574,7 +583,7 @@ document.addEventListener("DOMContentLoaded", function() {
             let discountValue = 0;
             if (activeCoupon === "BUSYATRA100") discountValue = 100;
             if (activeCoupon === "YATRA150") discountValue = 150;
-            
+
             discountValue = Math.min(discountValue, baseFare);
             const totalToPay = Math.max(0, baseFare + gstFee - discountValue);
 
@@ -617,7 +626,7 @@ document.addEventListener("DOMContentLoaded", function() {
         const taxes = parseInt(sessionStorage.getItem("bookingTaxes") || "190");
         const baseFare = parseInt(sessionStorage.getItem("bookingBaseFare") || "2998");
         const discount = parseInt(sessionStorage.getItem("bookingDiscount") || "0");
-        
+
         if (document.getElementById("summaryBusName")) document.getElementById("summaryBusName").innerText = busName;
         if (document.getElementById("summaryRoute")) document.getElementById("summaryRoute").innerText = route;
         if (document.getElementById("summaryDate")) document.getElementById("summaryDate").innerText = date;
@@ -626,16 +635,16 @@ document.addEventListener("DOMContentLoaded", function() {
         if (document.getElementById("sumTaxes")) document.getElementById("sumTaxes").innerText = `₹${taxes}`;
         if (document.getElementById("sumTotal")) document.getElementById("sumTotal").innerText = `₹${total}`;
         if (document.getElementById("headerAmount")) document.getElementById("headerAmount").innerText = `₹${total}`;
-        
+
         if (discount > 0 && document.getElementById("discountBlock")) {
             document.getElementById("discountBlock").classList.remove("d-none");
             if (document.getElementById("sumDiscount")) document.getElementById("sumDiscount").innerText = `-₹${discount}`;
         }
-        
+
         // Card number spacing utility
         const cardNum = document.getElementById("cardNumber");
         if (cardNum) {
-            cardNum.addEventListener("input", function() {
+            cardNum.addEventListener("input", function () {
                 let val = this.value.replace(/\s+/g, '').replace(/[^0-9]/g, '');
                 let parts = [];
                 for (let i = 0; i < val.length; i += 4) parts.push(val.substring(i, i + 4));
@@ -646,29 +655,29 @@ document.addEventListener("DOMContentLoaded", function() {
         // Expiry slash utility
         const expiry = document.getElementById("cardExpiry");
         if (expiry) {
-            expiry.addEventListener("input", function() {
+            expiry.addEventListener("input", function () {
                 let val = this.value.replace(/[^0-9]/g, '');
                 if (val.length >= 2) this.value = val.slice(0, 2) + '/' + val.slice(2, 4);
                 else this.value = val;
             });
         }
-        
+
         // Interactive bank select active state
         document.querySelectorAll(".btn-select-bank").forEach(btn => {
-            btn.addEventListener("click", function() {
+            btn.addEventListener("click", function () {
                 document.querySelectorAll(".btn-select-bank").forEach(b => b.classList.remove("border-primary", "bg-primary-subtle"));
                 this.classList.add("border-primary", "bg-primary-subtle");
                 const bankDropdown = document.getElementById("bankDropdown");
                 if (bankDropdown) bankDropdown.removeAttribute("required");
             });
         });
-        
+
         // Payment submission loader trigger (without blocking POST)
         const handlePaymentSubmit = () => {
             const overlay = document.getElementById("paymentOverlay");
             if (overlay) overlay.classList.remove("d-none");
         };
-        
+
         ["cardForm", "upiForm", "netbankingForm", "walletsForm"].forEach(id => {
             const form = document.getElementById(id);
             if (form) form.addEventListener("submit", handlePaymentSubmit);
@@ -686,7 +695,7 @@ document.addEventListener("DOMContentLoaded", function() {
         const seats = sessionStorage.getItem("bookingSeats") || "L1, L2";
         const total = sessionStorage.getItem("bookingTotal") || "3088";
         const travelers = JSON.parse(sessionStorage.getItem("travelersInfo") || "[]");
-        
+
         if (document.getElementById("pnrNumber")) document.getElementById("pnrNumber").innerText = bookingId;
         if (document.getElementById("ticketNumber")) document.getElementById("ticketNumber").innerText = bookingId;
         if (document.getElementById("ticketBusName")) document.getElementById("ticketBusName").innerText = busName;
@@ -695,7 +704,7 @@ document.addEventListener("DOMContentLoaded", function() {
         if (document.getElementById("ticketTime")) document.getElementById("ticketTime").innerText = time;
         if (document.getElementById("ticketSeats")) document.getElementById("ticketSeats").innerText = seats;
         if (document.getElementById("ticketPrice")) document.getElementById("ticketPrice").innerText = `₹${total}`;
-        
+
         const container = document.getElementById("passengerContainer");
         if (container) {
             container.innerHTML = travelers.map(t => `
@@ -721,7 +730,7 @@ document.addEventListener("DOMContentLoaded", function() {
         // Handle profile photo input change (triggered on photo upload in banner)
         const photoInput = document.getElementById('profilePhotoInput');
         if (photoInput) {
-            photoInput.addEventListener('change', function(e) {
+            photoInput.addEventListener('change', function (e) {
                 const file = e.target.files[0];
                 if (file) {
                     if (file.size > 2 * 1024 * 1024) {
@@ -729,14 +738,14 @@ document.addEventListener("DOMContentLoaded", function() {
                         return;
                     }
                     const reader = new FileReader();
-                    reader.onload = function(evt) {
+                    reader.onload = function (evt) {
                         const base64Image = evt.target.result;
                         let userData = JSON.parse(localStorage.getItem('busyatra_logged_in_user'));
                         if (userData) {
                             userData.profileImage = base64Image;
                             localStorage.setItem('busyatra_logged_in_user', JSON.stringify(userData));
                             loadCommonProfileBanner();
-                            
+
                             // Show floating success toast/alert
                             showFloatingNotification("Profile picture updated successfully!", "success");
                         }
@@ -786,7 +795,7 @@ document.addEventListener("DOMContentLoaded", function() {
         const editProfileForm = document.getElementById('editProfileForm');
 
         if (btnEditProfile) {
-            btnEditProfile.addEventListener('click', function() {
+            btnEditProfile.addEventListener('click', function () {
                 if (profileEditName) profileEditName.removeAttribute('disabled');
                 if (profileEditPhone) profileEditPhone.removeAttribute('disabled');
                 if (profileEditName) profileEditName.focus();
@@ -798,7 +807,7 @@ document.addEventListener("DOMContentLoaded", function() {
         }
 
         if (btnCancelEdit) {
-            btnCancelEdit.addEventListener('click', function() {
+            btnCancelEdit.addEventListener('click', function () {
                 // Restore values
                 let currentUser = JSON.parse(localStorage.getItem('busyatra_logged_in_user'));
                 if (profileEditName) {
@@ -818,7 +827,7 @@ document.addEventListener("DOMContentLoaded", function() {
         }
 
         if (editProfileForm) {
-            editProfileForm.addEventListener('submit', function(e) {
+            editProfileForm.addEventListener('submit', function (e) {
                 e.preventDefault();
                 const saveSpinner = document.getElementById('saveSpinner');
                 const saveIcon = document.getElementById('saveIcon');
@@ -826,7 +835,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 if (saveSpinner) saveSpinner.classList.remove('d-none');
                 if (saveIcon) saveIcon.classList.add('d-none');
 
-                setTimeout(function() {
+                setTimeout(function () {
                     let updatedUser = JSON.parse(localStorage.getItem('busyatra_logged_in_user'));
                     updatedUser.name = profileEditName.value.trim();
                     updatedUser.phone = profileEditPhone.value.trim();
@@ -860,7 +869,7 @@ document.addEventListener("DOMContentLoaded", function() {
         const passwordStrengthText = document.getElementById('passwordStrengthText');
 
         if (newPasswordInput) {
-            newPasswordInput.addEventListener('input', function() {
+            newPasswordInput.addEventListener('input', function () {
                 const pass = newPasswordInput.value;
                 let strength = 0;
                 if (pass.length >= 6) strength += 25;
@@ -906,7 +915,7 @@ document.addEventListener("DOMContentLoaded", function() {
         // Change Password Submission
         const changePasswordForm = document.getElementById('changePasswordForm');
         if (changePasswordForm) {
-            changePasswordForm.addEventListener('submit', function(e) {
+            changePasswordForm.addEventListener('submit', function (e) {
                 e.preventDefault();
 
                 let currentUser = JSON.parse(localStorage.getItem('busyatra_logged_in_user'));
@@ -935,7 +944,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 if (passwordSpinner) passwordSpinner.classList.remove('d-none');
                 if (passwordIcon) passwordIcon.classList.add('d-none');
 
-                setTimeout(function() {
+                setTimeout(function () {
                     let updatedUser = JSON.parse(localStorage.getItem('busyatra_logged_in_user'));
                     updatedUser.password = newPass;
                     localStorage.setItem('busyatra_logged_in_user', JSON.stringify(updatedUser));
@@ -984,7 +993,7 @@ document.addEventListener("DOMContentLoaded", function() {
         }
 
         if (menuProfile) {
-            menuProfile.addEventListener('click', function(e) {
+            menuProfile.addEventListener('click', function (e) {
                 e.preventDefault();
                 switchTab('profile');
                 window.location.hash = 'profile';
@@ -992,7 +1001,7 @@ document.addEventListener("DOMContentLoaded", function() {
         }
 
         if (menuWallet) {
-            menuWallet.addEventListener('click', function(e) {
+            menuWallet.addEventListener('click', function (e) {
                 e.preventDefault();
                 switchTab('wallet');
                 window.location.hash = 'wallet';
@@ -1019,7 +1028,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 </div>
             `;
             // Auto dismiss after 4 seconds
-            setTimeout(function() {
+            setTimeout(function () {
                 const alertEl = container.querySelector('.alert');
                 if (alertEl) {
                     const bsAlert = bootstrap.Alert.getInstance(alertEl) || new bootstrap.Alert(alertEl);
@@ -1040,7 +1049,7 @@ document.addEventListener("DOMContentLoaded", function() {
         const input = document.getElementById(inputId);
         const icon = document.getElementById(iconId);
         if (btn && input && icon) {
-            btn.addEventListener('click', function() {
+            btn.addEventListener('click', function () {
                 if (input.type === 'password') {
                     input.type = 'text';
                     icon.classList.replace('bi-eye-slash', 'bi-eye');
@@ -1111,7 +1120,7 @@ document.addEventListener("DOMContentLoaded", function() {
             </div>
         `;
         document.body.appendChild(toastContainer);
-        setTimeout(function() {
+        setTimeout(function () {
             toastContainer.remove();
         }, 3500);
     }

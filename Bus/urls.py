@@ -25,6 +25,7 @@ urlpatterns = [
     path('seat-booking/', views.seat_booking, name='seat_booking'),
     path('ticket/', views.ticket, name='ticket'),
     path('download-ticket/', views.download_ticket_pdf, name='download_ticket_pdf'),
+    path('travel-guidelines/', views.travel_guidelines, name='travel_guidelines'),
     
     #Manager URL patterns
     path('manager-bookings/', views.manager_bookings, name='manager_bookings')  ,
@@ -93,4 +94,7 @@ urlpatterns = [
     path('admin-profile/', views.admin_profile, name='admin_profile'),
     path('admin-reports/', views.admin_reports, name='admin_reports'),
     path('admin-settings/', views.admin_settings, name='admin_settings'),
+
+    #Contact Message for Admin or Manager.
+    path('contact_message/', views.contact_message, name='contact_message'),
 ]

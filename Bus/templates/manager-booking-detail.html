@@ -20,11 +20,7 @@
         <!-- Sidebar Navigation -->
         <nav class="admin-sidebar">
             <div class="sidebar-header">
-                <a class="navbar-brand text-light fw-bold fs-4 d-flex align-items-center" href="{% url 'index' %}">
-                    <img src="{% static 'assets/images/logo.png' %}" alt="BusYatra Logo" height="42"
-                        class="bg-white p-1 rounded me-2">
-                    <span class="fs-6 text-warning ms-1 opacity-75">Manager</span>
-                </a>
+                <span class="fs-6 text-warning ms-1 opacity-75">Manager</span>
             </div>
             <div class="nav flex-column mt-3">
                 <a href="{% url 'manager_dashboard' %}" class="nav-link" id="sidebar-dashboard"><i
@@ -39,6 +35,8 @@
                         class="bi bi-grid-3x3-gap"></i>Seat Status</a>
                 <a href="{% url 'manager_bookings' %}" class="nav-link active" id="sidebar-bookings"><i
                         class="bi bi-card-list"></i>Bookings</a>
+                <a href="{% url 'contact_message' %}" class="nav-link active" id="sidebar-bookings"><i
+                        class="bi bi-card-list"></i>Contact-Message</a>
                 <a href="{% url 'manager_reports' %}" class="nav-link" id="sidebar-reports"><i
                         class="bi bi-graph-up"></i>Reports</a>
                 <hr class="text-white opacity-25 my-2 mx-3">

@@ -1,6 +1,7 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,29 +13,38 @@
     <!-- Custom Style Sheet -->
     <link rel="stylesheet" href="{% static 'assets/css/style.css' %}">
 </head>
+
 <body>
 
     <div class="admin-wrapper">
         <!-- Sidebar Navigation -->
         <nav class="admin-sidebar">
             <div class="sidebar-header">
-                <a class="navbar-brand text-light fw-bold fs-4 d-flex align-items-center" href="{% url 'manager_dashboard' %}">
-                    <img src="{% static 'assets/images/logo.png' %}" alt="BusYatra Logo" height="42" class="bg-white p-1 rounded me-2">
-                    <span class="fs-6 text-warning ms-1 opacity-75">Manager</span>
-                </a>
+                <span class="fs-6 text-warning ms-1 opacity-75">Manager</span>
             </div>
             <div class="nav flex-column mt-3">
-                <a href="{% url 'manager_dashboard' %}" class="nav-link active" id="sidebar-dashboard"><i class="bi bi-speedometer2"></i>Dashboard</a>
-                <a href="{% url 'manager_buses' %}" class="nav-link" id="sidebar-buses"><i class="bi bi-bus-front"></i>Manage Buses</a>
-                <a href="{% url 'manager_routes' %}" class="nav-link" id="sidebar-routes"><i class="bi bi-signpost-split"></i>Manage Routes</a>
-                <a href="{% url 'manager_schedules' %}" class="nav-link" id="sidebar-schedules"><i class="bi bi-calendar-event"></i>Schedules</a>
-                <a href="{% url 'manager_seats' %}" class="nav-link" id="sidebar-seats"><i class="bi bi-grid-3x3-gap"></i>Seat Status</a>
-                <a href="{% url 'manager_bookings' %}" class="nav-link" id="sidebar-bookings"><i class="bi bi-card-list"></i>Bookings</a>
-                <a href="{% url 'manager_reports' %}" class="nav-link" id="sidebar-reports"><i class="bi bi-graph-up"></i>Reports</a>
+                <a href="{% url 'manager_dashboard' %}" class="nav-link active" id="sidebar-dashboard"><i
+                        class="bi bi-speedometer2"></i>Dashboard</a>
+                <a href="{% url 'manager_buses' %}" class="nav-link" id="sidebar-buses"><i
+                        class="bi bi-bus-front"></i>Manage Buses</a>
+                <a href="{% url 'manager_routes' %}" class="nav-link" id="sidebar-routes"><i
+                        class="bi bi-signpost-split"></i>Manage Routes</a>
+                <a href="{% url 'manager_schedules' %}" class="nav-link" id="sidebar-schedules"><i
+                        class="bi bi-calendar-event"></i>Schedules</a>
+                <a href="{% url 'manager_seats' %}" class="nav-link" id="sidebar-seats"><i
+                        class="bi bi-grid-3x3-gap"></i>Seat Status</a>
+                <a href="{% url 'manager_bookings' %}" class="nav-link" id="sidebar-bookings"><i
+                        class="bi bi-card-list"></i>Bookings</a>
+                <a href="{% url 'contact_message' %}" class="nav-link active" id="sidebar-bookings"><i
+                        class="bi bi-card-list"></i>Contact-Message</a>
+                <a href="{% url 'manager_reports' %}" class="nav-link" id="sidebar-reports"><i
+                        class="bi bi-graph-up"></i>Reports</a>
                 <hr class="text-white opacity-25 my-2 mx-3">
-                <a href="{% url 'manager_profile' %}" class="nav-link" id="sidebar-profile"><i class="bi bi-person-circle"></i>My Profile</a>
+                <a href="{% url 'manager_profile' %}" class="nav-link" id="sidebar-profile"><i
+                        class="bi bi-person-circle"></i>My Profile</a>
                 <a href="{% url 'index' %}" class="nav-link"><i class="bi bi-arrow-left-circle"></i>Client View</a>
-                <a href="{% url 'logout' %}" class="nav-link text-danger mt-auto"><i class="bi bi-box-arrow-left"></i>Logout</a>
+                <a href="{% url 'logout' %}" class="nav-link text-danger mt-auto"><i
+                        class="bi bi-box-arrow-left"></i>Logout</a>
             </div>
         </nav>
 
@@ -42,13 +52,17 @@
         <div class="admin-content d-flex flex-column">
             <!-- Top Header -->
             <header class="admin-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0 text-navy-dark fw-bold"><i class="bi bi-speedometer2 text-warning me-2"></i>Operator Console - <span id="operatorBrandName">Operator Yatra</span></h5>
+                <h5 class="mb-0 text-navy-dark fw-bold"><i class="bi bi-speedometer2 text-warning me-2"></i>Operator
+                    Console - <span id="operatorBrandName">Operator Yatra</span></h5>
                 <div class="d-flex align-items-center gap-2">
                     <span class="fw-semibold text-navy-dark">{{ login_user.name }}</span>
                     {% if login_user.profile and login_user.profile.name %}
-                        <img src="{{ login_user.profile.url }}" width="36" height="36" class="rounded-circle border border-2 object-fit-cover">
+                    <img src="{{ login_user.profile.url }}" width="36" height="36"
+                        class="rounded-circle border border-2 object-fit-cover">
                     {% else %}
-                        <div class="profile-img-container m-0 bg-warning text-dark d-flex align-items-center justify-content-center" style="width:36px; height:36px; font-size:0.95rem; font-weight:700; border-radius: 50%;">{{ login_user.name|slice:":2"|upper }}</div>
+                    <div class="profile-img-container m-0 bg-warning text-dark d-flex align-items-center justify-content-center"
+                        style="width:36px; height:36px; font-size:0.95rem; font-weight:700; border-radius: 50%;">{{
+                        login_user.name|slice:":2"|upper }}</div>
                     {% endif %}
                 </div>
             </header>
@@ -127,7 +141,8 @@
                             <div>
                                 <span class="text-muted small fw-semibold">Total Revenue</span>
                                 <h3 class="fw-bold text-navy-dark mt-1 mb-0">₹{{ net_revenue|floatformat:2 }}</h3>
-                                <small class="text-success fw-bold"><i class="bi bi-shield-check me-1"></i>Successful payments</small>
+                                <small class="text-success fw-bold"><i class="bi bi-shield-check me-1"></i>Successful
+                                    payments</small>
                             </div>
                             <div class="stat-icon icon-green">
                                 <i class="bi bi-currency-rupee"></i>
@@ -165,7 +180,8 @@
                     <!-- Recent Bookings -->
                     <div class="col-lg-6">
                         <div class="card card-custom p-4 shadow-sm border-0 h-100">
-                            <h6 class="text-navy-dark fw-bold mb-3"><i class="bi bi-card-list text-warning me-2"></i>Recent Passenger Bookings</h6>
+                            <h6 class="text-navy-dark fw-bold mb-3"><i
+                                    class="bi bi-card-list text-warning me-2"></i>Recent Passenger Bookings</h6>
                             <div class="table-responsive">
                                 <table class="table align-middle">
                                     <thead class="table-light">
@@ -192,7 +208,8 @@
                                         </tr>
                                         {% empty %}
                                         <tr>
-                                            <td colspan="4" class="text-center text-muted py-4">No recent bookings found.</td>
+                                            <td colspan="4" class="text-center text-muted py-4">No recent bookings
+                                                found.</td>
                                         </tr>
                                         {% endfor %}
                                     </tbody>
@@ -204,7 +221,8 @@
                     <!-- Recently Added Buses -->
                     <div class="col-lg-6">
                         <div class="card card-custom p-4 shadow-sm border-0 h-100">
-                            <h6 class="text-navy-dark fw-bold mb-3"><i class="bi bi-bus-front text-primary me-2"></i>Recently Added Buses</h6>
+                            <h6 class="text-navy-dark fw-bold mb-3"><i
+                                    class="bi bi-bus-front text-primary me-2"></i>Recently Added Buses</h6>
                             <div class="table-responsive">
                                 <table class="table align-middle">
                                     <thead class="table-light">
@@ -238,7 +256,8 @@
 
                 <!-- Active schedule list -->
                 <div class="card card-custom p-4">
-                    <h6 class="text-navy-dark fw-bold mb-3"><i class="bi bi-list-stars me-2 text-warning"></i>Active Trip Status</h6>
+                    <h6 class="text-navy-dark fw-bold mb-3"><i class="bi bi-list-stars me-2 text-warning"></i>Active
+                        Trip Status</h6>
                     <div class="table-responsive">
                         <table class="table align-middle">
                             <thead class="table-light">
@@ -256,16 +275,19 @@
                                 <tr>
                                     <td class="fw-bold">{{ item.schedule.journey_date }}</td>
                                     <td>{{ item.schedule.bus.bus_name }} ({{ item.schedule.bus.bus_number }})</td>
-                                    <td>{{ item.schedule.bus.source }} <i class="bi bi-arrow-right mx-1"></i> {{ item.schedule.bus.destination }}</td>
-                                    <td class="text-center">{{ item.reserved_count }} / {{ item.schedule.bus.total_seats }} ({{ item.occupancy_pct }}%)</td>
+                                    <td>{{ item.schedule.bus.source }} <i class="bi bi-arrow-right mx-1"></i> {{item.schedule.bus.destination }}</td>
+                                    <td class="text-center">{{ item.reserved_count }} / {{ item.schedule.bus.total_seats    }} ({{ item.occupancy_pct }}%)</td>
                                     <td class="text-center">
                                         {% if item.schedule.status == 'Available' %}
-                                            <span class="badge bg-success">On Time</span>
+                                        <span class="badge bg-success">On Time</span>
                                         {% else %}
-                                            <span class="badge bg-danger">Cancelled</span>
+                                        <span class="badge bg-danger">Cancelled</span>
                                         {% endif %}
                                     </td>
-                                    <td class="text-center"><a href="{% url 'manager_seats' %}?bus_id={{ item.schedule.bus.id }}&date={{ item.schedule.journey_date|date:'Y-m-d' }}" class="btn btn-sm btn-outline-warning text-dark"><i class="bi bi-eye"></i> View</a></td>
+                                    <td class="text-center"><a
+                                            href="{% url 'manager_seats' %}?bus_id={{ item.schedule.bus.id }}&date={{ item.schedule.journey_date|date:'Y-m-d' }}"
+                                            class="btn btn-sm btn-outline-warning text-dark"><i class="bi bi-eye"></i>
+                                            View</a></td>
                                 </tr>
                                 {% empty %}
                                 <tr>
@@ -279,9 +301,11 @@
             </main>
 
             <!-- Footer -->
-            <footer class="admin-footer py-3 px-4 mt-auto text-muted small d-flex justify-content-between align-items-center">
+            <footer
+                class="admin-footer py-3 px-4 mt-auto text-muted small d-flex justify-content-between align-items-center">
                 <div>&copy; 2026 BusYatra Manager Portal. All rights reserved.</div>
-                <div>System Status: <span class="text-success"><i class="bi bi-circle-fill fs-8 me-1 align-middle"></i>Optimal</span></div>
+                <div>System Status: <span class="text-success"><i
+                            class="bi bi-circle-fill fs-8 me-1 align-middle"></i>Optimal</span></div>
             </footer>
         </div>
     </div>
@@ -293,4 +317,5 @@
     <!-- Template Javascript -->
     <script src="{% static 'assets/js/main.js' %}"></script>
 </body>
+
 </html>
