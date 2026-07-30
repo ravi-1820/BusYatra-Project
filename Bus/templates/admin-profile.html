@@ -148,17 +148,35 @@
 
                                     <div class="mb-3">
                                         <label class="form-label small fw-semibold">Current Password</label>
-                                        <input type="password" name="old_password" class="form-control" required placeholder="Enter current password">
+                                        <div class="input-group-custom">
+                                            <i class="bi bi-lock text-muted"></i>
+                                            <input type="password" name="old_password" class="form-control" required placeholder="Enter current password">
+                                            <button type="button" class="password-toggle-btn">
+                                                <i class="bi bi-eye-slash"></i>
+                                            </button>
+                                        </div>
                                     </div>
 
                                     <div class="mb-3">
                                         <label class="form-label small fw-semibold">New Password</label>
-                                        <input type="password" name="new_password" class="form-control" required placeholder="Enter new password">
+                                        <div class="input-group-custom">
+                                            <i class="bi bi-lock text-muted"></i>
+                                            <input type="password" name="new_password" class="form-control" required placeholder="Enter new password">
+                                            <button type="button" class="password-toggle-btn">
+                                                <i class="bi bi-eye-slash"></i>
+                                            </button>
+                                        </div>
                                     </div>
 
                                     <div class="mb-3">
                                         <label class="form-label small fw-semibold">Confirm New Password</label>
-                                        <input type="password" name="confirm_password" class="form-control" required placeholder="Retype new password">
+                                        <div class="input-group-custom">
+                                            <i class="bi bi-lock text-muted"></i>
+                                            <input type="password" name="confirm_password" class="form-control" required placeholder="Retype new password">
+                                            <button type="button" class="password-toggle-btn">
+                                                <i class="bi bi-eye-slash"></i>
+                                            </button>
+                                        </div>
                                     </div>
 
                                     <button type="submit" class="btn btn-warning w-100 py-2 mt-4 fw-semibold text-dark">Change Password</button>

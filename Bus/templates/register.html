@@ -14,11 +14,8 @@
         </div>
         {% endif %}
 
-        <div class="auth-header">
-            <a href="{% url 'index' %}" class="auth-logo d-flex align-items-center justify-content-center">
-                <img src="{% static 'assets/images/logo.png' %}" alt="BusYatra Logo" height="60">
-            </a>
-            <h4 class="text-navy-dark mt-2 mb-1">Create your Account</h4>
+        <div class="auth-header text-center">
+            <h4 class="text-navy-dark mb-1">Create your Account</h4>
             <p class="text-muted small">Sign up now to earn ₹150 wallet bonus and enjoy easy travel booking</p>
         </div>
 
@@ -76,27 +73,33 @@
                     <i class="bi bi-lock text-muted"></i>
                     <input type="password" class="form-control" id="password" name="password"
                         placeholder="Enter your password" required>
+                    <button type="button" class="password-toggle-btn" id="toggleRegisterPassword">
+                        <i class="bi bi-eye-slash" id="toggleRegisterPasswordIcon"></i>
+                    </button>
                 </div>
             </div>
 
-            <!-- Password Field -->
+            <!-- Confirm Password Field -->
             <div class="mb-3">
-                <label for="password" class="form-label fw-semibold text-secondary small">Confirm Password</label>
+                <label for="confirmPassword" class="form-label fw-semibold text-secondary small">Confirm Password</label>
                 <div class="input-group-custom">
                     <i class="bi bi-lock text-muted"></i>
                     <input type="password" class="form-control" id="confirmPassword" name="confirm_password"
                         placeholder="Confirm your password" required>
+                    <button type="button" class="password-toggle-btn" id="toggleRegisterConfirmPassword">
+                        <i class="bi bi-eye-slash" id="toggleRegisterConfirmPasswordIcon"></i>
+                    </button>
                 </div>
             </div>
 
             <!-- profile Field -->
-            <div class="mb-3">
+            <!-- <div class="mb-3">
                 <label for="profile" class="form-label fw-semibold text-secondary small">Profile Picture</label>
                 <div class="input-group-custom">
                     <i class="bi bi-person text-muted"></i>
                     <input type="file" class="form-control" id="profile" name="profile">
                 </div>
-            </div>
+            </div> -->
 
             <!-- Terms and Conditions Checkbox -->
             <div class="mb-4">

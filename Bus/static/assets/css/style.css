@@ -216,30 +216,71 @@ h1, h2, h3, h4, h5, h6 {
     z-index: 10;
 }
 .input-group-custom {
-    position: relative;
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
 }
 .input-group-custom .form-control,
 .input-group-custom .form-select {
-    padding: 0.75rem 1rem 0.75rem 2.6rem;
+    padding: 0.75rem 2.8rem 0.75rem 2.6rem !important;
     border-radius: 12px;
     border: 1.5px solid var(--gray-border);
     font-weight: 500;
     color: var(--navy-dark);
     transition: var(--transition-smooth);
     background-color: #FFFFFF;
+    width: 100% !important;
 }
 .input-group-custom .form-control:focus,
 .input-group-custom .form-select:focus {
     border-color: var(--blue-primary);
     box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
 }
-.input-group-custom i {
-    position: absolute;
-    left: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--text-muted);
-    z-index: 5;
+.input-group-custom > i {
+    position: absolute !important;
+    left: 1rem !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    color: var(--text-muted) !important;
+    z-index: 5 !important;
+    pointer-events: none !important;
+}
+.password-toggle-btn {
+    position: absolute !important;
+    right: 0.85rem !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    color: #64748B !important;
+    font-size: 1.1rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    z-index: 10 !important;
+    line-height: 1 !important;
+    box-shadow: none !important;
+}
+.password-toggle-btn i {
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+    transform: none !important;
+    font-size: 1.1rem !important;
+    color: inherit !important;
+    display: inline-block !important;
+}
+.password-toggle-btn:hover,
+.password-toggle-btn:hover i {
+    color: var(--blue-primary) !important;
+}
+.password-toggle-btn:focus {
+    outline: none !important;
+    box-shadow: none !important;
 }
 .btn-swap-cities {
     width: 42px;

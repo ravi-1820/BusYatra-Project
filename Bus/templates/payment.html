@@ -78,7 +78,7 @@
 
         description: "Bus Ticket Booking",
 
-        image: "{% static 'images/logo.png' %}",
+        image: "/static/images/logo.png",
 
         {% if payment.id and not is_mock %}
         order_id: "{{ payment.id }}",

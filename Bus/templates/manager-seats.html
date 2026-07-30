@@ -80,7 +80,7 @@
                                 <option value="" disabled {% if not selected_bus %}selected{% endif %}>Select Bus
                                 </option>
                                 {% for bus in buses %}
-                                <option value="{{ bus.id }}" {% if selected_bus.id==bus.id %}selected{% endif %}>{{
+                                <option value="{{ bus.id }}" {% if selected_bus.id == bus.id %}selected{% endif %}>{{
                                     bus.bus_name }} ({{ bus.bus_number }})</option>
                                 {% endfor %}
                             </select>

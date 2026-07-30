@@ -10,7 +10,7 @@ urlpatterns = [
     path('user-dashboard/', views.dashboard, name='user_dashboard'),
     path('register/', views.register, name='register'),
     path('login/', views.login, name='login'),
-    path('verify_otp/', views.verify_otp, name='verify_otp'),
+    # 'verify_otp/' URL removed — Login OTP flow has been removed
     path('forgot-password/', views.forgot_password, name='forgot_password'),
     path('verify-forgot-otp/', views.verify_forgot_otp, name='verify_forgot_otp'),
     path('reset-password/', views.reset_password, name='reset_password'),
@@ -35,6 +35,8 @@ urlpatterns = [
     path('delete-bus/<int:bus_id>/', views.delete_bus, name='delete_bus'),
     path('manager-dashboard/', views.manager_dashboard, name='manager_dashboard'),
     path('manager-reports/', views.manager_reports, name='manager_reports'),
+    path('manager-reports/export/pdf/', views.export_pdf, name='export_pdf'),
+    path('manager-reports/export/csv/', views.export_csv, name='export_csv'),
     path('manager-routes/', views.manager_routes, name='manager_routes'),
     path('add_route/', views.add_route, name='add_route'),
     path('edit_route/<int:route_id>/', views.edit_route, name='edit_route'),

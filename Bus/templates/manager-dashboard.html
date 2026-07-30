@@ -69,6 +69,129 @@
 
             <!-- Dashboard Body -->
             <main class="admin-body">
+
+                <!-- ===== ANALYTICS SECTION (from Reports) ===== -->
+
+                <!-- Date Filter -->
+                <div class="card card-custom p-3 mb-4">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-5">
+                            <label class="form-label small fw-semibold text-secondary">Start Date</label>
+                            <input type="date" class="form-control" id="startDate" value="{{ start_date }}">
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label small fw-semibold text-secondary">End Date</label>
+                            <input type="date" class="form-control" id="endDate" value="{{ end_date }}">
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-warning w-100 py-2.5 fw-semibold" onclick="updateFilters()">
+                                <i class="bi bi-filter me-1"></i>Filter
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Date validation error feedback -->
+                    <div id="dateValidationError" class="alert alert-danger d-none mt-2 py-2 px-3 small fw-semibold" role="alert"></div>
+                </div>
+
+                <!-- Report Stats Summary -->
+                <div class="row g-4 mb-4">
+                    <div class="col-md-3">
+                        <div class="card card-custom p-3 text-center border-start border-5 border-warning shadow-sm">
+                            <span class="text-muted small fw-semibold">Brand Earnings</span>
+                            <h3 class="fw-bold text-navy-dark mt-1 mb-0">₹{{ total_revenue }}</h3>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card card-custom p-3 text-center border-start border-5 border-primary shadow-sm">
+                            <span class="text-muted small fw-semibold">Tickets Booked</span>
+                            <h3 class="fw-bold text-navy-dark mt-1 mb-0">{{ total_tickets }}</h3>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card card-custom p-3 text-center border-start border-5 border-success shadow-sm">
+                            <span class="text-muted small fw-semibold">Buses Running</span>
+                            <h3 class="fw-bold text-navy-dark mt-1 mb-0">{{ total_buses }} Buses</h3>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card card-custom p-3 text-center border-start border-5 border-info shadow-sm">
+                            <span class="text-muted small fw-semibold">Avg Occupancy</span>
+                            <h3 class="fw-bold text-navy-dark mt-1 mb-0">{{ avg_occupancy }}%</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Weekly Revenue Trends + Route Productivity -->
+                <div class="row g-4 mb-4">
+                    <!-- Weekly Revenue Chart -->
+                    <div class="col-lg-8">
+                        <div class="card card-custom p-4 h-100">
+                            <h6 class="text-navy-dark fw-bold mb-3"><i class="bi bi-cash-stack text-warning me-2"></i>Weekly Revenue Trends (₹)</h6>
+                            <div class="bg-light p-3 rounded-3 d-flex flex-column align-items-center justify-content-center" style="height: 250px;">
+                                <svg width="100%" height="200" viewBox="0 0 600 200" class="w-100">
+                                    <!-- Grid lines -->
+                                    <line x1="40" y1="20" x2="580" y2="20" stroke="#E2E8F0" stroke-width="1" />
+                                    <line x1="40" y1="70" x2="580" y2="70" stroke="#E2E8F0" stroke-width="1" />
+                                    <line x1="40" y1="120" x2="580" y2="120" stroke="#E2E8F0" stroke-width="1" />
+                                    <line x1="40" y1="170" x2="580" y2="170" stroke="#CBD5E1" stroke-width="1.5" />
+
+                                    <text x="5" y="25" fill="#64748B" font-size="10">₹{{ max_rev }}</text>
+                                    <text x="5" y="75" fill="#64748B" font-size="10">₹{{ half_max_rev }}</text>
+                                    <text x="5" y="125" fill="#64748B" font-size="10">₹{{ quarter_max_rev }}</text>
+
+                                    <!-- Trend line -->
+                                    {% if svg_path %}
+                                    <path d="{{ svg_path }}" fill="none" stroke="#F59E0B" stroke-width="3" />
+                                    {% endif %}
+
+                                    <!-- Data nodes with tooltips -->
+                                    {% for node in svg_nodes %}
+                                    <circle cx="{{ node.x }}" cy="{{ node.y }}" r="5" fill="#F59E0B"
+                                        data-bs-toggle="tooltip" data-bs-placement="top"
+                                        title="{{ node.day }}: ₹{{ node.rev }}"
+                                        style="cursor: pointer;" />
+                                    {% endfor %}
+
+                                    <!-- X-axis day labels -->
+                                    {% for node in svg_nodes %}
+                                    <text x="{{ node.x_text }}" y="190" fill="#64748B" font-size="11">{{ node.day }}</text>
+                                    {% endfor %}
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Route Productivity -->
+                    <div class="col-lg-4">
+                        <div class="card card-custom p-4 h-100">
+                            <h6 class="text-navy-dark fw-bold mb-3"><i class="bi bi-compass text-warning me-2"></i>Route Productivity</h6>
+                            <div class="bg-light p-3 rounded-3 d-flex flex-column align-items-center justify-content-start" style="height: 250px; overflow-y: auto;">
+                                {% for item in route_data %}
+                                <div class="w-100 mb-3 text-navy-dark">
+                                    <div class="d-flex justify-content-between small fw-bold mb-1">
+                                        <span>{{ item.route }}</span>
+                                        <span>{{ item.percentage }}% (₹{{ item.revenue }})</span>
+                                    </div>
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar {{ item.color }}" role="progressbar"
+                                            style="width: {{ item.percentage }}%;"
+                                            aria-valuenow="{{ item.percentage }}" aria-valuemin="0" aria-valuemax="100">
+                                        </div>
+                                    </div>
+                                </div>
+                                {% empty %}
+                                <div class="text-center text-muted py-5 my-auto w-100">
+                                    <i class="bi bi-compass fs-2 mb-2 d-block text-secondary"></i>
+                                    <p class="mb-0">No booking data found for any routes.</p>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== END ANALYTICS SECTION ===== -->
+
                 <!-- Summary cards -->
                 <!-- Summary cards (Row 1) -->
                 <div class="row g-4 mb-4">
@@ -316,6 +439,9 @@
 
     <!-- Template Javascript -->
     <script src="{% static 'assets/js/main.js' %}"></script>
+
+    <!-- Shared Dashboard & Reports Analytics Javascript -->
+    <script src="{% static 'assets/js/dashboard_reports.js' %}"></script>
 </body>
 
 </html>

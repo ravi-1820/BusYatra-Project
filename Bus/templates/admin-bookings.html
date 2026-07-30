@@ -125,6 +125,49 @@
                                 {% endfor %}
                             </tbody>
                         </table>
+
+                        <!-- Pagination Controls -->
+                        {% if page_obj.paginator.num_pages > 1 %}
+                        <nav aria-label="Page navigation" class="mt-4 mb-3">
+                            <ul class="pagination justify-content-center mb-0">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link shadow-none fw-semibold text-warning" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}" aria-label="Previous">
+                                            <i class="bi bi-chevron-left me-1"></i>Previous
+                                        </a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link shadow-none text-muted"><i class="bi bi-chevron-left me-1"></i>Previous</span>
+                                    </li>
+                                {% endif %}
+
+                                {% for num in page_obj.paginator.page_range %}
+                                    {% if page_obj.number == num %}
+                                        <li class="page-item active" aria-current="page">
+                                            <span class="page-link bg-warning text-dark fw-bold border-warning shadow-none">{{ num }}</span>
+                                        </li>
+                                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                        <li class="page-item">
+                                            <a class="page-link shadow-none text-dark" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}">{{ num }}</a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link shadow-none fw-semibold text-warning" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}" aria-label="Next">
+                                            Next<i class="bi bi-chevron-right ms-1"></i>
+                                        </a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link shadow-none text-muted">Next<i class="bi bi-chevron-right ms-1"></i></span>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
                     </div>
                 </div>
             </main>

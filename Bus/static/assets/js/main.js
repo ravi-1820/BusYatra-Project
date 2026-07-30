@@ -55,23 +55,27 @@ document.addEventListener("DOMContentLoaded", function () {
     // 1. Common UI Animations & Theme Interactions
     // ------------------------------------------------
 
-    // Password Show/Hide Toggle
-    const togglePassword = document.getElementById("togglePassword");
-    if (togglePassword) {
-        togglePassword.addEventListener("click", function () {
-            const passInput = document.getElementById("password");
-            const toggleIcon = document.getElementById("toggleIcon");
-            if (passInput && toggleIcon) {
-                if (passInput.type === "password") {
-                    passInput.type = "text";
-                    toggleIcon.classList.replace("bi-eye-slash", "bi-eye");
-                } else {
-                    passInput.type = "password";
-                    toggleIcon.classList.replace("bi-eye", "bi-eye-slash");
+    // Password Show/Hide Toggle (Global event listener for all password fields)
+    document.addEventListener("click", function (e) {
+        const btn = e.target.closest(".password-toggle-btn");
+        if (btn) {
+            e.preventDefault();
+            const container = btn.closest(".input-group-custom");
+            if (container) {
+                const passInput = container.querySelector("input");
+                const toggleIcon = btn.querySelector("i");
+                if (passInput && toggleIcon) {
+                    if (passInput.type === "password") {
+                        passInput.type = "text";
+                        toggleIcon.classList.replace("bi-eye-slash", "bi-eye");
+                    } else {
+                        passInput.type = "password";
+                        toggleIcon.classList.replace("bi-eye", "bi-eye-slash");
+                    }
                 }
             }
-        });
-    }
+        }
+    });
 
     // Navbar Scroll Animation
     window.addEventListener("scroll", function () {

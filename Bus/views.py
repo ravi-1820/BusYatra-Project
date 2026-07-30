@@ -5,7 +5,7 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.views.decorators.csrf import csrf_protect, csrf_exempt
 from django.db.models import Sum, Count, Q
-from django.db.models.functions import TruncDate, TruncMonth
+from django.db.models.functions import TruncMonth
 from django.core.paginator import Paginator, Page, EmptyPage, PageNotAnInteger
 import random
 import razorpay
@@ -465,6 +465,7 @@ Message:
 def contact_message(request):
     """
     Display all contact messages for Admin and Manager.
+    Paginated at 2 records per page.
     """
     # Login Check
     if 'email' not in request.session:
@@ -473,10 +474,20 @@ def contact_message(request):
         user = User.objects.get(email=request.session['email'])
         if user.usertype not in ['admin', 'manager']:
             return redirect('index')
-        contacts = Contact.objects.all().order_by('-id')
+        contacts_list = Contact.objects.all().order_by('-id')
+        paginator = Paginator(contacts_list, 2)
+        page = request.GET.get('page', 1)
+        try:
+            contacts = paginator.page(page)
+        except PageNotAnInteger:
+            contacts = paginator.page(1)
+        except EmptyPage:
+            contacts = paginator.page(paginator.num_pages)
+
         context = {
             'user': user,
             'contacts': contacts,
+            'page_obj': contacts,
         }
         return render(request, 'contact_messages.html', context)
     except User.DoesNotExist:
@@ -550,36 +561,35 @@ def register(request):
 @csrf_exempt
 def login(request):
     """
-    Handles user login by verifying credentials and sending a one-time OTP.
+    Handles user login by verifying email and password.
+    On success, sets up the session and redirects directly to the home page.
+    OTP step has been removed from the login flow.
     """
     if request.method == 'POST':
         email = request.POST.get('email', '').strip()
         password = request.POST.get('password', '').strip()
         try:
+            # Step 1: Check if the user with this email exists
             user = User.objects.get(email=email)
+
+            # Step 2: Validate password
             if user.password == password:
-                otp = random.randint(100000, 999999)
-                request.session['otp'] = str(otp)
+                # Step 3: Set up the session — no OTP needed
                 request.session['email'] = user.email
+                request.session['name'] = user.name
+                request.session['profile'] = user.profile.url if user.profile else ''
+                request.session['usertype'] = user.usertype
 
-                # Log OTP for local/offline debugging
-                logger.info(f"OTP generated for {user.email}: {otp}")
-
-                # Send OTP via email
-                try:
-                    send_mail(
-                        "BusYatra Login OTP",
-                        f"Hello {user.name},\nYour Login OTP  for verify email please enter otp: {otp}\nDo not share this OTP with anyone.\n\nBusYatra Team",
-                        settings.EMAIL_HOST_USER,
-                        [user.email],
-                        fail_silently=False,
-                    )
-                except Exception as email_err:
-                    logger.error(f"OTP email could not be sent to {user.email}: {email_err}")
-
-                return redirect('verify_otp')
+                # Step 4: Redirect based on user role
+                if user.usertype == 'customer':
+                    return redirect('index')
+                elif user.usertype == 'manager':
+                    return redirect('manager_dashboard')
+                else:
+                    return redirect('admin_dashboard')
             else:
                 return render(request, 'login.html', {'msg': "Password doesn't match..!"})
+
         except User.DoesNotExist:
             return render(request, 'login.html', {'msg': "Email doesn't exist..!"})
         except Exception as e:
@@ -587,45 +597,6 @@ def login(request):
             return render(request, 'login.html', {'msg': "Something went wrong. Please try again."})
 
     return render(request, 'login.html')
-
-def verify_otp(request):
-    """
-    Verifies the login OTP stored in the session.
-    """
-    if request.method == "POST":
-        try:
-            user_otp = request.POST.get("otp", "").strip()
-            session_otp = request.session.get("otp")
-            email = request.session.get("email")
-
-            if not email:
-                return redirect("login")
-
-            if user_otp == session_otp:
-                user = User.objects.get(email=email)
-                request.session["email"] = user.email
-                request.session["name"] = user.name
-                request.session["profile"] = user.profile.url if user.profile else ""
-                request.session["usertype"] = user.usertype
-
-                if "otp" in request.session:
-                    del request.session["otp"]
-
-                if user.usertype == "customer":
-                    return redirect("index")
-                elif user.usertype == "manager":
-                    return redirect("manager_dashboard")
-                else:
-                    return redirect("admin_dashboard")
-            else:
-                return render(request, "verify_otp.html", {"msg": "Invalid OTP. Please enter the correct OTP."})
-        except User.DoesNotExist:
-            return render(request, "verify_otp.html", {"msg": "User account not found."})
-        except Exception as e:
-            logger.error(f"OTP Verification Error: {e}")
-            return render(request, "verify_otp.html", {"msg": "Something went wrong. Please try again."})
-
-    return render(request, "verify_otp.html")
 
 def forgot_password(request):
     """
@@ -1436,25 +1407,45 @@ def download_ticket_pdf(request):
 def manager_bookings(request):
     """
     Lists all bookings placed on buses owned by the logged-in manager.
+    Paginated at 6 records per page.
     """
     manager = get_manager_user(request)
     if not manager:
         return redirect('login')
 
     buses = Bus.objects.filter(manager=manager)
-    bookings = Booking.objects.filter(bus__in=buses).order_by('-booking_date')
-    return render(request, 'manager-bookings.html', {'bookings': bookings})
+    bookings_list = Booking.objects.filter(bus__in=buses).order_by('-booking_date')
+    paginator = Paginator(bookings_list, 6)
+    page = request.GET.get('page', 1)
+    try:
+        bookings = paginator.page(page)
+    except PageNotAnInteger:
+        bookings = paginator.page(1)
+    except EmptyPage:
+        bookings = paginator.page(paginator.num_pages)
+
+    return render(request, 'manager-bookings.html', {'bookings': bookings, 'page_obj': bookings})
 
 def manager_buses(request):
     """
     Lists the manager's active bus fleet.
+    Paginated at 6 records per page.
     """
     manager = get_manager_user(request)
     if not manager:
         return redirect('login')
 
-    buses = Bus.objects.filter(manager=manager)
-    return render(request, 'manager-buses.html', {'buses': buses})
+    buses_list = Bus.objects.filter(manager=manager).order_by('-id')
+    paginator = Paginator(buses_list, 6)
+    page = request.GET.get('page', 1)
+    try:
+        buses = paginator.page(page)
+    except PageNotAnInteger:
+        buses = paginator.page(1)
+    except EmptyPage:
+        buses = paginator.page(paginator.num_pages)
+
+    return render(request, 'manager-buses.html', {'buses': buses, 'page_obj': buses})
 
 def add_bus(request):
     """
@@ -1553,13 +1544,23 @@ def delete_bus(request, bus_id):
 def manager_routes(request):
     """
     Lists routes managed by the active manager.
+    Paginated at 6 records per page.
     """
     manager = get_manager_user(request)
     if not manager:
         return redirect('login')
 
-    routes = Route.objects.filter(manager=manager)
-    return render(request, 'manager-routes.html', {'routes': routes})
+    routes_list = Route.objects.filter(manager=manager).order_by('-id')
+    paginator = Paginator(routes_list, 6)
+    page = request.GET.get('page', 1)
+    try:
+        routes = paginator.page(page)
+    except PageNotAnInteger:
+        routes = paginator.page(1)
+    except EmptyPage:
+        routes = paginator.page(paginator.num_pages)
+
+    return render(request, 'manager-routes.html', {'routes': routes, 'page_obj': routes})
 
 def add_route(request):
     """
@@ -1641,9 +1642,154 @@ def delete_route(request, route_id):
         pass
     return redirect('manager_routes')
 
+def get_report_context(manager, start_date_str, end_date_str):
+    """
+    Helper function: computes all analytics data needed by both the
+    Manager Dashboard and the Manager Reports page.
+
+    Parameters:
+        manager       — the logged-in manager User object
+        start_date_str — date string 'YYYY-MM-DD' or None
+        end_date_str   — date string 'YYYY-MM-DD' or None
+
+    Returns a dict with keys:
+        total_buses, total_revenue, total_tickets, avg_occupancy,
+        start_date, end_date, svg_path, svg_nodes, route_data,
+        max_rev, half_max_rev, quarter_max_rev
+    """
+    buses_query = Bus.objects.filter(manager=manager)
+    total_buses = buses_query.count()
+
+    # Step 1: Filter paid/completed bookings by date range with select_related for query optimization
+    bookings_query = Booking.objects.filter(
+        bus__in=buses_query,
+        payment=True,
+        status__in=['booked', 'completed']
+    ).select_related('bus')
+
+    if start_date_str and start_date_str.strip():
+        bookings_query = bookings_query.filter(booking_date__gte=start_date_str)
+    if end_date_str and end_date_str.strip():
+        bookings_query = bookings_query.filter(booking_date__lte=end_date_str)
+
+    total_revenue = bookings_query.aggregate(total=Sum('amount'))['total'] or 0.0
+    total_tickets = bookings_query.count()
+
+    # Step 2: Average occupancy across schedules in the date range (optimized with select_related)
+    schedules = Schedule.objects.filter(bus__in=buses_query).select_related('bus')
+    if start_date_str and start_date_str.strip():
+        schedules = schedules.filter(journey_date__gte=start_date_str)
+    if end_date_str and end_date_str.strip():
+        schedules = schedules.filter(journey_date__lte=end_date_str)
+
+    total_capacity = 0
+    total_booked_seats = 0
+    for s in schedules:
+        total_capacity += s.bus.total_seats
+        total_booked_seats += SeatBooking.objects.filter(
+            bus=s.bus, journey_date=s.journey_date
+        ).count()
+
+    if total_capacity > 0:
+        avg_occupancy = (total_booked_seats / total_capacity) * 100
+    else:
+        sum_total_seats = buses_query.aggregate(total=Sum('total_seats'))['total'] or 0
+        if sum_total_seats > 0:
+            all_seat_bookings = SeatBooking.objects.filter(bus__in=buses_query).count()
+            avg_occupancy = (all_seat_bookings / sum_total_seats) * 100
+        else:
+            avg_occupancy = 0.0
+
+    # Step 3: Weekly Revenue chart — pick up to 7 days from the date range
+    if start_date_str and end_date_str:
+        try:
+            start_date_obj = date.fromisoformat(start_date_str)
+            end_date_obj = date.fromisoformat(end_date_str)
+            delta = end_date_obj - start_date_obj
+            chart_days = [start_date_obj + timedelta(days=i) for i in range(min(delta.days + 1, 7))]
+        except Exception:
+            today = date.today()
+            chart_days = [today - timedelta(days=i) for i in range(6, -1, -1)]
+    else:
+        today = date.today()
+        chart_days = [today - timedelta(days=i) for i in range(6, -1, -1)]
+
+    weekly_revenue = []
+    day_names = []
+    for d in chart_days:
+        day_rev = Booking.objects.filter(
+            bus__in=buses_query,
+            payment=True,
+            status__in=['booked', 'completed'],
+            booking_date=d
+        ).aggregate(total=Sum('amount'))['total'] or 0.0
+        weekly_revenue.append(float(day_rev))
+        day_names.append(d.strftime('%a'))
+
+    max_rev = max(weekly_revenue) if weekly_revenue else 0
+    if max_rev == 0:
+        max_rev = 1000
+
+    # Build SVG path and node coordinates for the line chart
+    svg_nodes = []
+    points = []
+    for i, rev in enumerate(weekly_revenue):
+        x = 70 + i * 70
+        y = 170 - (rev / max_rev) * 140
+        points.append((x, y))
+        svg_nodes.append({
+            'x': x,
+            'y': y,
+            'rev': rev,
+            'day': day_names[i],
+            'x_text': x - 12
+        })
+
+    svg_path = "M " + " L ".join([f"{x} {y}" for x, y in points]) if points else ""
+
+    # Step 4: Route Productivity — revenue % per route
+    route_revenue = {}
+    total_rev_sum = 0
+    for booking in bookings_query:
+        route_key = f"{booking.bus.source} \u2194 {booking.bus.destination}"
+        amount = float(booking.amount)
+        route_revenue[route_key] = route_revenue.get(route_key, 0.0) + amount
+        total_rev_sum += amount
+
+    colors_list = ['bg-warning', 'bg-primary', 'bg-success', 'bg-info', 'bg-danger']
+    route_data = []
+    for idx, (route, rev) in enumerate(sorted(route_revenue.items(), key=lambda x: x[1], reverse=True)):
+        pct = (rev / total_rev_sum * 100) if total_rev_sum > 0 else 0
+        route_data.append({
+            'route': route,
+            'revenue': rev,
+            'percentage': round(pct, 1),
+            'color': colors_list[idx % len(colors_list)]
+        })
+
+    return {
+        'total_buses': total_buses,
+        'total_revenue': total_revenue,
+        'total_tickets': total_tickets,
+        'avg_occupancy': round(avg_occupancy, 1),
+        'start_date': start_date_str or (date.today() - timedelta(days=30)).isoformat(),
+        'end_date': end_date_str or date.today().isoformat(),
+        'weekly_revenue': weekly_revenue,
+        'day_names': day_names,
+        'svg_path': svg_path,
+        'svg_nodes': svg_nodes,
+        'route_data': route_data,
+        'max_rev': round(max_rev, 1),
+        'half_max_rev': round(max_rev / 2, 1),
+        'quarter_max_rev': round(max_rev / 4, 1),
+    }
+
+
 def manager_dashboard(request):
     """
     Compiles operational fleet and business metrics for the manager.
+    Also includes analytics (date-filtered revenue, chart, route productivity)
+    reusing the same logic as the Reports page via get_report_context().
     """
     manager = get_manager_user(request)
     if not manager:
@@ -1654,18 +1800,23 @@ def manager_dashboard(request):
         fleet_count = my_buses.count()
         route_count = Route.objects.filter(manager=manager).count()
 
-        schedules = Schedule.objects.filter(bus__in=my_buses)
+        schedules = Schedule.objects.filter(bus__in=my_buses).select_related('bus')
         schedule_count = schedules.count()
 
-        bookings = Booking.objects.filter(bus__in=my_buses)
+        bookings = Booking.objects.filter(bus__in=my_buses).select_related('bus')
         bookings_count = bookings.count()
         passenger_count = bookings_count
 
-        net_revenue = bookings.filter(payment=True, status__in=['booked', 'completed']).aggregate(total=Sum('amount'))['total'] or 0
+        net_revenue = bookings.filter(
+            payment=True, status__in=['booked', 'completed']
+        ).aggregate(total=Sum('amount'))['total'] or 0
 
         if schedules.exists():
             total_capacity = sum(s.bus.total_seats for s in schedules)
-            booked_seats = SeatBooking.objects.filter(bus__in=my_buses, journey_date__in=[s.journey_date for s in schedules]).count()
+            booked_seats = SeatBooking.objects.filter(
+                bus__in=my_buses,
+                journey_date__in=[s.journey_date for s in schedules]
+            ).count()
             available_seats = max(0, total_capacity - booked_seats)
         else:
             total_capacity = sum(b.total_seats for b in my_buses)
@@ -1677,13 +1828,22 @@ def manager_dashboard(request):
 
         active_trips_list = []
         for s in schedules.order_by('-journey_date')[:5]:
-            reserved_count = SeatBooking.objects.filter(bus=s.bus, journey_date=s.journey_date).count()
+            reserved_count = SeatBooking.objects.filter(
+                bus=s.bus, journey_date=s.journey_date
+            ).count()
             occupancy_pct = int((reserved_count / s.bus.total_seats * 100)) if s.bus.total_seats > 0 else 0
             active_trips_list.append({
                 'schedule': s,
                 'reserved_count': reserved_count,
                 'occupancy_pct': occupancy_pct
             })
+
+        # Read date filter params from GET (same as Reports page)
+        start_date_str = request.GET.get('start_date')
+        end_date_str = request.GET.get('end_date')
+
+        # Get analytics data using the shared helper (no duplicate code)
+        report_ctx = get_report_context(manager, start_date_str, end_date_str)
 
         context = {
             'fleet_count': fleet_count,
@@ -1698,19 +1858,331 @@ def manager_dashboard(request):
             'recent_buses': recent_buses,
             'active_trips_list': active_trips_list,
         }
+        # Merge the analytics context from the shared helper
+        context.update(report_ctx)
+
         return render(request, 'manager-dashboard.html', context)
     except Exception as e:
         logger.error(f"Manager Dashboard Error: {e}")
         return HttpResponse("An error occurred loading dashboard data.")
 
+
 def manager_reports(request):
     """
-    Renders reports interface.
+    Renders reports interface with live database analytics.
+    Reuses get_report_context() helper to avoid duplicating query logic.
     """
     manager = get_manager_user(request)
     if not manager:
         return redirect('login')
-    return render(request, 'manager-reports.html')
+
+    # Get date filter params from GET request
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
+
+    # Build context using the shared helper function
+    context = get_report_context(manager, start_date_str, end_date_str)
+
+    return render(request, 'manager-reports.html', context)
+
+
+def export_pdf(request):
+    """
+    Generates and downloads a professional PDF performance report
+    for the logged-in manager based on the selected date range.
+    """
+    # 1. Authenticate the Manager
+    manager = get_manager_user(request)
+    if not manager:
+        return redirect('login')
+
+    # 2. Get and validate date filters
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
+
+    if not start_date_str or not end_date_str or not start_date_str.strip() or not end_date_str.strip():
+        return HttpResponse("Validation Error: Please select both Start Date and End Date.", status=400)
+
+    try:
+        start_date = date.fromisoformat(start_date_str)
+        end_date = date.fromisoformat(end_date_str)
+        if start_date > end_date:
+            return HttpResponse("Validation Error: Start Date cannot be later than End Date.", status=400)
+    except ValueError:
+        return HttpResponse("Validation Error: Invalid date format. Use YYYY-MM-DD.", status=400)
+
+    # 3. Query the filtered bookings
+    buses_query = Bus.objects.filter(manager=manager)
+    total_buses = buses_query.count()
+
+    bookings_query = Booking.objects.filter(
+        bus__in=buses_query,
+        payment=True,
+        status__in=['booked', 'completed'],
+        booking_date__gte=start_date_str,
+        booking_date__lte=end_date_str
+    ).order_by('booking_date')
+
+    # 4. Calculate analytics statistics
+    total_revenue = bookings_query.aggregate(total=Sum('amount'))['total'] or 0.0
+    total_tickets = bookings_query.count()
+
+    # Calculate average occupancy
+    schedules = Schedule.objects.filter(
+        bus__in=buses_query,
+        journey_date__gte=start_date_str,
+        journey_date__lte=end_date_str
+    )
+    total_capacity = 0
+    total_booked_seats = 0
+    for s in schedules:
+        total_capacity += s.bus.total_seats
+        booked_count = SeatBooking.objects.filter(bus=s.bus, journey_date=s.journey_date).count()
+        total_booked_seats += booked_count
+
+    if total_capacity > 0:
+        avg_occupancy = (total_booked_seats / total_capacity) * 100
+    else:
+        sum_total_seats = buses_query.aggregate(total=Sum('total_seats'))['total'] or 0
+        if sum_total_seats > 0:
+            total_seat_bookings = SeatBooking.objects.filter(bus__in=buses_query).count()
+            avg_occupancy = (total_seat_bookings / sum_total_seats) * 100
+        else:
+            avg_occupancy = 0.0
+
+    # 5. Generate PDF report using ReportLab
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=letter,
+        leftMargin=36,
+        rightMargin=36,
+        topMargin=36,
+        bottomMargin=36
+    )
+
+    styles = getSampleStyleSheet()
+
+    # Define custom styles
+    title_style = ParagraphStyle(
+        'DocTitle', parent=styles['Heading1'], fontName='Helvetica-Bold', fontSize=20, leading=24, textColor=HexColor('#0F172A')
+    )
+    meta_style = ParagraphStyle(
+        'DocMeta', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=13, textColor=HexColor('#64748B')
+    )
+    section_style = ParagraphStyle(
+        'SectionTitle', parent=styles['Heading2'], fontName='Helvetica-Bold', fontSize=12, leading=16, textColor=HexColor('#0F172A'), spaceBefore=12, spaceAfter=6
+    )
+    th_style = ParagraphStyle(
+        'TableHeader', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=8, leading=10, textColor=colors.white
+    )
+    td_style = ParagraphStyle(
+        'TableCell', parent=styles['Normal'], fontName='Helvetica', fontSize=8, leading=11, textColor=HexColor('#0F172A')
+    )
+    stat_label_style = ParagraphStyle(
+        'StatLabel', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=12, textColor=HexColor('#475569')
+    )
+    stat_val_style = ParagraphStyle(
+        'StatVal', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=14, leading=18, textColor=HexColor('#0F172A')
+    )
+
+    elements = []
+
+    # Left content of header: Report Title & Period
+    left_content = [
+        [Paragraph("<b>BusYatra Manager Reports</b>", title_style)],
+        [Paragraph(f"Reporting Period: {start_date_str} to {end_date_str}", meta_style)]
+    ]
+    left_table = Table(left_content, colWidths=[360])
+    left_table.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+        ('TOPPADDING', (0,0), (-1,-1), 0),
+    ]))
+
+    # Right content of header: Manager profile info
+    right_content = [
+        [Paragraph(f"<b>Manager:</b> {manager.name}", meta_style)],
+        [Paragraph(f"<b>Email:</b> {manager.email}", meta_style)],
+        [Paragraph(f"<b>Generated On:</b> {date.today().isoformat()}", meta_style)]
+    ]
+    right_table = Table(right_content, colWidths=[180])
+    right_table.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('ALIGN', (0,0), (-1,-1), 'RIGHT'),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+        ('TOPPADDING', (0,0), (-1,-1), 0),
+    ]))
+
+    header_table = Table([[left_table, right_table]], colWidths=[360, 180])
+    header_table.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 10),
+    ]))
+    elements.append(header_table)
+
+    # Add a thin gray separator line
+    divider = Table([['']], colWidths=[540])
+    divider.setStyle(TableStyle([
+        ('LINEBELOW', (0, 0), (-1, -1), 1, HexColor('#CBD5E1')),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+    ]))
+    elements.append(divider)
+    elements.append(Spacer(1, 10))
+
+    # KPI Statistics Row
+    kpi_data = [
+        [
+            Paragraph("Brand Earnings", stat_label_style),
+            Paragraph("Tickets Booked", stat_label_style),
+            Paragraph("Buses Managed", stat_label_style),
+            Paragraph("Avg Occupancy", stat_label_style)
+        ],
+        [
+            Paragraph(f"INR {total_revenue:.2f}", stat_val_style),
+            Paragraph(str(total_tickets), stat_val_style),
+            Paragraph(f"{total_buses} Buses", stat_val_style),
+            Paragraph(f"{avg_occupancy:.1f}%", stat_val_style)
+        ]
+    ]
+    kpi_table = Table(kpi_data, colWidths=[135, 135, 135, 135])
+    kpi_table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), HexColor('#F8FAFC')),
+        ('BOX', (0,0), (-1,-1), 1, HexColor('#E2E8F0')),
+        ('INNERGRID', (0,0), (-1,-1), 1, HexColor('#E2E8F0')),
+        ('TOPPADDING', (0,0), (-1,-1), 8),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 8),
+        ('LEFTPADDING', (0,0), (-1,-1), 8),
+        ('RIGHTPADDING', (0,0), (-1,-1), 8),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+    ]))
+    elements.append(kpi_table)
+    elements.append(Spacer(1, 10))
+
+    # Transactions List Section
+    elements.append(Paragraph("Booking Transaction Details", section_style))
+
+    # Build transaction table
+    col_widths = [40, 110, 150, 80, 50, 60, 50]
+    table_data = [[
+        Paragraph("ID", th_style),
+        Paragraph("Passenger", th_style),
+        Paragraph("Bus & Route", th_style),
+        Paragraph("Travel Date", th_style),
+        Paragraph("Seat", th_style),
+        Paragraph("Amount", th_style),
+        Paragraph("Status", th_style)
+    ]]
+
+    for b in bookings_query:
+        passenger_info = f"<b>{b.passenger_name}</b><br/>{b.passenger_gender}, {b.passenger_age} yrs"
+        bus_route = f"<b>{b.bus.bus_name}</b> ({b.bus.bus_number})<br/>{b.bus.source} to {b.bus.destination}"
+        table_data.append([
+            Paragraph(str(b.id), td_style),
+            Paragraph(passenger_info, td_style),
+            Paragraph(bus_route, td_style),
+            Paragraph(b.travel_date.strftime('%d-%b-%Y'), td_style),
+            Paragraph(b.seat_number, td_style),
+            Paragraph(f"INR {b.amount:.2f}", td_style),
+            Paragraph(b.status.capitalize(), td_style)
+        ])
+
+    bookings_table = Table(table_data, colWidths=col_widths, repeatRows=1)
+    bookings_table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), HexColor('#0F172A')),
+        ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('TOPPADDING', (0,0), (-1,-1), 6),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 6),
+        ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, HexColor('#F8FAFC')]),
+        ('GRID', (0,0), (-1,-1), 0.5, HexColor('#E2E8F0')),
+    ]))
+    elements.append(bookings_table)
+
+    # Render PDF document to the memory buffer
+    doc.build(elements)
+
+    pdf_bytes = buffer.getvalue()
+    buffer.close()
+
+    # Return response as attachment download
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="manager_report_{start_date_str}_to_{end_date_str}.pdf"'
+    return response
+
+
+def export_csv(request):
+    """
+    Generates and downloads a CSV spreadsheet report for the logged-in manager
+    based on the selected date range.
+    """
+    import csv
+
+    # 1. Authenticate the Manager
+    manager = get_manager_user(request)
+    if not manager:
+        return redirect('login')
+
+    # 2. Get and validate date filters
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
+
+    if not start_date_str or not end_date_str or not start_date_str.strip() or not end_date_str.strip():
+        return HttpResponse("Validation Error: Please select both Start Date and End Date.", status=400)
+
+    try:
+        start_date = date.fromisoformat(start_date_str)
+        end_date = date.fromisoformat(end_date_str)
+        if start_date > end_date:
+            return HttpResponse("Validation Error: Start Date cannot be later than End Date.", status=400)
+    except ValueError:
+        return HttpResponse("Validation Error: Invalid date format. Use YYYY-MM-DD.", status=400)
+
+    # 3. Query the filtered bookings
+    buses_query = Bus.objects.filter(manager=manager)
+
+    bookings_query = Booking.objects.filter(
+        bus__in=buses_query,
+        payment=True,
+        status__in=['booked', 'completed'],
+        booking_date__gte=start_date_str,
+        booking_date__lte=end_date_str
+    ).order_by('booking_date')
+
+    # 4. Prepare the HTTP response with CSV content type
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="manager_report_{start_date_str}_to_{end_date_str}.csv"'
+
+    writer = csv.writer(response)
+
+    # Write column headers
+    writer.writerow([
+        'Booking ID', 'Passenger Name', 'Age', 'Gender',
+        'Bus Name', 'Bus Number', 'Source', 'Destination',
+        'Travel Date', 'Booking Date', 'Seat Number', 'Amount (INR)', 'Status'
+    ])
+
+    # Write data rows
+    for booking in bookings_query:
+        writer.writerow([
+            booking.id,
+            booking.passenger_name,
+            booking.passenger_age,
+            booking.passenger_gender,
+            booking.bus.bus_name,
+            booking.bus.bus_number,
+            booking.bus.source,
+            booking.bus.destination,
+            booking.travel_date,
+            booking.booking_date,
+            booking.seat_number,
+            booking.amount,
+            booking.status
+        ])
+
+    return response
+
 
 def manager_schedules(request):
     """
@@ -1738,9 +2210,19 @@ def manager_schedules(request):
         except Exception as e:
             logger.error(f"Error creating schedule: {e}")
 
-    schedules = Schedule.objects.filter(bus__in=buses).order_by('-journey_date')
+    schedules_list = Schedule.objects.filter(bus__in=buses).order_by('-journey_date')
+    paginator = Paginator(schedules_list, 6)
+    page = request.GET.get('page', 1)
+    try:
+        schedules = paginator.page(page)
+    except PageNotAnInteger:
+        schedules = paginator.page(1)
+    except EmptyPage:
+        schedules = paginator.page(paginator.num_pages)
+
     context = {
         'schedules': schedules,
+        'page_obj': schedules,
         'buses': buses
     }
     return render(request, 'manager-schedules.html', context)
@@ -1933,7 +2415,6 @@ def manager_cancel_booking(request, booking_id):
 #==========================================================================
 #    Admin Views
 #==========================================================================
-
 def admin_dashboard(request):
     """
     Assembles metrics dashboard across the system.
@@ -1941,7 +2422,7 @@ def admin_dashboard(request):
     admin = get_admin_user(request)
     if not admin:
         return redirect('login')
-
+    
     try:
         total_customers = User.objects.filter(usertype='customer').count()
         total_managers = User.objects.filter(usertype='manager').count()
@@ -1990,21 +2471,31 @@ def admin_dashboard(request):
 def admin_users(request):
     """
     Lists customer accounts. Supports search filters.
+    Paginated at 6 records per page.
     """
     admin = get_admin_user(request)
     if not admin:
         return redirect('login')
 
     query = request.GET.get('search', '').strip()
-    customers = User.objects.filter(usertype='customer')
+    customers_list = User.objects.filter(usertype='customer').order_by('-id')
     if query:
-        customers = customers.filter(
+        customers_list = customers_list.filter(
             Q(name__icontains=query) |
             Q(email__icontains=query) |
             Q(phone__icontains=query)
         )
 
-    return render(request, 'admin-users.html', {'customers': customers, 'search_query': query, 'login_user': admin})
+    paginator = Paginator(customers_list, 6)
+    page = request.GET.get('page', 1)
+    try:
+        customers = paginator.page(page)
+    except PageNotAnInteger:
+        customers = paginator.page(1)
+    except EmptyPage:
+        customers = paginator.page(paginator.num_pages)
+
+    return render(request, 'admin-users.html', {'customers': customers, 'page_obj': customers, 'search_query': query, 'login_user': admin})
 
 def admin_add_customer(request):
     """
@@ -2022,6 +2513,7 @@ def admin_add_customer(request):
         password = request.POST.get('password', '').strip()
 
         if not name or not email or not phone or not password:
+
             msg = "All fields are required."
         elif User.objects.filter(email=email).exists():
             msg = "Email already exists."
@@ -2115,25 +2607,35 @@ def admin_customer_detail(request, user_id):
 def admin_managers(request):
     """
     Lists registered managers. Supports search queries.
+    Paginated at 6 records per page.
     """
     admin = get_admin_user(request)
     if not admin:
         return redirect('login')
 
     query = request.GET.get('search', '').strip()
-    managers = User.objects.filter(usertype='manager')
+    managers_list = User.objects.filter(usertype='manager').order_by('-id')
     if query:
-        managers = managers.filter(
+        managers_list = managers_list.filter(
             Q(name__icontains=query) |
             Q(email__icontains=query) |
             Q(phone__icontains=query)
         )
 
-    for mgr in managers:
+    for mgr in managers_list:
         mgr.buses_count = Bus.objects.filter(manager=mgr).count()
         mgr.bookings_count = Booking.objects.filter(bus__manager=mgr).count()
 
-    return render(request, 'admin-managers.html', {'managers': managers, 'search_query': query, 'login_user': admin})
+    paginator = Paginator(managers_list, 6)
+    page = request.GET.get('page', 1)
+    try:
+        managers = paginator.page(page)
+    except PageNotAnInteger:
+        managers = paginator.page(1)
+    except EmptyPage:
+        managers = paginator.page(paginator.num_pages)
+
+    return render(request, 'admin-managers.html', {'managers': managers, 'page_obj': managers, 'search_query': query, 'login_user': admin})
 
 def admin_add_manager(request):
     """
@@ -2247,13 +2749,23 @@ def admin_manager_detail(request, user_id):
 def admin_buses(request):
     """
     Lists registered buses.
+    Paginated at 6 records per page.
     """
     admin = get_admin_user(request)
     if not admin:
         return redirect('login')
 
-    buses = Bus.objects.all()
-    return render(request, 'admin-buses.html', {'buses': buses, 'login_user': admin})
+    buses_list = Bus.objects.all().order_by('-id')
+    paginator = Paginator(buses_list, 6)
+    page = request.GET.get('page', 1)
+    try:
+        buses = paginator.page(page)
+    except PageNotAnInteger:
+        buses = paginator.page(1)
+    except EmptyPage:
+        buses = paginator.page(paginator.num_pages)
+
+    return render(request, 'admin-buses.html', {'buses': buses, 'page_obj': buses, 'login_user': admin})
 
 def admin_add_bus(request):
     """
@@ -2372,15 +2884,26 @@ def admin_delete_bus(request, bus_id):
 def admin_routes(request):
     """
     Lists routes. Matches fleet counts.
+    Paginated at 6 records per page.
     """
     admin = get_admin_user(request)
     if not admin:
         return redirect('login')
 
-    routes = Route.objects.all()
-    for route in routes:
+    routes_list = Route.objects.all().order_by('-id')
+    for route in routes_list:
         route.fleet_count = Bus.objects.filter(source=route.source, destination=route.destination).count()
-    return render(request, 'admin-routes.html', {'routes': routes, 'login_user': admin})
+
+    paginator = Paginator(routes_list, 6)
+    page = request.GET.get('page', 1)
+    try:
+        routes = paginator.page(page)
+    except PageNotAnInteger:
+        routes = paginator.page(1)
+    except EmptyPage:
+        routes = paginator.page(paginator.num_pages)
+
+    return render(request, 'admin-routes.html', {'routes': routes, 'page_obj': routes, 'login_user': admin})
 
 def admin_add_route(request):
     """
@@ -2474,13 +2997,23 @@ def admin_delete_route(request, route_id):
 def admin_schedules(request):
     """
     Lists schedules.
+    Paginated at 6 records per page.
     """
     admin = get_admin_user(request)
     if not admin:
         return redirect('login')
 
-    schedules = Schedule.objects.all()
-    return render(request, 'admin-schedules.html', {'schedules': schedules, 'login_user': admin})
+    schedules_list = Schedule.objects.all().order_by('-journey_date')
+    paginator = Paginator(schedules_list, 6)
+    page = request.GET.get('page', 1)
+    try:
+        schedules = paginator.page(page)
+    except PageNotAnInteger:
+        schedules = paginator.page(1)
+    except EmptyPage:
+        schedules = paginator.page(paginator.num_pages)
+
+    return render(request, 'admin-schedules.html', {'schedules': schedules, 'page_obj': schedules, 'login_user': admin})
 
 def admin_add_schedule(request):
     """
@@ -2570,13 +3103,23 @@ def admin_delete_schedule(request, schedule_id):
 def admin_bookings(request):
     """
     Lists system-wide customer bookings.
+    Paginated at 6 records per page.
     """
     admin = get_admin_user(request)
     if not admin:
         return redirect('login')
 
-    bookings = Booking.objects.all()
-    return render(request, 'admin-bookings.html', {'bookings': bookings, 'login_user': admin})
+    bookings_list = Booking.objects.all().order_by('-booking_date')
+    paginator = Paginator(bookings_list, 6)
+    page = request.GET.get('page', 1)
+    try:
+        bookings = paginator.page(page)
+    except PageNotAnInteger:
+        bookings = paginator.page(1)
+    except EmptyPage:
+        bookings = paginator.page(paginator.num_pages)
+
+    return render(request, 'admin-bookings.html', {'bookings': bookings, 'page_obj': bookings, 'login_user': admin})
 
 def admin_booking_detail(request, booking_id):
     """
@@ -2614,13 +3157,23 @@ def admin_cancel_booking(request, booking_id):
 def admin_payments(request):
     """
     Lists bookings that have successfully processed payments.
+    Paginated at 6 records per page.
     """
     admin = get_admin_user(request)
     if not admin:
         return redirect('login')
 
-    bookings = Booking.objects.filter(payment=True)
-    return render(request, 'admin-payments.html', {'bookings': bookings, 'login_user': admin})
+    bookings_list = Booking.objects.filter(payment=True).order_by('-booking_date')
+    paginator = Paginator(bookings_list, 6)
+    page = request.GET.get('page', 1)
+    try:
+        bookings = paginator.page(page)
+    except PageNotAnInteger:
+        bookings = paginator.page(1)
+    except EmptyPage:
+        bookings = paginator.page(paginator.num_pages)
+
+    return render(request, 'admin-payments.html', {'bookings': bookings, 'page_obj': bookings, 'login_user': admin})
 
 def admin_profile(request):
     """
@@ -2693,7 +3246,8 @@ def admin_reports(request):
         successful_bookings = Booking.objects.filter(payment=True)
         total_revenue = successful_bookings.aggregate(total=Sum('amount'))['total'] or 0
 
-        daily_bookings = Booking.objects.annotate(date=TruncDate('booking_date')).values('date').annotate(count=Count('id')).order_by('-date')[:7]
+        daily_bookings_qs = Booking.objects.values('booking_date').annotate(count=Count('id')).order_by('-booking_date')[:7]
+        daily_bookings = [{'date': item['booking_date'], 'count': item['count']} for item in daily_bookings_qs]
         monthly_bookings = Booking.objects.annotate(month=TruncMonth('booking_date')).values('month').annotate(count=Count('id')).order_by('-month')[:6]
 
         most_booked_routes = Booking.objects.values('bus__source', 'bus__destination').annotate(count=Count('id')).order_by('-count')[:5]
