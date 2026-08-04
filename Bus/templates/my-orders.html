@@ -65,17 +65,17 @@
                         <!-- Tab Headers -->
                         <ul class="nav nav-tabs mb-4" id="bookingTabs" role="tablist">
                             <li class="nav-item" role="presentation">
-                                <button class="nav-link active fw-bold text-navy-dark" id="upcoming-tab" data-bs-toggle="tab" data-bs-target="#upcoming" type="button" role="tab" aria-controls="upcoming" aria-selected="true">
+                                <button class="nav-link {% if active_tab == 'upcoming' or not active_tab %}active{% endif %} fw-bold text-navy-dark" id="upcoming-tab" data-bs-toggle="tab" data-bs-target="#upcoming" type="button" role="tab" aria-controls="upcoming" aria-selected="{% if active_tab == 'upcoming' or not active_tab %}true{% else %}false{% endif %}">
                                     <i class="bi bi-calendar2-check text-primary me-2"></i>Upcoming trips
                                 </button>
                             </li>
                             <li class="nav-item" role="presentation">
-                                <button class="nav-link fw-bold text-navy-dark" id="past-tab" data-bs-toggle="tab" data-bs-target="#past" type="button" role="tab" aria-controls="past" aria-selected="false">
+                                <button class="nav-link {% if active_tab == 'past' %}active{% endif %} fw-bold text-navy-dark" id="past-tab" data-bs-toggle="tab" data-bs-target="#past" type="button" role="tab" aria-controls="past" aria-selected="{% if active_tab == 'past' %}true{% else %}false{% endif %}">
                                     <i class="bi bi-calendar2-x text-secondary me-2"></i>Past trips
                                 </button>
                             </li>
                             <li class="nav-item" role="presentation">
-                                <button class="nav-link fw-bold text-navy-dark" id="cancelled-tab" data-bs-toggle="tab" data-bs-target="#cancelled" type="button" role="tab" aria-controls="cancelled" aria-selected="false">
+                                <button class="nav-link {% if active_tab == 'cancelled' %}active{% endif %} fw-bold text-navy-dark" id="cancelled-tab" data-bs-toggle="tab" data-bs-target="#cancelled" type="button" role="tab" aria-controls="cancelled" aria-selected="{% if active_tab == 'cancelled' %}true{% else %}false{% endif %}">
                                     <i class="bi bi-x-circle text-danger me-2"></i>Cancelled tickets
                                 </button>
                             </li>
@@ -85,7 +85,7 @@
                         <div class="tab-content" id="bookingTabsContent">
                             
                             <!-- Upcoming Trips Panel -->
-                            <div class="tab-pane fade show active" id="upcoming" role="tabpanel" aria-labelledby="upcoming-tab">
+                            <div class="tab-pane fade {% if active_tab == 'upcoming' or not active_tab %}show active{% endif %}" id="upcoming" role="tabpanel" aria-labelledby="upcoming-tab">
                                 <div class="d-flex flex-column gap-3" id="upcomingList">
                                     {% for booking in upcoming_bookings %}
                                         <div class="card booking-order-card border-0 shadow-sm status-{% if booking.status == 'cancelled' %}cancelled{% elif booking.status == 'completed' %}completed{% else %}booked{% endif %}">
@@ -198,10 +198,47 @@
                                         </div>
                                     {% endfor %}
                                 </div>
+                                {% if upcoming_page_obj.paginator.num_pages > 1 %}
+                                <nav aria-label="Upcoming trips pagination" class="mt-4">
+                                    <ul class="pagination justify-content-center mb-0">
+                                        {% if upcoming_page_obj.has_previous %}
+                                            <li class="page-item">
+                                                <a class="page-link shadow-none fw-semibold" href="?tab=upcoming&upcoming_page={{ upcoming_page_obj.previous_page_number }}" aria-label="Previous">&laquo; Previous</a>
+                                            </li>
+                                        {% else %}
+                                            <li class="page-item disabled">
+                                                <span class="page-link fw-semibold">&laquo; Previous</span>
+                                            </li>
+                                        {% endif %}
+
+                                        {% for num in upcoming_page_obj.paginator.page_range %}
+                                            {% if upcoming_page_obj.number == num %}
+                                                <li class="page-item active" aria-current="page">
+                                                    <span class="page-link">{{ num }}</span>
+                                                </li>
+                                            {% elif num > upcoming_page_obj.number|add:'-3' and num < upcoming_page_obj.number|add:'3' %}
+                                                <li class="page-item">
+                                                    <a class="page-link shadow-none fw-semibold" href="?tab=upcoming&upcoming_page={{ num }}">{{ num }}</a>
+                                                </li>
+                                            {% endif %}
+                                        {% endfor %}
+
+                                        {% if upcoming_page_obj.has_next %}
+                                            <li class="page-item">
+                                                <a class="page-link shadow-none fw-semibold" href="?tab=upcoming&upcoming_page={{ upcoming_page_obj.next_page_number }}" aria-label="Next">Next &raquo;</a>
+                                            </li>
+                                        {% else %}
+                                            <li class="page-item disabled">
+                                                <span class="page-link fw-semibold">Next &raquo;</span>
+                                            </li>
+                                        {% endif %}
+                                    </ul>
+                                </nav>
+                                {% endif %}
                             </div>
 
                             <!-- Past Trips Panel -->
-                            <div class="tab-pane fade" id="past" role="tabpanel" aria-labelledby="past-tab">
+                            <div class="tab-pane fade {% if active_tab == 'past' %}show active{% endif %}" id="past" role="tabpanel" aria-labelledby="past-tab">
                                 <div class="d-flex flex-column gap-3">
                                     {% for booking in past_bookings %}
                                         <div class="card booking-order-card border-0 shadow-sm status-{% if booking.status == 'cancelled' %}cancelled{% elif booking.status == 'completed' %}completed{% else %}booked{% endif %}">
@@ -314,10 +351,47 @@
                                         </div>
                                     {% endfor %}
                                 </div>
+                                {% if past_page_obj.paginator.num_pages > 1 %}
+                                <nav aria-label="Past trips pagination" class="mt-4">
+                                    <ul class="pagination justify-content-center mb-0">
+                                        {% if past_page_obj.has_previous %}
+                                            <li class="page-item">
+                                                <a class="page-link shadow-none fw-semibold" href="?tab=past&past_page={{ past_page_obj.previous_page_number }}" aria-label="Previous">&laquo; Previous</a>
+                                            </li>
+                                        {% else %}
+                                            <li class="page-item disabled">
+                                                <span class="page-link fw-semibold">&laquo; Previous</span>
+                                            </li>
+                                        {% endif %}
+
+                                        {% for num in past_page_obj.paginator.page_range %}
+                                            {% if past_page_obj.number == num %}
+                                                <li class="page-item active" aria-current="page">
+                                                    <span class="page-link">{{ num }}</span>
+                                                </li>
+                                            {% elif num > past_page_obj.number|add:'-3' and num < past_page_obj.number|add:'3' %}
+                                                <li class="page-item">
+                                                    <a class="page-link shadow-none fw-semibold" href="?tab=past&past_page={{ num }}">{{ num }}</a>
+                                                </li>
+                                            {% endif %}
+                                        {% endfor %}
+
+                                        {% if past_page_obj.has_next %}
+                                            <li class="page-item">
+                                                <a class="page-link shadow-none fw-semibold" href="?tab=past&past_page={{ past_page_obj.next_page_number }}" aria-label="Next">Next &raquo;</a>
+                                            </li>
+                                        {% else %}
+                                            <li class="page-item disabled">
+                                                <span class="page-link fw-semibold">Next &raquo;</span>
+                                            </li>
+                                        {% endif %}
+                                    </ul>
+                                </nav>
+                                {% endif %}
                             </div>
 
                             <!-- Cancelled Tickets Panel -->
-                            <div class="tab-pane fade" id="cancelled" role="tabpanel" aria-labelledby="cancelled-tab">
+                            <div class="tab-pane fade {% if active_tab == 'cancelled' %}show active{% endif %}" id="cancelled" role="tabpanel" aria-labelledby="cancelled-tab">
                                 <div class="d-flex flex-column gap-3" id="cancelledList">
                                     {% for booking in cancelled_bookings %}
                                         <div class="card booking-order-card border-0 shadow-sm status-cancelled">
@@ -430,6 +504,43 @@
                                         </div>
                                     {% endfor %}
                                 </div>
+                                {% if cancelled_page_obj.paginator.num_pages > 1 %}
+                                <nav aria-label="Cancelled tickets pagination" class="mt-4">
+                                    <ul class="pagination justify-content-center mb-0">
+                                        {% if cancelled_page_obj.has_previous %}
+                                            <li class="page-item">
+                                                <a class="page-link shadow-none fw-semibold" href="?tab=cancelled&cancelled_page={{ cancelled_page_obj.previous_page_number }}" aria-label="Previous">&laquo; Previous</a>
+                                            </li>
+                                        {% else %}
+                                            <li class="page-item disabled">
+                                                <span class="page-link fw-semibold">&laquo; Previous</span>
+                                            </li>
+                                        {% endif %}
+
+                                        {% for num in cancelled_page_obj.paginator.page_range %}
+                                            {% if cancelled_page_obj.number == num %}
+                                                <li class="page-item active" aria-current="page">
+                                                    <span class="page-link">{{ num }}</span>
+                                                </li>
+                                            {% elif num > cancelled_page_obj.number|add:'-3' and num < cancelled_page_obj.number|add:'3' %}
+                                                <li class="page-item">
+                                                    <a class="page-link shadow-none fw-semibold" href="?tab=cancelled&cancelled_page={{ num }}">{{ num }}</a>
+                                                </li>
+                                            {% endif %}
+                                        {% endfor %}
+
+                                        {% if cancelled_page_obj.has_next %}
+                                            <li class="page-item">
+                                                <a class="page-link shadow-none fw-semibold" href="?tab=cancelled&cancelled_page={{ cancelled_page_obj.next_page_number }}" aria-label="Next">Next &raquo;</a>
+                                            </li>
+                                        {% else %}
+                                            <li class="page-item disabled">
+                                                <span class="page-link fw-semibold">Next &raquo;</span>
+                                            </li>
+                                        {% endif %}
+                                    </ul>
+                                </nav>
+                                {% endif %}
                             </div>
 
                         </div>

@@ -868,12 +868,39 @@ def my_orders(request):
         grouped_bookings = build_order_groups(bookings)
         upcoming, past, cancelled = split_orders_by_date(grouped_bookings)
 
+        active_tab = request.GET.get('tab', 'upcoming')
+        if active_tab not in ['upcoming', 'past', 'cancelled']:
+            active_tab = 'upcoming'
+
+        def paginate_list(item_list, param_name):
+            paginator = Paginator(item_list, 3)
+            page_val = request.GET.get(param_name) or (request.GET.get('page') if active_tab == param_name.replace('_page', '') else 1)
+            try:
+                page_obj = paginator.page(page_val)
+            except PageNotAnInteger:
+                page_obj = paginator.page(1)
+            except EmptyPage:
+                try:
+                    page_num = int(page_val)
+                    page_obj = paginator.page(1 if page_num < 1 else paginator.num_pages)
+                except (ValueError, TypeError):
+                    page_obj = paginator.page(1)
+            return page_obj
+
+        upcoming_page_obj = paginate_list(upcoming, 'upcoming_page')
+        past_page_obj = paginate_list(past, 'past_page')
+        cancelled_page_obj = paginate_list(cancelled, 'cancelled_page')
+
         return render(request, 'my-orders.html', {
             'user': customer,
             'bookings': grouped_bookings,
-            'upcoming_bookings': upcoming,
-            'past_bookings': past,
-            'cancelled_bookings': cancelled,
+            'upcoming_bookings': upcoming_page_obj,
+            'past_bookings': past_page_obj,
+            'cancelled_bookings': cancelled_page_obj,
+            'upcoming_page_obj': upcoming_page_obj,
+            'past_page_obj': past_page_obj,
+            'cancelled_page_obj': cancelled_page_obj,
+            'active_tab': active_tab,
         })
     except Exception as e:
         logger.error(f"My Orders View Error: {e}")

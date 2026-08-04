@@ -207,3 +207,19 @@ class BusYatraViewsTestCase(TestCase):
         self.assertIn('page_obj', response.context)
         self.assertIn('contacts', response.context)
 
+    def test_my_orders_pagination(self):
+        # Set session for customer
+        session = self.client.session
+        session['email'] = self.customer.email
+        session.save()
+
+        # Call my_orders url
+        response = self.client.get(reverse('my_orders'))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'my-orders.html')
+        self.assertIn('upcoming_page_obj', response.context)
+        self.assertIn('past_page_obj', response.context)
+        self.assertIn('cancelled_page_obj', response.context)
+        self.assertEqual(response.context['upcoming_page_obj'].paginator.per_page, 3)
+
+
