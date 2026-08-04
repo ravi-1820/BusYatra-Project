@@ -3,6 +3,15 @@
 <html lang="en">
 
 <head>
+   <!-- Microsoft Clarity tracking code for analytics and user behavior insights -->
+   <script type="text/javascript">
+        (function (c, l, a, r, i, t, y) {
+            c[a] = c[a] || function () { (c[a].q = c[a].q || []).push(arguments) };
+            t = l.createElement(r); t.async = 1; t.src = "https://www.clarity.ms/tag/" + i;
+            y = l.getElementsByTagName(r)[0]; y.parentNode.insertBefore(t, y);
+        })(window, document, "clarity", "script", "xwyvranqrl");
+    </script>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BusYatra - Premium Bus Ticket Booking System</title>
@@ -12,6 +21,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css" rel="stylesheet">
     <!-- Custom Style Sheet -->
     <link rel="stylesheet" href="{% static 'assets/css/style.css' %}?v=1.2">
+    <!-- Swiper CSS for Modern Carousel Slider -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
 </head>
 
 <body>
@@ -20,7 +31,7 @@
     <nav class="navbar navbar-expand-lg navbar-custom sticky-top">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center" href="{% url 'index' %}">
-                <img src="{% static 'assets/images/logo.png' %}" alt="BusYatra Logo" height="52">
+                <img src="{% static 'assets/images/logo.png' %}" alt="BusYatra Logo" height="65">
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
                 aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
@@ -29,7 +40,7 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto align-items-center">
                     <li class="nav-item">
-                        <a class="nav-link active" href="{% url 'index' %}">Home</a>
+                        <a class="nav-link" href="{% url 'index' %}">Home</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'bus_list' %}">Search Buses</a>
@@ -43,33 +54,27 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'contact' %}">Contact</a>
                     </li>
-                    <!-- <li class="nav-item" id="managerNavLinkContainer">
-                        <a class="nav-link" href="{% url 'manager_dashboard' %}" onclick="localStorage.setItem('busyatra_logged_in_user', JSON.stringify({name: 'Zingbus Manager', email: 'manager@busyatra.com', phone: '+91 88888 77777', password: 'manager123', savings: 0, wallet: 0, role: 'manager', operator: 'Zingbus Premium'}));">Manager Panel</a>
-                    </li> -->
-                    <!-- <li class="nav-item" id="adminNavLinkContainer">
-                        <a class="nav-link" href="{% url 'admin_dashboard' %}" onclick="localStorage.setItem('busyatra_logged_in_user', JSON.stringify({name: 'System Admin', email: 'admin@busyatra.com', phone: '+91 99999 99999', password: 'admin123', savings: 0, wallet: 0, role: 'admin'}));">Admin Panel</a>
-                    </li> -->
                     <li class="nav-item ms-lg-3 mt-2 mt-lg-0 d-flex align-items-center gap-2" id="navUserArea">
                         {% if request.session.email %}
                         <div class="dropdown profile-dropdown">
-                            {% if login_user.profile and login_user.profile.name %}
+                            {% if login_user and login_user.profile and login_user.profile.name %}
                             <!-- Dropdown toggle button for users with custom profile photos -->
                             <a href="#"
                                 class="dropdown-toggle ms-2 d-inline-flex align-items-center gap-2 text-dark text-decoration-none"
                                 role="button" data-bs-toggle="dropdown" data-bs-offset="0,8" aria-expanded="false"
-                                title="{{ login_user.name }}">
+                                title="{{ login_user.name|default:request.session.name }}">
                                 <img src="{{ login_user.profile.url }}" width="42" height="42"
                                     class="rounded-circle border border-2 object-fit-cover">
-                                <span class="fw-semibold text-black" style="color: #000 !important;">{{ login_user.name }}</span>
+                                <span class="fw-semibold text-black notranslate" style="color: #000 !important;">{{ login_user.name|default:request.session.name }}</span>
                             </a>
                             {% else %}
                             <!-- Dropdown toggle button for users without profile photos (default icon) -->
                             <a href="#"
                                 class="dropdown-toggle ms-2 d-inline-flex align-items-center gap-2 text-dark text-decoration-none"
                                 role="button" data-bs-toggle="dropdown" data-bs-offset="0,8" aria-expanded="false"
-                                title="{{ login_user.name }}">
+                                title="{{ login_user.name|default:request.session.name }}">
                                 <i class="bi bi-person-circle fs-2 text-dark"></i>
-                                <span class="fw-semibold text-black" style="color: #000 !important;">{{ login_user.name }}</span>
+                                <span class="fw-semibold text-black notranslate" style="color: #000 !important;">{{ login_user.name|default:request.session.name }}</span>
                             </a>
                             {% endif %}
                             <!-- Redesigned profile menu list -->
@@ -90,10 +95,37 @@
                         <a href="{% url 'login' %}" class="btn btn-outline-nav btn-sm">
                             <i class="bi bi-box-arrow-in-right me-1"></i>Login
                         </a>
-                        <!-- <a href="{% url 'register' %}" class="btn btn-outline-nav btn-sm">
-                            <i class="bi bi-person-plus me-1"></i>Register
-                        </a> -->
                         {% endif %}
+                    </li>
+                    <!-- Language Translator Dropdown (Placed AFTER Login button) -->
+                    <li class="nav-item dropdown ms-lg-2 mt-2 mt-lg-0">
+                        <a class="nav-link dropdown-toggle d-inline-flex align-items-center gap-1 bg-white border border-light-subtle rounded-pill px-3 py-1 shadow-sm text-dark fw-medium"
+                            href="#" role="button" id="languageDropdown" data-bs-toggle="dropdown"
+                            aria-expanded="false">
+                            <i class="bi bi-translate text-primary me-1 fs-6"></i>
+                            <span id="selectedLanguageText">English</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 mt-2"
+                            aria-labelledby="languageDropdown">
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="javascript:void(0);"
+                                    onclick="changeLanguage('en', 'English')">
+                                    <span>🇬🇧</span> English
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="javascript:void(0);"
+                                    onclick="changeLanguage('hi', 'हिंदी')">
+                                    <span>🇮🇳</span> Hindi (हिंदी)
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="javascript:void(0);"
+                                    onclick="changeLanguage('gu', 'ગુજરાતી')">
+                                    <span>🇮🇳</span> Gujarati (ગુજરાતી)
+                                </a>
+                            </li>
+                        </ul>
                     </li>
                 </ul>
             </div>
@@ -108,77 +140,70 @@
         <div class="container">
             <div class="row gy-4">
                 <div class="col-md-4">
-                    <a class="navbar-brand d-flex align-items-center mb-3" href="{% url 'index' %}">
-                        <img src="{% static 'assets/images/logo.png' %}" alt="BusYatra Logo" height="52">
+                    <a class="d-inline-block mb-3" href="{% url 'index' %}">
+                        <img src="{% static 'assets/images/logo.png' %}" alt="BusYatra Logo" height="55">
                     </a>
-                    <!-- <p class="text-muted small">BusYatra is India's leading digital bus ticket aggregator. We provide
-                        clean, affordable, and safe travel schedules nationwide.</p> -->
-                    <div class="bg-light rounded-4 p-4 mb-4">
-                        <h6 class="fw-bold text-navy-dark mb-3"><i class="bi bi-geo-alt me-2 text-primary"></i>Head
-                            Office
-                            Address</h6>
-                        <p class="text-muted small mb-0">
+                    <div class="footer-card p-4 mb-3">
+                        <h6 class="fw-bold text-navy-dark mb-2 d-flex align-items-center">
+                            <i class="bi bi-geo-alt-fill me-2 text-primary"></i>Head Office Address
+                        </h6>
+                        <p class="small mb-0 text-secondary" style="line-height: 1.6;">
                             BusYatra Technologies Pvt. Ltd.<br>
                             3rd Floor, Tech Park, 5th Main,<br>
                             Koramangala, Bangalore — 560034<br>
                             Karnataka, India
                         </p>
                     </div>
-                    <div class="d-flex gap-3 mt-3">
-                        <a href="#" class="text-light fs-5"><i class="bi bi-facebook"></i></a>
-                        <a href="#" class="text-light fs-5"><i class="bi bi-twitter-x"></i></a>
-                        <a href="#" class="text-light fs-5"><i class="bi bi-instagram"></i></a>
-                        <a href="#" class="text-light fs-5"><i class="bi bi-linkedin"></i></a>
+                    <div class="d-flex gap-2">
+                        <a href="#" class="footer-social-icon" aria-label="Facebook"><i class="bi bi-facebook"></i></a>
+                        <a href="#" class="footer-social-icon" aria-label="Twitter"><i class="bi bi-twitter-x"></i></a>
+                        <a href="#" class="footer-social-icon" aria-label="Instagram"><i
+                                class="bi bi-instagram"></i></a>
+                        <a href="#" class="footer-social-icon" aria-label="LinkedIn"><i class="bi bi-linkedin"></i></a>
                     </div>
                 </div>
                 <div class="col-md-2 col-6">
-                    <h6 class="text-uppercase fw-bold text-warning mb-3">Popular Links</h6>
-                    <ul class="list-unstyled text-muted small">
-                        <li class="mb-2"><a href="{% url 'bus_list' %}" class="text-reset text-decoration-none">Search
-                                Buses</a></li>
-                        <li class="mb-2"><a href="{% url 'user_dashboard' %}" class="text-reset text-decoration-none">My
+                    <h6 class="footer-heading mb-4">Popular Links</h6>
+                    <ul class="list-unstyled small mb-0">
+                        <li class="mb-2"><a href="{% url 'bus_list' %}" class="text-decoration-none">Search Buses</a>
+                        </li>
+                        <li class="mb-2"><a href="{% url 'user_dashboard' %}" class="text-decoration-none">My
                                 Dashboard</a></li>
-                        <li class="mb-2"><a href="{% url 'manager_dashboard' %}"
-                                class="text-reset text-decoration-none">Manager Area</a></li>
-                        <li class="mb-2"><a href="{% url 'admin_dashboard' %}"
-                                class="text-reset text-decoration-none">Admin Area</a></li>
-                        <li class="mb-2"><a href="#" class="text-reset text-decoration-none">Special Offers</a></li>
+                        <li class="mb-2"><a href="{% url 'manager_dashboard' %}" class="text-decoration-none">Manager
+                                Area</a></li>
+                        <li class="mb-2"><a href="{% url 'admin_dashboard' %}" class="text-decoration-none">Admin
+                                Area</a></li>
+                        <li class="mb-2"><a href="#" class="text-decoration-none">Special Offers</a></li>
                     </ul>
                 </div>
                 <div class="col-md-2 col-6">
-                    <h6 class="text-uppercase fw-bold text-warning mb-3">Company</h6>
-                    <ul class="list-unstyled text-muted small">
-                        <li class="mb-2"><a href="{% url 'about' %}" class="text-reset text-decoration-none">About
-                                Us</a></li>
-                        <li class="mb-2"><a href="{% url 'contact' %}" class="text-reset text-decoration-none">Contact
-                                Us</a></li>
-                        <li class="mb-2"><a href="#" class="text-reset text-decoration-none">Cancellation Policy</a>
-                        </li>
-                        <li class="mb-2"><a href="#" class="text-reset text-decoration-none">Terms of Service</a></li>
-                        <li class="mb-2"><a href="#" class="text-reset text-decoration-none">Privacy Policy</a></li>
+                    <h6 class="footer-heading mb-4">Company</h6>
+                    <ul class="list-unstyled small mb-0">
+                        <li class="mb-2"><a href="{% url 'about' %}" class="text-decoration-none">About Us</a></li>
+                        <li class="mb-2"><a href="{% url 'contact' %}" class="text-decoration-none">Contact Us</a></li>
+                        <li class="mb-2"><a href="#" class="text-decoration-none">Cancellation Policy</a></li>
+                        <li class="mb-2"><a href="#" class="text-decoration-none">Terms of Service</a></li>
+                        <li class="mb-2"><a href="#" class="text-decoration-none">Privacy Policy</a></li>
                     </ul>
                 </div>
                 <div class="col-md-4">
-                    <h6 class="text-uppercase fw-bold text-warning mb-3">Newsletter</h6>
-                    <p class="text-muted small mb-3">Subscribe to get travel discount coupons and system updates.</p>
+                    <h6 class="footer-heading mb-4">Newsletter</h6>
+                    <p class="small mb-3 text-secondary">Subscribe to get travel discount coupons and system updates
+                        directly in your inbox.</p>
                     <div class="input-group">
-                        <input type="email" class="form-control bg-light border-light-subtle text-dark"
-                            placeholder="Your Email Address" style="border-radius: 8px 0 0 8px;">
-                        <button class="btn btn-primary-custom" type="button" style="border-radius: 0 8px 8px 0;"><i
-                                class="bi bi-send-fill"></i></button>
+                        <input type="email" class="form-control" placeholder="Your Email Address"
+                            aria-label="Your Email Address">
+                        <button class="btn btn-subscribe" type="button" aria-label="Subscribe">
+                            <i class="bi bi-send-fill"></i>
+                        </button>
                     </div>
                 </div>
             </div>
             <hr class="my-4">
-            <div class="row">
-                <center>
-                    <div class="col-md-6 text-center text-md-start small text-muted">
-                        &copy; 2026 BusYatra Online Booking Systems. All rights reserved.
-                    </div>
-                </center>
-                <!-- <div class="col-md-6 text-center text-md-end small text-muted">
-                    Designed with <i class="bi bi-heart-fill text-danger"></i> using Bootstrap 5.
-                </div> -->
+            <div class="row align-items-center">
+                <div class="col-md-12 text-center small text-secondary">
+                    &copy; 2026 BusYatra Online Booking Systems. All rights reserved.
+                </div>
             </div>
         </div>
     </footer>
@@ -206,6 +231,60 @@
     </script>
     {% endif %}
 
+    <!-- Hidden Google Translate Element -->
+    <div id="google_translate_element" style="display:none;"></div>
+
+    <script type="text/javascript">
+        function googleTranslateElementInit() {
+            new google.translate.TranslateElement({
+                pageLanguage: 'en',
+                includedLanguages: 'en,hi,gu',
+                autoDisplay: false
+            }, 'google_translate_element');
+        }
+
+        function setCookie(name, value, days) {
+            var expires = "";
+            if (days) {
+                var date = new Date();
+                date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+                expires = "; expires=" + date.toUTCString();
+            }
+            document.cookie = name + "=" + (value || "") + expires + "; path=/";
+        }
+
+        function changeLanguage(langCode, langName) {
+            var currentLang = localStorage.getItem('busyatra_lang') || 'en';
+            if (currentLang === langCode) return;
+
+            localStorage.setItem('busyatra_lang', langCode);
+            localStorage.setItem('busyatra_lang_name', langName);
+
+            setCookie('googtrans', '/en/' + langCode, 30);
+
+            var textEl = document.getElementById('selectedLanguageText');
+            if (textEl) {
+                textEl.textContent = langName;
+            }
+
+            window.location.reload();
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var savedLang = localStorage.getItem('busyatra_lang') || 'en';
+            var savedLangName = localStorage.getItem('busyatra_lang_name') || 'English';
+
+            var textEl = document.getElementById('selectedLanguageText');
+            if (textEl) {
+                textEl.textContent = savedLangName;
+            }
+        });
+    </script>
+    <script type="text/javascript"
+        src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
+    <!-- Swiper JS -->
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     <!-- Template Javascript -->
     <script src="{% static 'assets/js/main.js' %}?v=1.2"></script>
 </body>

@@ -30,27 +30,27 @@ logger = logging.getLogger(__name__)
 #==========================================================================
 
 def get_customer_user(request):
-    """
-    Returns the logged-in customer User object if valid, otherwise None.
-    """
-    return get_logged_in_user(request, 'customer')
+    try:
+        return get_logged_in_user(request, 'customer')
+    except Exception as e:
+        logger.error(f"Error in get_customer_user: {e}")
+        return None
 
 def get_manager_user(request):
-    """
-    Returns the logged-in manager User object if valid, otherwise None.
-    """
-    return get_logged_in_user(request, 'manager')
+    try:
+        return get_logged_in_user(request, 'manager')
+    except Exception as e:
+        logger.error(f"Error in get_manager_user: {e}")
+        return None
 
 def get_admin_user(request):
-    """
-    Returns the logged-in admin User object if valid, otherwise None.
-    """
-    return get_logged_in_user(request, 'admin')
+    try:
+        return get_logged_in_user(request, 'admin')
+    except Exception as e:
+        logger.error(f"Error in get_admin_user: {e}")
+        return None
 
 def get_logged_in_user(request, usertype):
-    """
-    Session email se user nikalta hai. User na mile to None return karta hai.
-    """
     email = request.session.get('email')
     if not email:
         return None
@@ -60,26 +60,25 @@ def get_logged_in_user(request, usertype):
         return None
 
 def parse_booking_ids(booking_ids):
-    """
-    "1,2,3" ko [1, 2, 3] me badalta hai. Galat values ignore hoti hain.
-    """
-    if not booking_ids:
+    try:
+        if not booking_ids:
+            return []
+        return [int(item) for item in booking_ids.split(",") if item.strip().isdigit()]
+    except Exception as e:
+        logger.error(f"Error parsing booking ids: {e}")
         return []
-    return [int(item) for item in booking_ids.split(",") if item.strip().isdigit()]
 
 def get_customer_bookings(customer, booking_ids):
-    """
-    Sirf logged-in customer ki bookings return karta hai.
-    """
-    ids = parse_booking_ids(booking_ids)
-    if not ids:
+    try:
+        ids = parse_booking_ids(booking_ids)
+        if not ids:
+            return Booking.objects.none()
+        return Booking.objects.filter(id__in=ids, user=customer).select_related('bus', 'user')
+    except Exception as e:
+        logger.error(f"Error fetching customer bookings: {e}")
         return Booking.objects.none()
-    return Booking.objects.filter(id__in=ids, user=customer)
 
 def is_valid_date(date_str):
-    """
-    Checks if a string is a valid date in YYYY-MM-DD format and not 'None', 'null' or empty.
-    """
     if not date_str or not isinstance(date_str, str):
         return False
     if date_str.strip().lower() in ("none", "null", ""):
@@ -92,19 +91,17 @@ def is_valid_date(date_str):
         return False
 
 def is_valid_city(city_str):
-    """
-    Checks if a city string is valid (not None, not empty, not 'None'/'null').
-    """
-    if not city_str or not isinstance(city_str, str):
+    try:
+        if not city_str or not isinstance(city_str, str):
+            return False
+        if city_str.strip().lower() in ("none", "null", ""):
+            return False
+        return True
+    except Exception as e:
+        logger.error(f"Error validating city: {e}")
         return False
-    if city_str.strip().lower() in ("none", "null", ""):
-        return False
-    return True
 
 def is_valid_passengers(passengers_str):
-    """
-    Checks if a passenger count is a positive integer.
-    """
     if not passengers_str:
         return False
     try:
@@ -114,268 +111,287 @@ def is_valid_passengers(passengers_str):
         return False
 
 def get_search_details(request):
-    """
-    Search values GET se lo. Agar GET me value nahi hai to session se lo.
-    GET aur session values ko rigorously validate karo.
-    """
-    raw_from = request.GET.get('from')
-    raw_to = request.GET.get('to')
-    raw_date = request.GET.get('date')
-    raw_passengers = request.GET.get('passengers')
+    try:
+        raw_from = request.GET.get('from') or request.GET.get('source')
+        raw_to = request.GET.get('to') or request.GET.get('destination')
+        raw_date = request.GET.get('date')
+        raw_passengers = request.GET.get('passengers')
 
-    # Determine source city
-    if 'from' in request.GET:
-        if is_valid_city(raw_from):
-            from_city = raw_from.strip()
-            request.session['journey_from'] = from_city
-        else:
-            if raw_from == "":
-                from_city = ""
-                request.session['journey_from'] = ""
+        # Determine source city
+        if 'from' in request.GET or 'source' in request.GET:
+            if is_valid_city(raw_from):
+                from_city = raw_from.strip()
+                request.session['journey_from'] = from_city
             else:
-                session_from = request.session.get('journey_from')
-                from_city = session_from.strip() if is_valid_city(session_from) else ""
-    else:
-        session_from = request.session.get('journey_from')
-        from_city = session_from.strip() if is_valid_city(session_from) else ""
-
-    # Determine destination city
-    if 'to' in request.GET:
-        if is_valid_city(raw_to):
-            to_city = raw_to.strip()
-            request.session['journey_to'] = to_city
+                if raw_from == "":
+                    from_city = ""
+                    request.session['journey_from'] = ""
+                else:
+                    session_from = request.session.get('journey_from')
+                    from_city = session_from.strip() if is_valid_city(session_from) else ""
         else:
-            if raw_to == "":
-                to_city = ""
-                request.session['journey_to'] = ""
+            session_from = request.session.get('journey_from')
+            from_city = session_from.strip() if is_valid_city(session_from) else ""
+
+        # Determine destination city
+        if 'to' in request.GET or 'destination' in request.GET:
+            if is_valid_city(raw_to):
+                to_city = raw_to.strip()
+                request.session['journey_to'] = to_city
             else:
-                session_to = request.session.get('journey_to')
-                to_city = session_to.strip() if is_valid_city(session_to) else ""
-    else:
-        session_to = request.session.get('journey_to')
-        to_city = session_to.strip() if is_valid_city(session_to) else ""
-
-    # Determine travel date
-    if 'date' in request.GET:
-        if is_valid_date(raw_date):
-            travel_date = raw_date.strip()
-            request.session['journey_date'] = travel_date
+                if raw_to == "":
+                    to_city = ""
+                    request.session['journey_to'] = ""
+                else:
+                    session_to = request.session.get('journey_to')
+                    to_city = session_to.strip() if is_valid_city(session_to) else ""
         else:
-            if raw_date == "":
-                travel_date = date.today().strftime("%Y-%m-%d")
+            session_to = request.session.get('journey_to')
+            to_city = session_to.strip() if is_valid_city(session_to) else ""
+
+        # Determine travel date
+        if 'date' in request.GET:
+            if is_valid_date(raw_date):
+                travel_date = raw_date.strip()
                 request.session['journey_date'] = travel_date
             else:
-                session_date = request.session.get('journey_date')
-                travel_date = session_date.strip() if is_valid_date(session_date) else date.today().strftime("%Y-%m-%d")
-    else:
-        session_date = request.session.get('journey_date')
-        travel_date = session_date.strip() if is_valid_date(session_date) else date.today().strftime("%Y-%m-%d")
-
-    # Determine passengers count
-    if 'passengers' in request.GET:
-        if is_valid_passengers(raw_passengers):
-            passengers = raw_passengers.strip()
-            request.session['num_passengers'] = passengers
+                if raw_date == "":
+                    travel_date = date.today().strftime("%Y-%m-%d")
+                    request.session['journey_date'] = travel_date
+                else:
+                    session_date = request.session.get('journey_date')
+                    travel_date = session_date.strip() if is_valid_date(session_date) else date.today().strftime("%Y-%m-%d")
         else:
-            if raw_passengers == "":
-                passengers = "1"
-                request.session['num_passengers'] = "1"
-            else:
-                session_passengers = request.session.get('num_passengers')
-                passengers = session_passengers.strip() if is_valid_passengers(session_passengers) else "1"
-    else:
-        session_passengers = request.session.get('num_passengers')
-        passengers = session_passengers.strip() if is_valid_passengers(session_passengers) else "1"
+            session_date = request.session.get('journey_date')
+            travel_date = session_date.strip() if is_valid_date(session_date) else date.today().strftime("%Y-%m-%d")
 
-    return {
-        'from_city': from_city,
-        'to_city': to_city,
-        'travel_date': travel_date,
-        'passengers': passengers,
-    }
+        # Determine passengers count
+        if 'passengers' in request.GET:
+            if is_valid_passengers(raw_passengers):
+                passengers = raw_passengers.strip()
+                request.session['num_passengers'] = passengers
+            else:
+                if raw_passengers == "":
+                    passengers = "1"
+                    request.session['num_passengers'] = "1"
+                else:
+                    session_passengers = request.session.get('num_passengers')
+                    passengers = session_passengers.strip() if is_valid_passengers(session_passengers) else "1"
+        else:
+            session_passengers = request.session.get('num_passengers')
+            passengers = session_passengers.strip() if is_valid_passengers(session_passengers) else "1"
+
+        # Determine round_trip option
+        if 'round_trip' in request.GET:
+            raw_round_trip = request.GET.get('round_trip')
+            is_round_trip = True if raw_round_trip in ['1', 'true', 'True', 'on'] else False
+            request.session['round_trip'] = is_round_trip
+        else:
+            is_round_trip = request.session.get('round_trip', False)
+
+        return {
+            'from_city': from_city,
+            'to_city': to_city,
+            'travel_date': travel_date,
+            'passengers': passengers,
+            'round_trip': is_round_trip,
+        }
+    except Exception as e:
+        logger.error(f"Error getting search details: {e}")
+        return {
+            'from_city': '',
+            'to_city': '',
+            'travel_date': date.today().strftime("%Y-%m-%d"),
+            'passengers': '1',
+        }
 
 def travel_date_or_today(travel_date):
-    """
-    Seat count ke liye date chahiye. Date na mile ya invalid ho to aaj ki date use hoti hai.
-    """
-    if is_valid_date(travel_date):
-        return travel_date
-    return date.today().strftime("%Y-%m-%d")
+    try:
+        if is_valid_date(travel_date):
+            return travel_date
+        return date.today().strftime("%Y-%m-%d")
+    except Exception as e:
+        logger.error(f"Error in travel_date_or_today: {e}")
+        return date.today().strftime("%Y-%m-%d")
 
 def booked_seat_count(bus, travel_date):
-    """
-    Sirf successful paid bookings ko booked seat maana gaya hai.
-    """
-    date_to_use = travel_date_or_today(travel_date)
-    return Booking.objects.filter(
-        bus=bus,
-        travel_date=date_to_use,
-        payment=True,
-        payment_status="success",
-        booking_status="booked"
-    ).count()
+    try:
+        date_to_use = travel_date_or_today(travel_date)
+        return Booking.objects.filter(
+            bus=bus,
+            travel_date=date_to_use,
+            payment=True,
+            payment_status="success",
+            booking_status="booked"
+        ).count()
+    except Exception as e:
+        logger.error(f"Error counting booked seats: {e}")
+        return 0
 
 def set_live_available_seats(buses, travel_date):
-    """
-    Har bus par current available_seats value attach karta hai.
-    """
-    date_to_use = travel_date_or_today(travel_date)
-    for bus in buses:
-        bus.available_seats = max(0, bus.total_seats - booked_seat_count(bus, date_to_use))
+    try:
+        date_to_use = travel_date_or_today(travel_date)
+        for bus in buses:
+            bus.available_seats = max(0, bus.total_seats - booked_seat_count(bus, date_to_use))
+    except Exception as e:
+        logger.error(f"Error setting live available seats: {e}")
 
 def get_booked_seats(bus, travel_date):
-    """
-    Seat map ke liye blocked seat numbers ki list.
-    """
-    date_to_use = travel_date_or_today(travel_date)
-    return list(
-        SeatBooking.objects.filter(
-            bus=bus,
-            journey_date=date_to_use
-        ).values_list("seat_number", flat=True)
-    )
+    try:
+        date_to_use = travel_date_or_today(travel_date)
+        return list(
+            SeatBooking.objects.filter(
+                bus=bus,
+                journey_date=date_to_use
+            ).values_list("seat_number", flat=True)
+        )
+    except Exception as e:
+        logger.error(f"Error getting booked seats: {e}")
+        return []
 
 def calculate_payment_summary(bookings):
-    """
-    Fare summary ek jagah calculate hoti hai.
-    """
-    subtotal = sum(booking.amount for booking in bookings)
-    gst_fees = int((subtotal * 5) / 100)
-    convenience_fee = 40 * len(bookings)
-    total_price = subtotal + gst_fees + convenience_fee
-    return subtotal, gst_fees, convenience_fee, total_price
+    try:
+        subtotal = sum(booking.amount for booking in bookings)
+        gst_fees = int((subtotal * 5) / 100)
+        convenience_fee = 40 * len(bookings)
+        total_price = subtotal + gst_fees + convenience_fee
+        return subtotal, gst_fees, convenience_fee, total_price
+    except Exception as e:
+        logger.error(f"Error calculating payment summary: {e}")
+        return 0, 0, 0, 0
 
 def make_passenger_dict(booking):
-    """
-    Template me passenger details dikhane ke liye simple dict.
-    """
-    return {
-        'name': booking.passenger_name,
-        'age': booking.passenger_age,
-        'gender': booking.passenger_gender,
-        'seat': booking.seat_number,
-    }
+    try:
+        return {
+            'name': booking.passenger_name,
+            'age': booking.passenger_age,
+            'gender': booking.passenger_gender,
+            'seat': booking.seat_number,
+        }
+    except Exception as e:
+        logger.error(f"Error making passenger dict: {e}")
+        return {'name': '', 'age': 0, 'gender': '', 'seat': ''}
 
 def build_order_groups(bookings):
-    """
-    Ek payment me kai seats ho sakti hain. Unhe ek card/group me combine karta hai.
-    """
-    groups = []
-    group_by_key = {}
+    try:
+        groups = []
+        group_by_key = {}
 
-    for booking in bookings:
-        key = (booking.bus.id, booking.travel_date, booking.booking_date, booking.status, booking.payment)
+        for booking in bookings:
+            key = (booking.bus.id, booking.travel_date, booking.booking_date, booking.status, booking.payment)
 
-        if key not in group_by_key:
-            group_by_key[key] = {
-                'id': booking.id,
-                'booking_ids': [],
-                'bus': booking.bus,
-                'travel_date': booking.travel_date,
-                'booking_date': booking.booking_date,
-                'status': booking.status,
-                'payment': booking.payment,
-                'seat_numbers': [],
-                'passengers': [],
-                'total_fare': 0,
-            }
-            groups.append(group_by_key[key])
+            if key not in group_by_key:
+                group_by_key[key] = {
+                    'id': booking.id,
+                    'booking_ids': [],
+                    'bus': booking.bus,
+                    'travel_date': booking.travel_date,
+                    'booking_date': booking.booking_date,
+                    'status': booking.status,
+                    'payment': booking.payment,
+                    'seat_numbers': [],
+                    'passengers': [],
+                    'total_fare': 0,
+                }
+                groups.append(group_by_key[key])
 
-        group = group_by_key[key]
-        group['booking_ids'].append(str(booking.id))
-        group['seat_numbers'].append(booking.seat_number)
-        group['passengers'].append(make_passenger_dict(booking))
-        group['total_fare'] += booking.amount
+            group = group_by_key[key]
+            group['booking_ids'].append(str(booking.id))
+            group['seat_numbers'].append(booking.seat_number)
+            group['passengers'].append(make_passenger_dict(booking))
+            group['total_fare'] += booking.amount
 
-    for group in groups:
-        group['seat_numbers_str'] = ", ".join(group['seat_numbers'])
-        group['booking_ids_str'] = ",".join(group['booking_ids'])
-        group['num_seats'] = len(group['seat_numbers'])
+        for group in groups:
+            group['seat_numbers_str'] = ", ".join(group['seat_numbers'])
+            group['booking_ids_str'] = ",".join(group['booking_ids'])
+            group['num_seats'] = len(group['seat_numbers'])
 
-    return groups
+        return groups
+    except Exception as e:
+        logger.error(f"Error building order groups: {e}")
+        return []
 
 def split_orders_by_date(groups):
-    """
-    Orders ko upcoming, past, cancelled lists me baantta hai.
-    """
-    today = date.today()
-    upcoming = []
-    past = []
-    cancelled = []
+    try:
+        today = date.today()
+        upcoming = []
+        past = []
+        cancelled = []
 
-    for group in groups:
-        if group['status'] == 'cancelled':
-            cancelled.append(group)
-        elif group['travel_date'] >= today:
-            upcoming.append(group)
-        else:
-            past.append(group)
+        for group in groups:
+            if group['status'] == 'cancelled':
+                cancelled.append(group)
+            elif group['travel_date'] >= today:
+                upcoming.append(group)
+            else:
+                past.append(group)
 
-    return upcoming, past, cancelled
+        return upcoming, past, cancelled
+    except Exception as e:
+        logger.error(f"Error splitting orders: {e}")
+        return [], [], []
 
 def create_pending_bookings(customer, bus, seats, travel_date, post_data):
-    """
-    Selected seats ke liye unpaid bookings banata hai.
-    """
-    booking_ids = []
+    try:
+        booking_ids = []
 
-    for seat in seats:
-        booking = Booking.objects.create(
-            user=customer,
-            bus=bus,
-            seat_number=seat,
-            passenger_name=post_data.get(f"passenger_name_{seat}", ""),
-            passenger_age=int(post_data.get(f"passenger_age_{seat}", 0)),
-            passenger_gender=post_data.get(f"passenger_gender_{seat}", ""),
-            amount=bus.fare,
-            travel_date=travel_date,
-            status="booked",
-            payment=False
-        )
-        booking_ids.append(str(booking.id))
+        for seat in seats:
+            booking = Booking.objects.create(
+                user=customer,
+                bus=bus,
+                seat_number=seat,
+                passenger_name=post_data.get(f"passenger_name_{seat}", ""),
+                passenger_age=int(post_data.get(f"passenger_age_{seat}", 0)),
+                passenger_gender=post_data.get(f"passenger_gender_{seat}", ""),
+                amount=bus.fare,
+                travel_date=travel_date,
+                status="booked",
+                payment=False
+            )
+            booking_ids.append(str(booking.id))
 
-    return booking_ids
+        return booking_ids
+    except Exception as e:
+        logger.error(f"Error creating pending bookings: {e}")
+        return []
 
 def mark_bookings_paid(bookings, payment_id, order_id, signature):
-    """
-    Payment success ke baad booking confirm aur seat block karta hai.
-    """
-    for booking in bookings:
-        booking.payment = True
-        booking.payment_status = "success"
-        booking.booking_status = "booked"
-        booking.status = "booked"
-        booking.payment_id = payment_id
-        booking.razorpay_order_id = order_id
-        booking.razorpay_signature = signature
-        booking.save()
+    try:
+        for booking in bookings:
+            booking.payment = True
+            booking.payment_status = "success"
+            booking.booking_status = "booked"
+            booking.status = "booked"
+            booking.payment_id = payment_id
+            booking.razorpay_order_id = order_id
+            booking.razorpay_signature = signature
+            booking.save()
 
-        SeatBooking.objects.get_or_create(
-            booking=booking,
-            bus=booking.bus,
-            seat_number=booking.seat_number,
-            journey_date=booking.travel_date
-        )
+            SeatBooking.objects.get_or_create(
+                booking=booking,
+                bus=booking.bus,
+                seat_number=booking.seat_number,
+                journey_date=booking.travel_date
+            )
+    except Exception as e:
+        logger.error(f"Error marking bookings paid: {e}")
 
 def mark_bookings_failed(bookings):
-    """
-    Payment fail ho to booking cancel karta hai.
-    """
-    for booking in bookings:
-        booking.payment = False
-        booking.payment_status = "failed"
-        booking.booking_status = "cancelled"
-        booking.status = "cancelled"
-        booking.save()
+    try:
+        for booking in bookings:
+            booking.payment = False
+            booking.payment_status = "failed"
+            booking.booking_status = "cancelled"
+            booking.status = "cancelled"
+            booking.save()
+    except Exception as e:
+        logger.error(f"Error marking bookings failed: {e}")
 
 #==========================================================================
 #    Customer Views
 #==========================================================================
 
 def index(request):
-    """
-    Renders the homepage with routes, distinct sources, and destinations.
-    """
     try:
         routes = Route.objects.all()
         sources = Bus.objects.values_list('source', flat=True).distinct().order_by('source')
@@ -391,15 +407,13 @@ def index(request):
         return HttpResponse("An error occurred loading the home page.")
 
 def about(request):
-    """
-    Renders the about page.
-    """
-    return render(request, 'about.html')
+    try:
+        return render(request, 'about.html')
+    except Exception as e:
+        logger.error(f"Error in about view: {e}")
+        return HttpResponse("An error occurred loading the page.")
 
 def travel_guidelines(request):
-    """
-    Renders the travel guidelines page.
-    """
     try:
         return render(request, 'travel_guidelines.html')
     except Exception as e:
@@ -407,9 +421,6 @@ def travel_guidelines(request):
         return HttpResponse("An error occurred loading the travel guidelines page.")
 
 def contact(request):
-    """
-    Handles user contact form submission.
-    """
     if request.method == 'POST':
         # print(request.POST)  # Debug
         # print("Name:", request.POST.get('name'))
@@ -463,10 +474,6 @@ Message:
     return render(request, 'contact.html')
 
 def contact_message(request):
-    """
-    Display all contact messages for Admin and Manager.
-    Paginated at 2 records per page.
-    """
     # Login Check
     if 'email' not in request.session:
         return redirect('login')
@@ -502,9 +509,6 @@ def contact_message(request):
         return render(request, 'contact_messages.html', context)
       
 def register(request):
-    """
-    Handles new user registration with email and mobile uniqueness validations.
-    """
     if request.method == "POST":
         try:
             name = request.POST.get("name", "").strip()
@@ -560,11 +564,6 @@ def register(request):
 
 @csrf_exempt
 def login(request):
-    """
-    Handles user login by verifying email and password.
-    On success, sets up the session and redirects directly to the home page.
-    OTP step has been removed from the login flow.
-    """
     if request.method == 'POST':
         email = request.POST.get('email', '').strip()
         password = request.POST.get('password', '').strip()
@@ -599,9 +598,6 @@ def login(request):
     return render(request, 'login.html')
 
 def forgot_password(request):
-    """
-    Handles forgot password request by verifying email and sending OTP.
-    """
     if request.method == "POST":
         try:
             email = request.POST.get("email", "").strip()
@@ -633,9 +629,6 @@ def forgot_password(request):
     return render(request, "forgot_password.html")
 
 def verify_forgot_otp(request):
-    """
-    Verifies the forgot password OTP.
-    """
     if request.method == "POST":
         try:
             user_otp = request.POST.get("otp", "").strip()
@@ -657,9 +650,6 @@ def verify_forgot_otp(request):
     return render(request, "verify_forgot_otp.html")
 
 def reset_password(request):
-    """
-    Resets the user's password to the newly provided one.
-    """
     if 'forgot_email' not in request.session or not request.session.get('otp_verified'):
         return redirect("login")
 
@@ -694,16 +684,13 @@ def reset_password(request):
     return render(request, "reset_password.html")
 
 def logout(request):
-    """
-    Flushes the current session and logs the user out.
-    """
-    request.session.flush()
+    try:
+        request.session.flush()
+    except Exception as e:
+        logger.error(f"Error during logout: {e}")
     return redirect('login')
 
 def account(request):
-    """
-    Handles user profile detail updates.
-    """
     email = request.session.get('email')
     if not email:
         return redirect('login')
@@ -735,9 +722,6 @@ def account(request):
     return render(request, 'account.html', {'user': user})
 
 def delete_account(request):
-    """
-    Deletes the current user account and clears the session.
-    """
     email = request.session.get('email')
     if email:
         try:
@@ -749,17 +733,20 @@ def delete_account(request):
     return redirect('login')
 
 def bus_list(request):
-    """
-    Bus search page: route filter, pagination, aur live available seats.
-    """
     search = get_search_details(request)
     buses = Bus.objects.all().order_by('id')
 
     if search['from_city'] and search['to_city']:
-        buses = buses.filter(
-            source__iexact=search['from_city'],
-            destination__iexact=search['to_city']
-        )
+        if search.get('round_trip'):
+            buses = buses.filter(
+                (Q(source__iexact=search['from_city']) & Q(destination__iexact=search['to_city'])) |
+                (Q(source__iexact=search['to_city']) & Q(destination__iexact=search['from_city']))
+            )
+        else:
+            buses = buses.filter(
+                source__iexact=search['from_city'],
+                destination__iexact=search['to_city']
+            )
 
     class CustomPage(Page):
         def count(self):
@@ -791,12 +778,10 @@ def bus_list(request):
         'to_city': search['to_city'],
         'travel_date': search['travel_date'],
         'passengers': search['passengers'],
+        'round_trip': search.get('round_trip', False),
     })
 
 def bus_detail(request, pk):
-    """
-    Single bus detail page with live available seat count.
-    """
     try:
         bus = Bus.objects.get(id=pk)
     except Bus.DoesNotExist:
@@ -814,9 +799,6 @@ def bus_detail(request, pk):
     })
 
 def seat_booking(request, pk=None):
-    """
-    Seat map dikhata hai aur selected seats ki pending booking banata hai.
-    """
     customer = get_customer_user(request)
     if not customer:
         return redirect("login")
@@ -867,18 +849,16 @@ def seat_booking(request, pk=None):
         return HttpResponse(f"Error occurred: {e}")
 
 def dashboard(request):
-    """
-    Renders customer dashboard page.
-    """
-    customer = get_customer_user(request)
-    if not customer:
+    try:
+        customer = get_customer_user(request)
+        if not customer:
+            return redirect('login')
+        return render(request, 'dashboard.html')
+    except Exception as e:
+        logger.error(f"Error in dashboard view: {e}")
         return redirect('login')
-    return render(request, 'dashboard.html')
 
 def my_orders(request):
-    """
-    Customer ki bookings ko readable groups me dikhata hai.
-    """
     customer = get_customer_user(request)
     if not customer:
         return redirect('login')
@@ -900,9 +880,6 @@ def my_orders(request):
         return HttpResponse("An error occurred loading bookings.")
 
 def payment(request):
-    """
-    Payment page: booking verify, amount calculate, Razorpay order create.
-    """
     customer = get_customer_user(request)
     if not customer:
         return redirect("login")
@@ -952,10 +929,6 @@ def payment(request):
         return HttpResponse(f"Error occurred: {e}")
     
 def generate_ticket_pdf_bytes(bookings):
-    """
-    Generates a professional, premium PDF binary stream for a list of bookings.
-    Uses a clean, modern grid style matching the BusYatra template.
-    """
     import qrcode
 
     def format_time(t):
@@ -1090,8 +1063,8 @@ def generate_ticket_pdf_bytes(bookings):
     arrival_time_str = format_time(bus.arrival_time)
     travel_date_str = format_date(first_b.travel_date)
 
-    # Route display: Source ↓ Destination
-    route_html = f"<font size=11><b>{bus.source}</b></font><br/><font size=10 color='#3B82F6'><b>↓</b></font><br/><font size=11><b>{bus.destination}</b></font>"
+    # Route display: Source → Destination (Single row)
+    route_html = f"<font size=10><b>{bus.source}</b></font> <font size=10 color='#3B82F6'><b>→</b></font> <font size=10><b>{bus.destination}</b></font>"
     route_p = Paragraph(route_html, route_style)
 
     journey_left_data = [
@@ -1300,9 +1273,6 @@ def generate_ticket_pdf_bytes(bookings):
     return buffer.getvalue()
 
 def ticket(request):
-    """
-    Payment callback verify karta hai. Success par ticket dikhata hai.
-    """
     customer = get_customer_user(request)
     if not customer:
         return redirect("login")
@@ -1372,10 +1342,6 @@ def ticket(request):
         return HttpResponse(f"Error occurred: {e}")
 
 def download_ticket_pdf(request):
-    """
-    Logged-in customer ke ticket ka PDF download karata hai ya inline render karta hai print ke liye.
-    Uses the same single PDF generator function generate_ticket_pdf_bytes.
-    """
     customer = get_customer_user(request)
     if not customer:
         return redirect('login')
@@ -1405,10 +1371,6 @@ def download_ticket_pdf(request):
 #==========================================================================
 
 def manager_bookings(request):
-    """
-    Lists all bookings placed on buses owned by the logged-in manager.
-    Paginated at 6 records per page.
-    """
     manager = get_manager_user(request)
     if not manager:
         return redirect('login')
@@ -1427,10 +1389,6 @@ def manager_bookings(request):
     return render(request, 'manager-bookings.html', {'bookings': bookings, 'page_obj': bookings})
 
 def manager_buses(request):
-    """
-    Lists the manager's active bus fleet.
-    Paginated at 6 records per page.
-    """
     manager = get_manager_user(request)
     if not manager:
         return redirect('login')
@@ -1448,9 +1406,6 @@ def manager_buses(request):
     return render(request, 'manager-buses.html', {'buses': buses, 'page_obj': buses})
 
 def add_bus(request):
-    """
-    Allows a manager to register a new bus with unique license number check.
-    """
     manager = get_manager_user(request)
     if not manager:
         return redirect('login')
@@ -1485,9 +1440,6 @@ def add_bus(request):
     return render(request, 'add_bus.html')
 
 def edit_bus(request, bus_id):
-    """
-    Modifies configuration of a specific bus owned by the manager.
-    """
     manager = get_manager_user(request)
     if not manager:
         return redirect('login')
@@ -1527,9 +1479,6 @@ def edit_bus(request, bus_id):
     return render(request, 'edit_bus.html', {'bus': bus})
 
 def delete_bus(request, bus_id):
-    """
-    Deletes a specific bus owned by the logged-in manager.
-    """
     manager = get_manager_user(request)
     if not manager:
         return redirect('login')
@@ -1542,10 +1491,6 @@ def delete_bus(request, bus_id):
     return redirect('manager_buses')
 
 def manager_routes(request):
-    """
-    Lists routes managed by the active manager.
-    Paginated at 6 records per page.
-    """
     manager = get_manager_user(request)
     if not manager:
         return redirect('login')
@@ -1563,9 +1508,6 @@ def manager_routes(request):
     return render(request, 'manager-routes.html', {'routes': routes, 'page_obj': routes})
 
 def add_route(request):
-    """
-    Registers a new unique route.
-    """
     manager = get_manager_user(request)
     if not manager:
         return redirect('login')
@@ -1594,9 +1536,6 @@ def add_route(request):
     return render(request, 'add_route.html')
 
 def edit_route(request, route_id):
-    """
-    Updates route configurations.
-    """
     manager = get_manager_user(request)
     if not manager:
         return redirect('login')
@@ -1628,9 +1567,6 @@ def edit_route(request, route_id):
     return render(request, 'edit_route.html', {'route': route})
 
 def delete_route(request, route_id):
-    """
-    Deletes route records.
-    """
     manager = get_manager_user(request)
     if not manager:
         return redirect('login')
@@ -1642,22 +1578,15 @@ def delete_route(request, route_id):
         pass
     return redirect('manager_routes')
 
-def get_report_context(manager, start_date_str, end_date_str):
-    """
-    Helper function: computes all analytics data needed by both the
-    Manager Dashboard and the Manager Reports page.
-
-    Parameters:
-        manager       — the logged-in manager User object
-        start_date_str — date string 'YYYY-MM-DD' or None
-        end_date_str   — date string 'YYYY-MM-DD' or None
-
-    Returns a dict with keys:
-        total_buses, total_revenue, total_tickets, avg_occupancy,
-        start_date, end_date, svg_path, svg_nodes, route_data,
-        max_rev, half_max_rev, quarter_max_rev
-    """
-    buses_query = Bus.objects.filter(manager=manager)
+def get_report_context(user, start_date_str, end_date_str):
+    if user and getattr(user, 'usertype', '') == 'admin':
+        buses_query = Bus.objects.all()
+    elif user and getattr(user, 'usertype', '') == 'manager':
+        buses_query = Bus.objects.filter(manager=user)
+    elif user:
+        buses_query = Bus.objects.filter(manager=user)
+    else:
+        buses_query = Bus.objects.all()
     total_buses = buses_query.count()
 
     # Step 1: Filter paid/completed bookings by date range with select_related for query optimization
@@ -1786,11 +1715,6 @@ def get_report_context(manager, start_date_str, end_date_str):
 
 
 def manager_dashboard(request):
-    """
-    Compiles operational fleet and business metrics for the manager.
-    Also includes analytics (date-filtered revenue, chart, route productivity)
-    reusing the same logic as the Reports page via get_report_context().
-    """
     manager = get_manager_user(request)
     if not manager:
         return redirect('login')
@@ -1868,32 +1792,18 @@ def manager_dashboard(request):
 
 
 def manager_reports(request):
-    """
-    Renders reports interface with live database analytics.
-    Reuses get_report_context() helper to avoid duplicating query logic.
-    """
-    manager = get_manager_user(request)
-    if not manager:
+    try:
+        return redirect('manager_dashboard')
+    except Exception as e:
+        logger.error(f"Error redirecting manager reports: {e}")
         return redirect('login')
-
-    # Get date filter params from GET request
-    start_date_str = request.GET.get('start_date')
-    end_date_str = request.GET.get('end_date')
-
-    # Build context using the shared helper function
-    context = get_report_context(manager, start_date_str, end_date_str)
-
-    return render(request, 'manager-reports.html', context)
 
 
 def export_pdf(request):
-    """
-    Generates and downloads a professional PDF performance report
-    for the logged-in manager based on the selected date range.
-    """
-    # 1. Authenticate the Manager
+    # 1. Authenticate Manager or Admin
     manager = get_manager_user(request)
-    if not manager:
+    admin = get_admin_user(request) if not manager else None
+    if not manager and not admin:
         return redirect('login')
 
     # 2. Get and validate date filters
@@ -1912,7 +1822,10 @@ def export_pdf(request):
         return HttpResponse("Validation Error: Invalid date format. Use YYYY-MM-DD.", status=400)
 
     # 3. Query the filtered bookings
-    buses_query = Bus.objects.filter(manager=manager)
+    if manager:
+        buses_query = Bus.objects.filter(manager=manager)
+    else:
+        buses_query = Bus.objects.all()
     total_buses = buses_query.count()
 
     bookings_query = Booking.objects.filter(
@@ -1986,11 +1899,16 @@ def export_pdf(request):
         'StatVal', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=14, leading=18, textColor=HexColor('#0F172A')
     )
 
+    user = manager or admin
+    user_name = user.name if user else "System User"
+    user_email = user.email if user else ""
+    user_role = "Manager" if manager else "Admin"
+
     elements = []
 
     # Left content of header: Report Title & Period
     left_content = [
-        [Paragraph("<b>BusYatra Manager Reports</b>", title_style)],
+        [Paragraph(f"<b>BusYatra {user_role} Performance Report</b>", title_style)],
         [Paragraph(f"Reporting Period: {start_date_str} to {end_date_str}", meta_style)]
     ]
     left_table = Table(left_content, colWidths=[360])
@@ -2000,10 +1918,10 @@ def export_pdf(request):
         ('TOPPADDING', (0,0), (-1,-1), 0),
     ]))
 
-    # Right content of header: Manager profile info
+    # Right content of header: User profile info
     right_content = [
-        [Paragraph(f"<b>Manager:</b> {manager.name}", meta_style)],
-        [Paragraph(f"<b>Email:</b> {manager.email}", meta_style)],
+        [Paragraph(f"<b>{user_role}:</b> {user_name}", meta_style)],
+        [Paragraph(f"<b>Email:</b> {user_email}", meta_style)],
         [Paragraph(f"<b>Generated On:</b> {date.today().isoformat()}", meta_style)]
     ]
     right_table = Table(right_content, colWidths=[180])
@@ -2113,15 +2031,12 @@ def export_pdf(request):
 
 
 def export_csv(request):
-    """
-    Generates and downloads a CSV spreadsheet report for the logged-in manager
-    based on the selected date range.
-    """
     import csv
 
-    # 1. Authenticate the Manager
+    # 1. Authenticate Manager or Admin
     manager = get_manager_user(request)
-    if not manager:
+    admin = get_admin_user(request) if not manager else None
+    if not manager and not admin:
         return redirect('login')
 
     # 2. Get and validate date filters
@@ -2140,7 +2055,10 @@ def export_csv(request):
         return HttpResponse("Validation Error: Invalid date format. Use YYYY-MM-DD.", status=400)
 
     # 3. Query the filtered bookings
-    buses_query = Bus.objects.filter(manager=manager)
+    if manager:
+        buses_query = Bus.objects.filter(manager=manager)
+    else:
+        buses_query = Bus.objects.all()
 
     bookings_query = Booking.objects.filter(
         bus__in=buses_query,
@@ -2185,9 +2103,6 @@ def export_csv(request):
 
 
 def manager_schedules(request):
-    """
-    Creates and schedules travel trip calendars.
-    """
     manager = get_manager_user(request)
     if not manager:
         return redirect('login')
@@ -2228,9 +2143,6 @@ def manager_schedules(request):
     return render(request, 'manager-schedules.html', context)
 
 def edit_schedule(request, pk):
-    """
-    Alters scheduled calendars.
-    """
     manager = get_manager_user(request)
     if not manager:
         return redirect('login')
@@ -2262,9 +2174,6 @@ def edit_schedule(request, pk):
     return render(request, 'edit_schedule.html', context)
 
 def delete_schedule(request, pk):
-    """
-    Deletes schedule sheets.
-    """
     manager = get_manager_user(request)
     if not manager:
         return redirect('login')
@@ -2277,9 +2186,6 @@ def delete_schedule(request, pk):
     return redirect('manager_schedules')
 
 def manager_seats(request):
-    """
-    Displays real-time booking lists and seat maps for the manager.
-    """
     manager = get_manager_user(request)
     if not manager:
         return redirect('login')
@@ -2319,9 +2225,6 @@ def manager_seats(request):
     return render(request, 'manager-seats.html', context)
 
 def manager_profile(request):
-    """
-    Alters settings profile for a manager.
-    """
     manager = get_manager_user(request)
     if not manager:
         return redirect('login')
@@ -2378,9 +2281,6 @@ def manager_profile(request):
     return render(request, 'manager-profile.html', {'msg': msg, 'msg1': msg1})
 
 def manager_booking_detail(request, booking_id):
-    """
-    Renders details for a customer booking on one of the manager's buses.
-    """
     manager = get_manager_user(request)
     if not manager:
         return redirect('login')
@@ -2392,9 +2292,6 @@ def manager_booking_detail(request, booking_id):
         return redirect('manager_bookings')
 
 def manager_cancel_booking(request, booking_id):
-    """
-    Cancels a customer's booking. Frees up their seat allocation.
-    """
     manager = get_manager_user(request)
     if not manager:
         return redirect('login')
@@ -2416,9 +2313,6 @@ def manager_cancel_booking(request, booking_id):
 #    Admin Views
 #==========================================================================
 def admin_dashboard(request):
-    """
-    Assembles metrics dashboard across the system.
-    """
     admin = get_admin_user(request)
     if not admin:
         return redirect('login')
@@ -2443,6 +2337,13 @@ def admin_dashboard(request):
         recent_customers = User.objects.filter(usertype='customer').order_by('-id')[:5]
         recent_managers = User.objects.filter(usertype='manager').order_by('-id')[:5]
 
+        # Read date filter params from GET
+        start_date_str = request.GET.get('start_date')
+        end_date_str = request.GET.get('end_date')
+
+        # Get analytics data using the shared helper get_report_context
+        report_ctx = get_report_context(admin, start_date_str, end_date_str)
+
         context = {
             'fleet_count': total_buses,
             'route_count': total_routes,
@@ -2463,16 +2364,13 @@ def admin_dashboard(request):
             'recent_managers': recent_managers,
             'login_user': admin,
         }
+        context.update(report_ctx)
         return render(request, 'admin-dashboard.html', context)
     except Exception as e:
         logger.error(f"Admin Dashboard Error: {e}")
         return HttpResponse("An error occurred loading admin dashboard data.")
 
 def admin_users(request):
-    """
-    Lists customer accounts. Supports search filters.
-    Paginated at 6 records per page.
-    """
     admin = get_admin_user(request)
     if not admin:
         return redirect('login')
@@ -2498,9 +2396,6 @@ def admin_users(request):
     return render(request, 'admin-users.html', {'customers': customers, 'page_obj': customers, 'search_query': query, 'login_user': admin})
 
 def admin_add_customer(request):
-    """
-    Creates customer profiles from admin console.
-    """
     admin = get_admin_user(request)
     if not admin:
         return redirect('login')
@@ -2537,9 +2432,6 @@ def admin_add_customer(request):
     return render(request, 'admin-add-customer.html', {'msg': msg, 'login_user': admin})
 
 def admin_edit_customer(request, user_id):
-    """
-    Updates configuration profiles of customer accounts.
-    """
     admin = get_admin_user(request)
     if not admin:
         return redirect('login')
@@ -2579,20 +2471,18 @@ def admin_edit_customer(request, user_id):
     return render(request, 'admin-edit-customer.html', {'customer': customer, 'msg': msg, 'login_user': admin})
 
 def admin_delete_customer(request, user_id):
-    """
-    Deletes customer profiles.
-    """
-    admin = get_admin_user(request)
-    if not admin:
-        return redirect('login')
+    try:
+        admin = get_admin_user(request)
+        if not admin:
+            return redirect('login')
 
-    User.objects.filter(id=user_id, usertype='customer').delete()
-    return redirect('admin_users')
+        User.objects.filter(id=user_id, usertype='customer').delete()
+        return redirect('admin_users')
+    except Exception as e:
+        logger.error(f"Error deleting customer: {e}")
+        return redirect('admin_users')
 
 def admin_customer_detail(request, user_id):
-    """
-    Renders billing ledger and profile history metrics for a customer.
-    """
     admin = get_admin_user(request)
     if not admin:
         return redirect('login')
@@ -2605,10 +2495,6 @@ def admin_customer_detail(request, user_id):
         return redirect('admin_users')
 
 def admin_managers(request):
-    """
-    Lists registered managers. Supports search queries.
-    Paginated at 6 records per page.
-    """
     admin = get_admin_user(request)
     if not admin:
         return redirect('login')
@@ -2638,9 +2524,6 @@ def admin_managers(request):
     return render(request, 'admin-managers.html', {'managers': managers, 'page_obj': managers, 'search_query': query, 'login_user': admin})
 
 def admin_add_manager(request):
-    """
-    Registers a new manager profile.
-    """
     admin = get_admin_user(request)
     if not admin:
         return redirect('login')
@@ -2676,9 +2559,6 @@ def admin_add_manager(request):
     return render(request, 'admin-add-manager.html', {'msg': msg, 'login_user': admin})
 
 def admin_edit_manager(request, user_id):
-    """
-    Updates profiles of manager accounts.
-    """
     admin = get_admin_user(request)
     if not admin:
         return redirect('login')
@@ -2718,20 +2598,18 @@ def admin_edit_manager(request, user_id):
     return render(request, 'admin-edit-manager.html', {'manager': manager, 'msg': msg, 'login_user': admin})
 
 def admin_delete_manager(request, user_id):
-    """
-    Removes manager configurations.
-    """
-    admin = get_admin_user(request)
-    if not admin:
-        return redirect('login')
+    try:
+        admin = get_admin_user(request)
+        if not admin:
+            return redirect('login')
 
-    User.objects.filter(id=user_id, usertype='manager').delete()
-    return redirect('admin_managers')
+        User.objects.filter(id=user_id, usertype='manager').delete()
+        return redirect('admin_managers')
+    except Exception as e:
+        logger.error(f"Error deleting manager: {e}")
+        return redirect('admin_managers')
 
 def admin_manager_detail(request, user_id):
-    """
-    Renders details of a manager, showing their fleet and generated revenue.
-    """
     admin = get_admin_user(request)
     if not admin:
         return redirect('login')
@@ -2747,10 +2625,6 @@ def admin_manager_detail(request, user_id):
         return redirect('admin_managers')
 
 def admin_buses(request):
-    """
-    Lists registered buses.
-    Paginated at 6 records per page.
-    """
     admin = get_admin_user(request)
     if not admin:
         return redirect('login')
@@ -2768,9 +2642,6 @@ def admin_buses(request):
     return render(request, 'admin-buses.html', {'buses': buses, 'page_obj': buses, 'login_user': admin})
 
 def admin_add_bus(request):
-    """
-    Registers a new bus from the admin panel.
-    """
     admin = get_admin_user(request)
     if not admin:
         return redirect('login')
@@ -2790,7 +2661,7 @@ def admin_add_bus(request):
         fare = request.POST.get('fare')
 
         if not manager_id or not bus_name or not bus_number or not source or not destination or not departure_time or not arrival_time or not total_seats or not fare:
-            msg = "Duplicate Bus Number should not be allowed."
+            msg = "All fields are required."
         elif Bus.objects.filter(bus_number=bus_number).exists():
             msg = "Duplicate Bus Number should not be allowed."
         else:
@@ -2818,9 +2689,6 @@ def admin_add_bus(request):
     return render(request, 'admin-add-bus.html', {'managers': managers, 'msg': msg, 'login_user': admin})
 
 def admin_edit_bus(request, bus_id):
-    """
-    Alters bus config specs from the admin panel.
-    """
     admin = get_admin_user(request)
     if not admin:
         return redirect('login')
@@ -2845,7 +2713,7 @@ def admin_edit_bus(request, bus_id):
         fare = request.POST.get('fare')
 
         if not manager_id or not bus_name or not bus_number or not source or not destination or not departure_time or not arrival_time or not total_seats or not fare:
-            msg = "Duplicate Bus Number should not be allowed."
+            msg = "All fields are required."
         elif Bus.objects.filter(bus_number=bus_number).exclude(id=bus.id).exists():
             msg = "Duplicate Bus Number should not be allowed."
         else:
@@ -2871,21 +2739,18 @@ def admin_edit_bus(request, bus_id):
     return render(request, 'admin-edit-bus.html', {'bus': bus, 'managers': managers, 'msg': msg, 'login_user': admin})
 
 def admin_delete_bus(request, bus_id):
-    """
-    Deletes bus records.
-    """
-    admin = get_admin_user(request)
-    if not admin:
-        return redirect('login')
+    try:
+        admin = get_admin_user(request)
+        if not admin:
+            return redirect('login')
 
-    Bus.objects.filter(id=bus_id).delete()
-    return redirect('admin_buses')
+        Bus.objects.filter(id=bus_id).delete()
+        return redirect('admin_buses')
+    except Exception as e:
+        logger.error(f"Error deleting bus: {e}")
+        return redirect('admin_buses')
 
 def admin_routes(request):
-    """
-    Lists routes. Matches fleet counts.
-    Paginated at 6 records per page.
-    """
     admin = get_admin_user(request)
     if not admin:
         return redirect('login')
@@ -2906,9 +2771,6 @@ def admin_routes(request):
     return render(request, 'admin-routes.html', {'routes': routes, 'page_obj': routes, 'login_user': admin})
 
 def admin_add_route(request):
-    """
-    Registers a new route from the admin panel.
-    """
     admin = get_admin_user(request)
     if not admin:
         return redirect('login')
@@ -2923,7 +2785,7 @@ def admin_add_route(request):
         duration = request.POST.get('duration', '').strip()
 
         if not manager_id or not source or not destination or not distance or not duration:
-            msg = "Duplicate Route should not be created."
+            msg = "All fields are required."
         elif Route.objects.filter(source=source, destination=destination).exists():
             msg = "Duplicate Route should not be created."
         else:
@@ -2943,9 +2805,6 @@ def admin_add_route(request):
     return render(request, 'admin-add-route.html', {'managers': managers, 'msg': msg, 'login_user': admin})
 
 def admin_edit_route(request, route_id):
-    """
-    Alters route configurations.
-    """
     admin = get_admin_user(request)
     if not admin:
         return redirect('login')
@@ -2965,7 +2824,7 @@ def admin_edit_route(request, route_id):
         duration = request.POST.get('duration', '').strip()
 
         if not manager_id or not source or not destination or not distance or not duration:
-            msg = "Duplicate Route should not be created."
+            msg = "All fields are required."
         elif Route.objects.filter(source=source, destination=destination).exclude(id=route.id).exists():
             msg = "Duplicate Route should not be created."
         else:
@@ -2984,21 +2843,18 @@ def admin_edit_route(request, route_id):
     return render(request, 'admin-edit-route.html', {'route': route, 'managers': managers, 'msg': msg, 'login_user': admin})
 
 def admin_delete_route(request, route_id):
-    """
-    Deletes route records.
-    """
-    admin = get_admin_user(request)
-    if not admin:
-        return redirect('login')
+    try:
+        admin = get_admin_user(request)
+        if not admin:
+            return redirect('login')
 
-    Route.objects.filter(id=route_id).delete()
-    return redirect('admin_routes')
+        Route.objects.filter(id=route_id).delete()
+        return redirect('admin_routes')
+    except Exception as e:
+        logger.error(f"Error deleting route: {e}")
+        return redirect('admin_routes')
 
 def admin_schedules(request):
-    """
-    Lists schedules.
-    Paginated at 6 records per page.
-    """
     admin = get_admin_user(request)
     if not admin:
         return redirect('login')
@@ -3016,9 +2872,6 @@ def admin_schedules(request):
     return render(request, 'admin-schedules.html', {'schedules': schedules, 'page_obj': schedules, 'login_user': admin})
 
 def admin_add_schedule(request):
-    """
-    Registers a new schedule calendar.
-    """
     admin = get_admin_user(request)
     if not admin:
         return redirect('login')
@@ -3051,9 +2904,6 @@ def admin_add_schedule(request):
     return render(request, 'admin-add-schedule.html', {'buses': buses, 'msg': msg, 'login_user': admin})
 
 def admin_edit_schedule(request, schedule_id):
-    """
-    Alters travel schedules.
-    """
     admin = get_admin_user(request)
     if not admin:
         return redirect('login')
@@ -3090,21 +2940,18 @@ def admin_edit_schedule(request, schedule_id):
     return render(request, 'admin-edit-schedule.html', {'schedule': schedule, 'buses': buses, 'msg': msg, 'login_user': admin})
 
 def admin_delete_schedule(request, schedule_id):
-    """
-    Deletes schedule calendars.
-    """
-    admin = get_admin_user(request)
-    if not admin:
-        return redirect('login')
+    try:
+        admin = get_admin_user(request)
+        if not admin:
+            return redirect('login')
 
-    Schedule.objects.filter(id=schedule_id).delete()
-    return redirect('admin_schedules')
+        Schedule.objects.filter(id=schedule_id).delete()
+        return redirect('admin_schedules')
+    except Exception as e:
+        logger.error(f"Error deleting schedule: {e}")
+        return redirect('admin_schedules')
 
 def admin_bookings(request):
-    """
-    Lists system-wide customer bookings.
-    Paginated at 6 records per page.
-    """
     admin = get_admin_user(request)
     if not admin:
         return redirect('login')
@@ -3122,9 +2969,6 @@ def admin_bookings(request):
     return render(request, 'admin-bookings.html', {'bookings': bookings, 'page_obj': bookings, 'login_user': admin})
 
 def admin_booking_detail(request, booking_id):
-    """
-    Renders details of any system-wide customer booking.
-    """
     admin = get_admin_user(request)
     if not admin:
         return redirect('login')
@@ -3136,9 +2980,6 @@ def admin_booking_detail(request, booking_id):
         return redirect('admin_bookings')
 
 def admin_cancel_booking(request, booking_id):
-    """
-    Cancels a ticket. Frees booked seats.
-    """
     admin = get_admin_user(request)
     if not admin:
         return redirect('login')
@@ -3155,10 +2996,6 @@ def admin_cancel_booking(request, booking_id):
     return redirect('admin_bookings')
 
 def admin_payments(request):
-    """
-    Lists bookings that have successfully processed payments.
-    Paginated at 6 records per page.
-    """
     admin = get_admin_user(request)
     if not admin:
         return redirect('login')
@@ -3176,9 +3013,6 @@ def admin_payments(request):
     return render(request, 'admin-payments.html', {'bookings': bookings, 'page_obj': bookings, 'login_user': admin})
 
 def admin_profile(request):
-    """
-    Alters configurations and settings for the active admin.
-    """
     admin = get_admin_user(request)
     if not admin:
         return redirect('login')
@@ -3233,51 +3067,18 @@ def admin_profile(request):
     return render(request, 'admin-profile.html', {'msg': msg, 'msg1': msg1, 'login_user': admin})
 
 def admin_reports(request):
-    """
-    Generates analytical graphs and operational spreadsheets for system admins.
-    """
-    admin = get_admin_user(request)
-    if not admin:
-        return redirect('login')
-
     try:
-        total_bookings = Booking.objects.count()
-        cancelled_bookings = Booking.objects.filter(status='cancelled').count()
-        successful_bookings = Booking.objects.filter(payment=True)
-        total_revenue = successful_bookings.aggregate(total=Sum('amount'))['total'] or 0
-
-        daily_bookings_qs = Booking.objects.values('booking_date').annotate(count=Count('id')).order_by('-booking_date')[:7]
-        daily_bookings = [{'date': item['booking_date'], 'count': item['count']} for item in daily_bookings_qs]
-        monthly_bookings = Booking.objects.annotate(month=TruncMonth('booking_date')).values('month').annotate(count=Count('id')).order_by('-month')[:6]
-
-        most_booked_routes = Booking.objects.values('bus__source', 'bus__destination').annotate(count=Count('id')).order_by('-count')[:5]
-
-        most_used_buses = Booking.objects.values('bus__bus_name', 'bus__bus_number').annotate(count=Count('id')).order_by('-count')[:5]
-        for bus in most_used_buses:
-            bus['buses_count'] = Bus.objects.filter(bus_name=bus['bus__bus_name']).count()
-            bus['tickets_sold'] = Booking.objects.filter(bus__bus_name=bus['bus__bus_name']).count()
-            bus['gross_earnings'] = Booking.objects.filter(bus__bus_name=bus['bus__bus_name'], payment=True).aggregate(total=Sum('amount'))['total'] or 0
-
-        context = {
-            'total_bookings': total_bookings,
-            'cancelled_bookings': cancelled_bookings,
-            'net_earnings': total_revenue,
-            'daily_bookings': daily_bookings,
-            'monthly_bookings': monthly_bookings,
-            'most_booked_routes': most_booked_routes,
-            'most_used_buses': most_used_buses,
-            'login_user': admin,
-        }
-        return render(request, 'admin-reports.html', context)
+        return redirect('admin_dashboard')
     except Exception as e:
-        logger.error(f"Admin Reports Generation Error: {e}")
-        return HttpResponse("An error occurred generating reports.")
+        logger.error(f"Error redirecting admin reports: {e}")
+        return redirect('login')
 
 def admin_settings(request):
-    """
-    Renders admin settings interface.
-    """
-    admin = get_admin_user(request)
-    if not admin:
+    try:
+        admin = get_admin_user(request)
+        if not admin:
+            return redirect('login')
+        return render(request, 'admin-settings.html', {'login_user': admin})
+    except Exception as e:
+        logger.error(f"Error in admin settings view: {e}")
         return redirect('login')
-    return render(request, 'admin-settings.html', {'login_user': admin})

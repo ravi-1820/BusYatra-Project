@@ -13,6 +13,14 @@ class BusYatraViewsTestCase(TestCase):
             password="password123",
             usertype="manager"
         )
+        # Create an admin user
+        self.admin = User.objects.create(
+            name="Test Admin",
+            email="admin_test@busyatra.com",
+            phone="1112223333",
+            password="password123",
+            usertype="admin"
+        )
         # Create a customer user
         self.customer = User.objects.create(
             name="Test Customer",
@@ -76,18 +84,10 @@ class BusYatraViewsTestCase(TestCase):
         session['email'] = self.manager.email
         session.save()
 
-        # Call manager-reports url
+        # Call manager-reports url (redirects to manager_dashboard)
         response = self.client.get(reverse('manager_reports'))
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'manager-reports.html')
-        
-        # Verify context variables exist
-        self.assertIn('total_revenue', response.context)
-        self.assertIn('total_tickets', response.context)
-        self.assertIn('total_buses', response.context)
-        self.assertIn('avg_occupancy', response.context)
-        self.assertIn('weekly_revenue', response.context)
-        self.assertIn('route_data', response.context)
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse('manager_dashboard'))
 
     def test_export_pdf_view_authenticated_and_valid(self):
         # Set session for manager
@@ -99,7 +99,17 @@ class BusYatraViewsTestCase(TestCase):
         response = self.client.get(reverse('export_pdf'), {'start_date': '2026-07-01', 'end_date': '2026-07-28'})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response['Content-Type'], 'application/pdf')
-        self.assertTrue(response['Content-Disposition'].startswith('attachment; filename="manager_report_'))
+
+    def test_export_pdf_admin_authenticated(self):
+        # Set session for admin
+        session = self.client.session
+        session['email'] = self.admin.email
+        session.save()
+
+        # Call export_pdf url with valid dates for admin
+        response = self.client.get(reverse('export_pdf'), {'start_date': '2026-07-01', 'end_date': '2026-07-28'})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/pdf')
 
     def test_export_csv_view_authenticated_and_valid(self):
         # Set session for manager

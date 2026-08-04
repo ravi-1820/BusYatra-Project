@@ -88,7 +88,7 @@
                             <div class="tab-pane fade show active" id="upcoming" role="tabpanel" aria-labelledby="upcoming-tab">
                                 <div class="d-flex flex-column gap-3" id="upcomingList">
                                     {% for booking in upcoming_bookings %}
-                                        <div class="card card-custom shadow-sm border-start border-5 {% if booking.status == 'cancelled' %}border-danger{% elif booking.status == 'completed' %}border-secondary{% else %}border-primary{% endif %}">
+                                        <div class="card booking-order-card border-0 shadow-sm status-{% if booking.status == 'cancelled' %}cancelled{% elif booking.status == 'completed' %}completed{% else %}booked{% endif %}">
                                             <div class="card-body p-4">
                                                 <div class="row align-items-center">
                                                     <!-- Bus Image & Details -->
@@ -204,7 +204,7 @@
                             <div class="tab-pane fade" id="past" role="tabpanel" aria-labelledby="past-tab">
                                 <div class="d-flex flex-column gap-3">
                                     {% for booking in past_bookings %}
-                                        <div class="card card-custom shadow-sm border-start border-5 {% if booking.status == 'cancelled' %}border-danger{% elif booking.status == 'completed' %}border-secondary{% else %}border-primary{% endif %}">
+                                        <div class="card booking-order-card border-0 shadow-sm status-{% if booking.status == 'cancelled' %}cancelled{% elif booking.status == 'completed' %}completed{% else %}booked{% endif %}">
                                             <div class="card-body p-4">
                                                 <div class="row align-items-center">
                                                     <!-- Bus Image & Details -->
@@ -320,7 +320,7 @@
                             <div class="tab-pane fade" id="cancelled" role="tabpanel" aria-labelledby="cancelled-tab">
                                 <div class="d-flex flex-column gap-3" id="cancelledList">
                                     {% for booking in cancelled_bookings %}
-                                        <div class="card card-custom shadow-sm border-start border-5 {% if booking.status == 'cancelled' %}border-danger{% elif booking.status == 'completed' %}border-secondary{% else %}border-primary{% endif %}">
+                                        <div class="card booking-order-card border-0 shadow-sm status-cancelled">
                                             <div class="card-body p-4">
                                                 <div class="row align-items-center">
                                                     <!-- Bus Image & Details -->

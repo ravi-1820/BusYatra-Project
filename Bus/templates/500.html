@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<div class="container my-5 text-center py-5">
+    <div class="card shadow-sm border-0 rounded-4 p-5 mx-auto" style="max-width: 600px;">
+        <div class="card-body">
+            <h1 class="display-1 fw-bold text-danger mb-3">500</h1>
+            <h3 class="fw-bold text-navy-dark mb-3">Server Error</h3>
+            <p class="text-muted mb-4">Something went wrong on our server. Please try again later or return to homepage.</p>
+            <a href="{% url 'index' %}" class="btn btn-primary-custom px-4 py-2 rounded-pill fw-semibold">
+                <i class="bi bi-house-door-fill me-2"></i>Back to Home
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

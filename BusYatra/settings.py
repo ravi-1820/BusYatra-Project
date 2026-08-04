@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -20,12 +21,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-k8m=mn5%2!f01mxn&6g7e8)7nc(ayw_nd^*o_-=b$98tm7bar@'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-k8m=mn5%2!f01mxn&6g7e8)7nc(ayw_nd^*o_-=b$98tm7bar@')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'True').lower() in ('true', '1', 't')
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '.pythonanywhere.com', '*']
 
 
 # Application definition
@@ -108,7 +109,6 @@ LANGUAGE_CODE = 'en-us'
 
 TIME_ZONE = 'Asia/kolkata'
 
-
 USE_I18N = True
 
 USE_TZ = True
@@ -118,20 +118,19 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Media files (uploads)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-# Use your full Gmail address
-EMAIL_HOST_USER = 'ravitech090@gmail.com'
-# Use the generated 16-character App Password, NOT your regular Gmail password
-EMAIL_HOST_PASSWORD = 'cipu vacr yyli ythp'
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True').lower() in ('true', '1', 't')
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'ravitech090@gmail.com')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', 'cipu vacr yyli ythp')
 
-RAZORPAY_KEY_ID = 'rzp_test_qR4RRcX7iYEtFH'
-RAZORPAY_KEY_SECRET = '1WVI4f7rnhwRhYSunmR3JDl6'
+RAZORPAY_KEY_ID = os.environ.get('RAZORPAY_KEY_ID', 'rzp_test_qR4RRcX7iYEtFH')
+RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', '1WVI4f7rnhwRhYSunmR3JDl6')
 SECURE_CROSS_ORIGIN_POLICY = "same-origin-allow-popups"

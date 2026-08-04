@@ -35,7 +35,15 @@
 <!-- Search Form Section -->
 <section id="search-section" class="container mb-5">
     <div class="search-card">
-        <h4 class="mb-4 text-navy-dark"><i class="bi bi-ticket-perforated text-primary me-2"></i>Search Bus Tickets</h4>
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
+            <h4 class="mb-0 text-navy-dark"><i class="bi bi-ticket-perforated text-primary me-2"></i>Search Bus Tickets</h4>
+            <div>
+                <input type="checkbox" class="btn-check" name="round_trip" value="1" id="homeRoundTrip" autocomplete="off">
+                <label class="btn btn-outline-primary rounded-pill btn-sm fw-bold px-3 d-flex align-items-center gap-1 shadow-sm" for="homeRoundTrip" style="cursor: pointer;">
+                    <i class="bi bi-arrow-left-right"></i> Round Trip (Return Buses)
+                </label>
+            </div>
+        </div>
         <form action="{% url 'bus_list' %}" method="GET" id="busSearchForm">
             <div class="row g-3 align-items-end">
                 <!-- From Field -->
@@ -109,53 +117,114 @@
 </section>
 
 <!-- Popular Routes Section -->
-<section class="py-5 bg-white">
+<section class="py-5 bg-white position-relative overflow-hidden">
     <div class="container">
-        <h2 class="section-title text-center">Popular Bus Routes</h2>
-        <div class="row g-4">
-            <div class="col-12 text-center mb-4">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+            <div>
+                <h2 class="section-title text-start mb-1">Popular Bus Routes</h2>
+                <p class="text-muted mb-0 small">Explore top-rated routes with real-time bus schedules and instant booking</p>
+            </div>
+            <div class="d-flex align-items-center gap-3">
                 <span class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill fw-semibold">
                     <i class="bi bi-geo-alt-fill me-1"></i>Total Active Routes: {{ routes.count }}
                 </span>
+                <!-- Shadcn Style Carousel Navigation Controls -->
+                <div class="shadcn-carousel-controls d-flex align-items-center gap-2">
+                    <button type="button" class="carousel-btn-prev btn rounded-circle shadow-sm" aria-label="Previous Slide">
+                        <i class="bi bi-arrow-left"></i>
+                    </button>
+                    <button type="button" class="carousel-btn-next btn rounded-circle shadow-sm" aria-label="Next Slide">
+                        <i class="bi bi-arrow-right"></i>
+                    </button>
+                </div>
             </div>
-            {% for route in routes %}
-            <div class="col-md-6 col-lg-3">
-                <div class="card card-custom h-100">
-                    <div class="card-body p-4">
-                        <span class="badge bg-success-subtle text-success mb-2 px-3 py-1 rounded-pill">
-                            Daily Runs
-                        </span>
-                        <h5 class="card-title mb-1 text-navy-dark">
-                            {{ route.source }} to {{ route.destination }}
-                        </h5>
-                        <p class="text-muted small mb-3">
-                            <i class="bi bi-clock me-1"></i>
-                            {{ route.duration }} hrs travel time
-                        </p>
-                        <hr class="my-3 text-secondary opacity-25">
-                        <div class="d-flex justify-content-between align-items-center">
+        </div>
+
+        {% if routes %}
+        <!-- Swiper Carousel Container -->
+        <div class="swiper popular-routes-swiper pb-2">
+            <div class="swiper-wrapper">
+                {% for route in routes %}
+                <div class="swiper-slide h-auto">
+                    <div class="card route-card-carousel h-100 border-0 shadow-sm rounded-4 p-3 bg-white">
+                        <div class="card-body p-2 d-flex flex-column justify-content-between">
                             <div>
-                                <span class="text-muted small">Distance</span>
-                                <h4 class="text-primary mb-0">
-                                    {{ route.distance }} KM
-                                </h4>
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <span class="badge bg-success-subtle text-success px-3 py-1 rounded-pill small fw-medium">
+                                        <i class="bi bi-lightning-charge-fill me-1"></i>Daily Runs
+                                    </span>
+                                    <span class="text-muted small">
+                                        <i class="bi bi-clock me-1 text-primary"></i>{{ route.duration }} hrs
+                                    </span>
+                                </div>
+                                <h5 class="card-title fw-bold text-navy-dark mb-1 d-flex align-items-center justify-content-between fs-6">
+                                    <span>{{ route.source }}</span>
+                                    <i class="bi bi-arrow-right text-primary mx-2 route-arrow-icon"></i>
+                                    <span>{{ route.destination }}</span>
+                                </h5>
+                                <p class="text-muted small mb-0 opacity-75">Express Non-Stop</p>
                             </div>
-                            <a href="{% url 'bus_list' %}?source={{ route.source }}&destination={{ route.destination }}"
-                                class="btn btn-amber-custom btn-sm px-3">
-                                <i class="bi bi-chevron-right"></i>
-                            </a>
+                            <div>
+                                <hr class="my-3 text-secondary opacity-25">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <span class="text-muted small d-block">Distance</span>
+                                        <h4 class="text-primary fw-bold mb-0 fs-5">
+                                            {{ route.distance }} <span class="fs-6 fw-normal text-secondary">KM</span>
+                                        </h4>
+                                    </div>
+                                    <a href="{% url 'bus_list' %}?from={{ route.source|urlencode }}&to={{ route.destination|urlencode }}&source={{ route.source|urlencode }}&destination={{ route.destination|urlencode }}"
+                                        class="btn btn-primary rounded-pill px-3 py-2 d-flex align-items-center gap-1 route-arrow-btn">
+                                        <span class="small fw-semibold">Book Now</span>
+                                        <i class="bi bi-arrow-right fs-6"></i>
+                                    </a>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
+                {% endfor %}
             </div>
-            {% empty %}
-            <div class="col-12 text-center">
-                <h5>No Routes Available</h5>
-            </div>
-            {% endfor %}
+            <!-- Restored Pagination Dots (.....) -->
+            <div class="swiper-pagination"></div>
         </div>
+        {% else %}
+        <div class="text-center py-5">
+            <h5 class="text-muted">No Routes Available</h5>
+        </div>
+        {% endif %}
     </div>
 </section>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        if (document.querySelector('.popular-routes-swiper')) {
+            new Swiper('.popular-routes-swiper', {
+                slidesPerView: 1,
+                spaceBetween: 20,
+                loop: true,
+                autoplay: {
+                    delay: 3500,
+                    disableOnInteraction: false,
+                    pauseOnMouseEnter: true,
+                },
+                pagination: {
+                    el: '.popular-routes-swiper .swiper-pagination',
+                    clickable: true,
+                },
+                navigation: {
+                    nextEl: '.carousel-btn-next',
+                    prevEl: '.carousel-btn-prev',
+                },
+                breakpoints: {
+                    576: { slidesPerView: 2, spaceBetween: 20 },
+                    992: { slidesPerView: 3, spaceBetween: 24 },
+                    1200: { slidesPerView: 4, spaceBetween: 24 }
+                }
+            });
+        }
+    });
+</script>
 
 <!-- Why Choose Us Section -->
 <section id="why-choose-us" class="py-5 bg-light">

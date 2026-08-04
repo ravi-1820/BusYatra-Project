@@ -57,10 +57,17 @@ function exportReport(format, pdfUrl, csvUrl) {
     const startInput = document.getElementById("startDate");
     const endInput = document.getElementById("endDate");
 
-    if (!startInput || !endInput) return;
+    let start = startInput ? startInput.value : "";
+    let end = endInput ? endInput.value : "";
 
-    const start = startInput.value;
-    const end = endInput.value;
+    if (!start || !end) {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        start = start || `${yyyy}-${mm}-01`;
+        end = end || `${yyyy}-${mm}-${dd}`;
+    }
 
     if (validateDates(start, end)) {
         let url = "";
