@@ -35,21 +35,22 @@
 <!-- Search Form Section -->
 <section id="search-section" class="container mb-5">
     <div class="search-card">
-        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
-            <h4 class="mb-0 text-navy-dark"><i class="bi bi-ticket-perforated text-primary me-2"></i>Search Bus Tickets</h4>
-            <div class="d-flex align-items-center gap-2">
-                <input type="radio" class="btn-check" name="trip_type_select" id="homeOneWay" checked autocomplete="off">
-                <label class="btn btn-outline-primary rounded-pill btn-sm fw-bold px-3 d-flex align-items-center gap-1 shadow-sm" for="homeOneWay" style="cursor: pointer;">
-                    <i class="bi bi-arrow-right"></i> One Way
-                </label>
-
-                <input type="checkbox" class="btn-check" name="round_trip" value="1" id="homeRoundTrip" autocomplete="off">
-                <label class="btn btn-outline-primary rounded-pill btn-sm fw-bold px-3 d-flex align-items-center gap-1 shadow-sm" for="homeRoundTrip" style="cursor: pointer;">
-                    <i class="bi bi-arrow-left-right"></i> Round Trip (Return Buses)
-                </label>
-            </div>
-        </div>
         <form action="{% url 'bus_list' %}" method="GET" id="busSearchForm">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
+                <h4 class="mb-0 text-navy-dark"><i class="bi bi-ticket-perforated text-primary me-2"></i>Search Bus Tickets</h4>
+                <!-- Premium Segmented Radio Control -->
+                <div class="trip-type-segmented-control">
+                    <input type="radio" class="btn-check" name="round_trip" id="tripOneWay" value="0" checked autocomplete="off">
+                    <label class="trip-type-pill" for="tripOneWay">
+                        <i class="bi bi-arrow-right text-primary me-1"></i>One Way
+                    </label>
+
+                    <input type="radio" class="btn-check" name="round_trip" id="tripRoundTrip" value="1" autocomplete="off">
+                    <label class="trip-type-pill" for="tripRoundTrip">
+                        <i class="bi bi-arrow-left-right text-primary me-1"></i>Round Trip
+                    </label>
+                </div>
+            </div>
             <div class="row g-3 align-items-end">
                 <!-- From Field -->
                 <div class="col-lg-3 col-md-6">

@@ -118,17 +118,6 @@
             </div>
             
             <div class="d-flex align-items-center gap-2 flex-wrap">
-                <!-- One Way & Round Trip Action Buttons -->
-                <button type="button" onclick="toggleRoundTrip(false)" class="btn {% if not round_trip %}btn-light text-primary fw-bold border{% else %}btn-outline-light fw-semibold{% endif %} btn-sm rounded-pill px-3 shadow-sm d-flex align-items-center gap-1">
-                    <i class="bi bi-arrow-right me-1"></i>
-                    <span>One Way</span>
-                </button>
-
-                <button type="button" onclick="toggleRoundTrip(true)" class="btn {% if round_trip %}btn-light text-primary fw-bold border{% else %}btn-outline-light fw-semibold{% endif %} btn-sm rounded-pill px-3 shadow-sm d-flex align-items-center gap-1">
-                    <i class="bi bi-arrow-left-right me-1"></i>
-                    <span>Round Trip</span>
-                </button>
-
                 <a href="{% url 'index' %}" class="btn btn-light btn-sm rounded-pill fw-bold text-primary px-3 shadow-sm">
                     <i class="bi bi-pencil-square me-1"></i> Modify Search
                 </a>
@@ -349,20 +338,6 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 });
-function toggleRoundTrip(enableState) {
-    const urlParams = new URLSearchParams(window.location.search);
-    if (typeof enableState === 'boolean') {
-        if (enableState) {
-            urlParams.set('round_trip', '1');
-        } else {
-            urlParams.set('round_trip', '0');
-        }
-    } else {
-        const current = urlParams.get('round_trip') === '1';
-        urlParams.set('round_trip', current ? '0' : '1');
-    }
-    window.location.search = urlParams.toString();
-}
 </script>
 
 {% endblock %}

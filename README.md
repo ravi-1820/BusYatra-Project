@@ -96,14 +96,15 @@ Open **http://127.0.0.1:8000** in your browser.
 
 ## Credentials
 
-- **Manager Account (Pre-seeded):**
-  - **Email:** `manager@busyatra.com`
-  - **Password:** `password123`
-
 - **Admin / Superuser Account:**
-  - **Email:** Created via `python manage.py createsuperuser`
-  - **Admin Dashboard URL:** `http://127.0.0.1:8000/admin-dashboard/`
+   - Username :- admin1
+   - Email :- admin1@gmail.com
+   - Password :- admin1
 
+- **Manager Account (Pre-seeded):**
+  - Username :- manager1
+  - Email: manager1@gmail.com
+  - Password:- manager1
 ---
 
 ## 🛠️ Technology Stack
@@ -132,11 +133,20 @@ python myenv/BusYatra/manage.py test Bus
 
 ## Screenshots
 
-### Home Page
-![Home Page](myenv/BusYatra/Bus/static/assets/images/Hero-BG.png)
+### 1. Home-page
+![Home Page](docs/Images/Home-page.png)
 
-### Bus Search & Details
-![Bus Search](myenv/BusYatra/Bus/static/assets/images/AC%20Seater%20exterior.png)
+### 2. Login-page
+![Login Page](docs/Images/Login-page.png)
 
-### Customer Orders & Tickets
-![My Orders Page](myenv/BusYatra/Bus/static/assets/images/logo.png)
+### 3. Profile-page
+![Profile Page](docs/Images/Profile-page.png)
+
+### 4. Buslist-page
+![Bus List Page](docs/Images/Buslist-page.png)
+
+### 5. History-page
+![History Page](docs/Images/History-page.png)
+
+### 6. Manager-page
+![Manager Page](docs/Images/Manager-dashboard.png)
