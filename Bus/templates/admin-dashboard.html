@@ -64,11 +64,11 @@
                     Dashboard</h5>
                 <div class="d-flex align-items-center gap-3">
                     <div class="d-flex gap-2">
-                        <button class="btn btn-outline-warning text-dark btn-sm rounded-3 py-2 px-3 fw-semibold"
+                        <button class="btn btn-outline-primary text-dark btn-sm rounded-3 py-2 px-3 fw-semibold"
                             onclick="exportReport('PDF')">
                             <i class="bi bi-file-earmark-pdf-fill me-1 text-danger"></i>Export PDF
                         </button>
-                        <button class="btn btn-outline-warning text-dark btn-sm rounded-3 py-2 px-3 fw-semibold"
+                        <button class="btn btn-outline-primary text-dark btn-sm rounded-3 py-2 px-3 fw-semibold"
                             onclick="exportReport('CSV')">
                             <i class="bi bi-file-earmark-spreadsheet-fill me-1 text-success"></i>Export CSV
                         </button>
@@ -101,7 +101,7 @@
                             <input type="date" class="form-control" id="endDate" value="{{ end_date }}">
                         </div>
                         <div class="col-md-2">
-                            <button class="btn btn-warning w-100 py-2.5 fw-semibold" onclick="updateFilters()">
+                            <button class="btn btn-primary w-100 py-2.5 fw-semibold" onclick="updateFilters()">
                                 <i class="bi bi-filter me-1"></i>Filter
                             </button>
                         </div>
@@ -144,8 +144,8 @@
                     <div class="col-lg-8">
                         <div class="card card-custom p-4 h-100">
                             <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h6 class="text-navy-dark fw-bold mb-0"><i class="bi bi-cash-stack text-warning me-2"></i>Weekly Revenue Trends (₹)</h6>
-                                <span class="badge bg-warning-subtle text-dark px-2.5 py-1 rounded-pill fw-semibold small"><i class="bi bi-graph-up-arrow me-1 text-warning"></i>Live Analytics</span>
+                                <h6 class="text-navy-dark fw-bold mb-0"><i class="bi bi-cash-stack text-primary me-2"></i>Weekly Revenue Trends (₹)</h6>
+                                <span class="badge bg-primary-subtle text-primary px-2.5 py-1 rounded-pill fw-semibold small"><i class="bi bi-graph-up-arrow me-1 text-primary"></i>Live Analytics</span>
                             </div>
                             <div class="position-relative w-100" style="height: 250px;">
                                 <canvas id="weeklyRevenueChart"></canvas>
@@ -506,8 +506,8 @@
             const revValues = [{% for r in weekly_revenue %}{{ r }}{% if not forloop.last %}, {% endif %}{% endfor %}];
             
             const gradientRev = ctxRev.createLinearGradient(0, 0, 0, 220);
-            gradientRev.addColorStop(0, 'rgba(245, 158, 11, 0.35)');
-            gradientRev.addColorStop(1, 'rgba(245, 158, 11, 0.01)');
+            gradientRev.addColorStop(0, 'rgba(37, 99, 235, 0.35)');
+            gradientRev.addColorStop(1, 'rgba(37, 99, 235, 0.01)');
 
             new Chart(ctxRev, {
                 type: 'line',
@@ -516,17 +516,17 @@
                     datasets: [{
                         label: 'Revenue (₹)',
                         data: revValues,
-                        borderColor: '#f59e0b',
+                        borderColor: '#2563eb',
                         borderWidth: 3,
                         backgroundColor: gradientRev,
                         fill: true,
                         tension: 0.38,
                         pointBackgroundColor: '#ffffff',
-                        pointBorderColor: '#f59e0b',
+                        pointBorderColor: '#2563eb',
                         pointBorderWidth: 3,
                         pointRadius: 5,
                         pointHoverRadius: 8,
-                        pointHoverBackgroundColor: '#f59e0b',
+                        pointHoverBackgroundColor: '#2563eb',
                         pointHoverBorderColor: '#ffffff',
                         pointHoverBorderWidth: 2
                     }]
