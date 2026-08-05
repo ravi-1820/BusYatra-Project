@@ -118,18 +118,16 @@
             </div>
             
             <div class="d-flex align-items-center gap-2 flex-wrap">
-                <!-- Round Trip Action Button -->
-                {% if round_trip %}
-                <button type="button" onclick="toggleRoundTrip(false)" class="btn btn-light text-primary btn-sm rounded-pill fw-bold px-3 shadow-sm d-flex align-items-center gap-1 border">
-                    <i class="bi bi-arrow-left-right text-primary me-1"></i>
-                    <span>Round Trip: Active</span>
+                <!-- One Way & Round Trip Action Buttons -->
+                <button type="button" onclick="toggleRoundTrip(false)" class="btn {% if not round_trip %}btn-light text-primary fw-bold border{% else %}btn-outline-light fw-semibold{% endif %} btn-sm rounded-pill px-3 shadow-sm d-flex align-items-center gap-1">
+                    <i class="bi bi-arrow-right me-1"></i>
+                    <span>One Way</span>
                 </button>
-                {% else %}
-                <button type="button" onclick="toggleRoundTrip(true)" class="btn btn-outline-light btn-sm rounded-pill fw-semibold px-3 shadow-sm d-flex align-items-center gap-1">
+
+                <button type="button" onclick="toggleRoundTrip(true)" class="btn {% if round_trip %}btn-light text-primary fw-bold border{% else %}btn-outline-light fw-semibold{% endif %} btn-sm rounded-pill px-3 shadow-sm d-flex align-items-center gap-1">
                     <i class="bi bi-arrow-left-right me-1"></i>
-                    <span>Include Return Buses</span>
+                    <span>Round Trip</span>
                 </button>
-                {% endif %}
 
                 <a href="{% url 'index' %}" class="btn btn-light btn-sm rounded-pill fw-bold text-primary px-3 shadow-sm">
                     <i class="bi bi-pencil-square me-1"></i> Modify Search
@@ -224,7 +222,7 @@
             <!-- Previous Button -->
             {% if buses.has_previous %}
                 <li class="page-item">
-                    <a class="page-link border-0 text-primary fw-bold" href="?page={{ buses.previous_page_number }}{% if from_city %}&from={{ from_city }}{% endif %}{% if to_city %}&to={{ to_city }}{% endif %}{% if travel_date %}&date={{ travel_date }}{% endif %}{% if passengers %}&passengers={{ passengers }}{% endif %}" aria-label="Previous">
+                    <a class="page-link border-0 text-primary fw-bold" href="?page={{ buses.previous_page_number }}{% if from_city %}&from={{ from_city }}{% endif %}{% if to_city %}&to={{ to_city }}{% endif %}{% if travel_date %}&date={{ travel_date }}{% endif %}{% if passengers %}&passengers={{ passengers }}{% endif %}{% if round_trip %}&round_trip=1{% endif %}" aria-label="Previous">
                         <i class="bi bi-chevron-left me-1"></i>Previous
                     </a>
                 </li>
@@ -242,7 +240,7 @@
                     </li>
                 {% else %}
                     <li class="page-item">
-                        <a class="page-link border-0 text-dark rounded-pill px-3 mx-1" href="?page={{ num }}{% if from_city %}&from={{ from_city }}{% endif %}{% if to_city %}&to={{ to_city }}{% endif %}{% if travel_date %}&date={{ travel_date }}{% endif %}{% if passengers %}&passengers={{ passengers }}{% endif %}">{{ num }}</a>
+                        <a class="page-link border-0 text-dark rounded-pill px-3 mx-1" href="?page={{ num }}{% if from_city %}&from={{ from_city }}{% endif %}{% if to_city %}&to={{ to_city }}{% endif %}{% if travel_date %}&date={{ travel_date }}{% endif %}{% if passengers %}&passengers={{ passengers }}{% endif %}{% if round_trip %}&round_trip=1{% endif %}">{{ num }}</a>
                     </li>
                 {% endif %}
             {% endfor %}
@@ -250,7 +248,7 @@
             <!-- Next Button -->
             {% if buses.has_next %}
                 <li class="page-item">
-                    <a class="page-link border-0 text-primary fw-bold" href="?page={{ buses.next_page_number }}{% if from_city %}&from={{ from_city }}{% endif %}{% if to_city %}&to={{ to_city }}{% endif %}{% if travel_date %}&date={{ travel_date }}{% endif %}{% if passengers %}&passengers={{ passengers }}{% endif %}" aria-label="Next">
+                    <a class="page-link border-0 text-primary fw-bold" href="?page={{ buses.next_page_number }}{% if from_city %}&from={{ from_city }}{% endif %}{% if to_city %}&to={{ to_city }}{% endif %}{% if travel_date %}&date={{ travel_date }}{% endif %}{% if passengers %}&passengers={{ passengers }}{% endif %}{% if round_trip %}&round_trip=1{% endif %}" aria-label="Next">
                         Next<i class="bi bi-chevron-right ms-1"></i>
                     </a>
                 </li>

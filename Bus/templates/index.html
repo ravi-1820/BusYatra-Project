@@ -37,7 +37,12 @@
     <div class="search-card">
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
             <h4 class="mb-0 text-navy-dark"><i class="bi bi-ticket-perforated text-primary me-2"></i>Search Bus Tickets</h4>
-            <div>
+            <div class="d-flex align-items-center gap-2">
+                <input type="radio" class="btn-check" name="trip_type_select" id="homeOneWay" checked autocomplete="off">
+                <label class="btn btn-outline-primary rounded-pill btn-sm fw-bold px-3 d-flex align-items-center gap-1 shadow-sm" for="homeOneWay" style="cursor: pointer;">
+                    <i class="bi bi-arrow-right"></i> One Way
+                </label>
+
                 <input type="checkbox" class="btn-check" name="round_trip" value="1" id="homeRoundTrip" autocomplete="off">
                 <label class="btn btn-outline-primary rounded-pill btn-sm fw-bold px-3 d-flex align-items-center gap-1 shadow-sm" for="homeRoundTrip" style="cursor: pointer;">
                     <i class="bi bi-arrow-left-right"></i> Round Trip (Return Buses)
@@ -332,4 +337,85 @@
         </div>
     </div>
 </section>
+
+<!-- Search Validation Modal -->
+<div class="modal fade" id="searchValidationModal" tabindex="-1" aria-labelledby="searchValidationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
+            <div class="modal-header border-0 text-white p-4" style="background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);">
+                <h5 class="modal-title fw-bold text-white d-flex align-items-center gap-2 m-0" id="searchValidationModalLabel" style="color: #ffffff !important;">
+                    <i class="bi bi-exclamation-circle-fill text-warning" style="font-size: 1.25rem;"></i>
+                    <span style="color: #ffffff !important;">Selection Required</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 text-center">
+                <div class="mb-3">
+                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle p-3 shadow-sm" style="background-color: #EFF6FF;">
+                        <i class="bi bi-geo-alt-fill text-primary display-5"></i>
+                    </div>
+                </div>
+                <h5 class="fw-bold text-dark mb-2" id="searchValidationMessage">Please select Source and Destination city.</h5>
+                <p class="text-muted small mb-0">Choose your origin and destination from the dropdown list to search available buses.</p>
+            </div>
+            <div class="modal-footer border-0 justify-content-center pb-4 pt-1">
+                <button type="button" class="btn btn-primary-custom fw-bold px-4 py-2 rounded-pill shadow-sm" data-bs-dismiss="modal">OK, Got It</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const homeOneWay = document.getElementById("homeOneWay");
+    const homeRoundTrip = document.getElementById("homeRoundTrip");
+
+    if (homeOneWay && homeRoundTrip) {
+        homeOneWay.addEventListener("change", function () {
+            if (this.checked) {
+                homeRoundTrip.checked = false;
+            }
+        });
+        homeRoundTrip.addEventListener("change", function () {
+            if (this.checked) {
+                homeOneWay.checked = false;
+            } else {
+                homeOneWay.checked = true;
+            }
+        });
+    }
+
+    const searchForm = document.getElementById("busSearchForm");
+    if (searchForm) {
+        searchForm.addEventListener("submit", function (e) {
+            const fromCity = document.getElementById("fromCity");
+            const toCity = document.getElementById("toCity");
+
+            const fromVal = fromCity ? fromCity.value.trim() : "";
+            const toVal = toCity ? toCity.value.trim() : "";
+
+            const isFromEmpty = !fromVal || fromVal.toLowerCase() === "select source";
+            const isToEmpty = !toVal || toVal.toLowerCase() === "select destination";
+
+            if (isFromEmpty || isToEmpty) {
+                e.preventDefault();
+                let msg = "";
+                if (isFromEmpty && isToEmpty) {
+                    msg = "Please select Source and Destination city.";
+                } else if (isFromEmpty) {
+                    msg = "Please select Source city.";
+                } else {
+                    msg = "Please select Destination city.";
+                }
+
+                const msgEl = document.getElementById("searchValidationMessage");
+                if (msgEl) msgEl.innerText = msg;
+
+                const validationModal = new bootstrap.Modal(document.getElementById('searchValidationModal'));
+                validationModal.show();
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

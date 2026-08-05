@@ -49,6 +49,9 @@ python myenv/BusYatra/seed_buses.py
 # 7. Create a superuser (admin account)
 python myenv/BusYatra/manage.py createsuperuser
 
+# 8. seed_buses file run command
+ 
+
 # 8. Start the development server
 python myenv/BusYatra/manage.py runserver
 ```
@@ -79,7 +82,6 @@ python3 myenv/BusYatra/manage.py makemigrations
 python3 myenv/BusYatra/manage.py migrate
 
 # 6. Seed initial database data (Manager & Sample Buses)
-python3 myenv/BusYatra/seed_buses.py
 
 # 7. Create a superuser (admin account)
 python3 myenv/BusYatra/manage.py createsuperuser

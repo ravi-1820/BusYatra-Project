@@ -1,6 +1,6 @@
 from django.test import TestCase, Client
 from django.urls import reverse
-from .models import User, Contact
+from .models import User, Contact, Bus
 
 class BusYatraViewsTestCase(TestCase):
     def setUp(self):
@@ -221,5 +221,65 @@ class BusYatraViewsTestCase(TestCase):
         self.assertIn('past_page_obj', response.context)
         self.assertIn('cancelled_page_obj', response.context)
         self.assertEqual(response.context['upcoming_page_obj'].paginator.per_page, 3)
+
+    def test_bus_search_scenarios(self):
+        # Create test buses
+        bus1 = Bus.objects.create(
+            manager=self.manager,
+            bus_name="Express Bus 1",
+            bus_number="GJ01AB1234",
+            bus_type="AC Sleeper",
+            source="Ahmedabad",
+            destination="Jaipur",
+            departure_time="08:00:00",
+            arrival_time="16:00:00",
+            total_seats=30,
+            available_seats=30,
+            fare=500
+        )
+        bus2 = Bus.objects.create(
+            manager=self.manager,
+            bus_name="Express Bus 2",
+            bus_number="DL01XY9876",
+            bus_type="Non-AC Seater",
+            source="Delhi",
+            destination="Mumbai",
+            departure_time="10:00:00",
+            arrival_time="22:00:00",
+            total_seats=40,
+            available_seats=40,
+            fare=600
+        )
+
+        # Scenario 1 - Normal Search with Source & Destination
+        resp1 = self.client.get(reverse('bus_list'), {'from': 'Ahmedabad', 'to': 'Jaipur'})
+        self.assertEqual(resp1.status_code, 200)
+        buses1 = resp1.context['buses'].object_list
+        self.assertEqual(len(buses1), 1)
+        self.assertEqual(buses1[0].id, bus1.id)
+
+        # Scenario 2 - Search Without Filters & Placeholders
+        resp2 = self.client.get(reverse('bus_list'), {'from': 'Select Source', 'to': 'Select Destination'})
+        self.assertEqual(resp2.status_code, 200)
+        buses2 = resp2.context['buses'].object_list
+        self.assertEqual(len(buses2), 2)
+
+        # Scenario 3 - Direct navigation ("Book Now") without parameters
+        resp3 = self.client.get(reverse('bus_list'))
+        self.assertEqual(resp3.status_code, 200)
+        buses3 = resp3.context['buses'].object_list
+        self.assertEqual(len(buses3), 2)
+
+        # Scenario 4 - After returning from search, search without filters
+        # 1. Search with filters first
+        self.client.get(reverse('bus_list'), {'from': 'Ahmedabad', 'to': 'Jaipur'})
+        # 2. Search again without filters
+        resp4 = self.client.get(reverse('bus_list'), {'from': '', 'to': ''})
+        self.assertEqual(resp4.status_code, 200)
+        buses4 = resp4.context['buses'].object_list
+        self.assertEqual(len(buses4), 2)
+        # Ensure session does not store journey_from or journey_to
+        self.assertNotIn('journey_from', self.client.session)
+        self.assertNotIn('journey_to', self.client.session)
 
 

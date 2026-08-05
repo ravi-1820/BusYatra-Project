@@ -101,6 +101,18 @@ def is_valid_city(city_str):
         logger.error(f"Error validating city: {e}")
         return False
 
+def normalize_search_city(city_str):
+    try:
+        if not city_str or not isinstance(city_str, str):
+            return ""
+        val = city_str.strip()
+        if val.lower() in ("", "none", "null", "select source", "select destination", "source", "destination"):
+            return ""
+        return val
+    except Exception as e:
+        logger.error(f"Error normalizing search city: {e}")
+        return ""
+
 def is_valid_passengers(passengers_str):
     if not passengers_str:
         return False
@@ -117,77 +129,21 @@ def get_search_details(request):
         raw_date = request.GET.get('date')
         raw_passengers = request.GET.get('passengers')
 
-        # Determine source city
-        if 'from' in request.GET or 'source' in request.GET:
-            if is_valid_city(raw_from):
-                from_city = raw_from.strip()
-                request.session['journey_from'] = from_city
-            else:
-                if raw_from == "":
-                    from_city = ""
-                    request.session['journey_from'] = ""
-                else:
-                    session_from = request.session.get('journey_from')
-                    from_city = session_from.strip() if is_valid_city(session_from) else ""
-        else:
-            session_from = request.session.get('journey_from')
-            from_city = session_from.strip() if is_valid_city(session_from) else ""
+        from_city = normalize_search_city(raw_from)
+        to_city = normalize_search_city(raw_to)
 
-        # Determine destination city
-        if 'to' in request.GET or 'destination' in request.GET:
-            if is_valid_city(raw_to):
-                to_city = raw_to.strip()
-                request.session['journey_to'] = to_city
-            else:
-                if raw_to == "":
-                    to_city = ""
-                    request.session['journey_to'] = ""
-                else:
-                    session_to = request.session.get('journey_to')
-                    to_city = session_to.strip() if is_valid_city(session_to) else ""
+        if is_valid_date(raw_date):
+            travel_date = raw_date.strip()
         else:
-            session_to = request.session.get('journey_to')
-            to_city = session_to.strip() if is_valid_city(session_to) else ""
+            travel_date = date.today().strftime("%Y-%m-%d")
 
-        # Determine travel date
-        if 'date' in request.GET:
-            if is_valid_date(raw_date):
-                travel_date = raw_date.strip()
-                request.session['journey_date'] = travel_date
-            else:
-                if raw_date == "":
-                    travel_date = date.today().strftime("%Y-%m-%d")
-                    request.session['journey_date'] = travel_date
-                else:
-                    session_date = request.session.get('journey_date')
-                    travel_date = session_date.strip() if is_valid_date(session_date) else date.today().strftime("%Y-%m-%d")
+        if is_valid_passengers(raw_passengers):
+            passengers = raw_passengers.strip()
         else:
-            session_date = request.session.get('journey_date')
-            travel_date = session_date.strip() if is_valid_date(session_date) else date.today().strftime("%Y-%m-%d")
+            passengers = "1"
 
-        # Determine passengers count
-        if 'passengers' in request.GET:
-            if is_valid_passengers(raw_passengers):
-                passengers = raw_passengers.strip()
-                request.session['num_passengers'] = passengers
-            else:
-                if raw_passengers == "":
-                    passengers = "1"
-                    request.session['num_passengers'] = "1"
-                else:
-                    session_passengers = request.session.get('num_passengers')
-                    passengers = session_passengers.strip() if is_valid_passengers(session_passengers) else "1"
-        else:
-            session_passengers = request.session.get('num_passengers')
-            passengers = session_passengers.strip() if is_valid_passengers(session_passengers) else "1"
-
-        # Determine round_trip option
-        if 'round_trip' in request.GET:
-            raw_round_trip = request.GET.get('round_trip')
-            is_round_trip = True if raw_round_trip in ['1', 'true', 'True', 'on'] else False
-            request.session['round_trip'] = is_round_trip
-        else:
-            is_round_trip = request.session.get('round_trip', False)
+        raw_round_trip = request.GET.get('round_trip')
+        is_round_trip = True if raw_round_trip in ['1', 'true', 'True', 'on'] else False
 
         return {
             'from_city': from_city,
@@ -203,6 +159,7 @@ def get_search_details(request):
             'to_city': '',
             'travel_date': date.today().strftime("%Y-%m-%d"),
             'passengers': '1',
+            'round_trip': False,
         }
 
 def travel_date_or_today(travel_date):
@@ -747,6 +704,10 @@ def bus_list(request):
                 source__iexact=search['from_city'],
                 destination__iexact=search['to_city']
             )
+    elif search['from_city']:
+        buses = buses.filter(source__iexact=search['from_city'])
+    elif search['to_city']:
+        buses = buses.filter(destination__iexact=search['to_city'])
 
     class CustomPage(Page):
         def count(self):
