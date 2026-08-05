@@ -386,19 +386,44 @@ h1, h2, h3, h4, h5, h6 {
     border-radius: 2px;
 }
 
-/* Rounded Cards & Hover Effects */
+/* Rounded Cards, Stat Cards & Hover Animations */
 .card-custom {
     background: #FFFFFF;
     border-radius: 16px;
-    border: 1px solid var(--gray-border);
-    box-shadow: var(--shadow-sm);
-    transition: var(--transition-smooth);
+    border: 1px solid #E2E8F0;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;
 }
 .card-custom:hover {
     transform: translateY(-4px);
-    box-shadow: var(--shadow-lg);
-    border-color: rgba(59, 130, 246, 0.2);
+    box-shadow: 0 12px 25px -5px rgba(0, 0, 0, 0.08);
+}
+
+.stat-report-card {
+    background: #FFFFFF;
+    border-radius: 16px;
+    border: none !important;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06) !important;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+.stat-report-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 28px -4px rgba(15, 23, 42, 0.12) !important;
+}
+
+.stat-card {
+    background: #FFFFFF;
+    border-radius: 16px;
+    border: none !important;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 28px -4px rgba(15, 23, 42, 0.12);
 }
 
 /* Feature Icon style */
