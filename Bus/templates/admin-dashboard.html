@@ -143,37 +143,12 @@
                     <!-- Weekly Revenue Chart -->
                     <div class="col-lg-8">
                         <div class="card card-custom p-4 h-100">
-                            <h6 class="text-navy-dark fw-bold mb-3"><i class="bi bi-cash-stack text-warning me-2"></i>Weekly Revenue Trends (₹)</h6>
-                            <div class="bg-light p-3 rounded-3 d-flex flex-column align-items-center justify-content-center" style="height: 250px;">
-                                <svg width="100%" height="200" viewBox="0 0 600 200" class="w-100">
-                                    <!-- Grid lines -->
-                                    <line x1="40" y1="20" x2="580" y2="20" stroke="#E2E8F0" stroke-width="1" />
-                                    <line x1="40" y1="70" x2="580" y2="70" stroke="#E2E8F0" stroke-width="1" />
-                                    <line x1="40" y1="120" x2="580" y2="120" stroke="#E2E8F0" stroke-width="1" />
-                                    <line x1="40" y1="170" x2="580" y2="170" stroke="#CBD5E1" stroke-width="1.5" />
-
-                                    <text x="5" y="25" fill="#64748B" font-size="10">₹{{ max_rev }}</text>
-                                    <text x="5" y="75" fill="#64748B" font-size="10">₹{{ half_max_rev }}</text>
-                                    <text x="5" y="125" fill="#64748B" font-size="10">₹{{ quarter_max_rev }}</text>
-
-                                    <!-- Trend line -->
-                                    {% if svg_path %}
-                                    <path d="{{ svg_path }}" fill="none" stroke="#F59E0B" stroke-width="3" />
-                                    {% endif %}
-
-                                    <!-- Data nodes with tooltips -->
-                                    {% for node in svg_nodes %}
-                                    <circle cx="{{ node.x }}" cy="{{ node.y }}" r="5" fill="#F59E0B"
-                                        data-bs-toggle="tooltip" data-bs-placement="top"
-                                        title="{{ node.day }}: ₹{{ node.rev }}"
-                                        style="cursor: pointer;" />
-                                    {% endfor %}
-
-                                    <!-- X-axis day labels -->
-                                    {% for node in svg_nodes %}
-                                    <text x="{{ node.x_text }}" y="190" fill="#64748B" font-size="11">{{ node.day }}</text>
-                                    {% endfor %}
-                                </svg>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="text-navy-dark fw-bold mb-0"><i class="bi bi-cash-stack text-warning me-2"></i>Weekly Revenue Trends (₹)</h6>
+                                <span class="badge bg-warning-subtle text-dark px-2.5 py-1 rounded-pill fw-semibold small"><i class="bi bi-graph-up-arrow me-1 text-warning"></i>Live Analytics</span>
+                            </div>
+                            <div class="position-relative w-100" style="height: 250px;">
+                                <canvas id="weeklyRevenueChart"></canvas>
                             </div>
                         </div>
                     </div>
@@ -181,28 +156,22 @@
                     <!-- Route Productivity -->
                     <div class="col-lg-4">
                         <div class="card card-custom p-4 h-100">
-                            <h6 class="text-navy-dark fw-bold mb-3"><i class="bi bi-compass text-warning me-2"></i>Route Productivity</h6>
-                            <div class="bg-light p-3 rounded-3 d-flex flex-column align-items-center justify-content-start" style="height: 250px; overflow-y: auto;">
-                                {% for item in route_data %}
-                                <div class="w-100 mb-3 text-navy-dark">
-                                    <div class="d-flex justify-content-between small fw-bold mb-1">
-                                        <span>{{ item.route }}</span>
-                                        <span>{{ item.percentage }}% (₹{{ item.revenue }})</span>
-                                    </div>
-                                    <div class="progress" style="height: 8px;">
-                                        <div class="progress-bar {{ item.color }}" role="progressbar"
-                                            style="width: {{ item.percentage }}%;"
-                                            aria-valuenow="{{ item.percentage }}" aria-valuemin="0" aria-valuemax="100">
-                                        </div>
-                                    </div>
-                                </div>
-                                {% empty %}
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="text-navy-dark fw-bold mb-0"><i class="bi bi-pie-chart-fill text-warning me-2"></i>Route Productivity</h6>
+                                <span class="badge bg-primary-subtle text-primary px-2.5 py-1 rounded-pill fw-semibold small">Route Share</span>
+                            </div>
+                            {% if route_data %}
+                            <div class="position-relative w-100 d-flex align-items-center justify-content-center" style="height: 250px;">
+                                <canvas id="routeProductivityChart"></canvas>
+                            </div>
+                            {% else %}
+                            <div class="bg-light p-3 rounded-3 d-flex flex-column align-items-center justify-content-center" style="height: 250px;">
                                 <div class="text-center text-muted py-5 my-auto w-100">
                                     <i class="bi bi-compass fs-2 mb-2 d-block text-secondary"></i>
                                     <p class="mb-0">No booking data found for any routes.</p>
                                 </div>
-                                {% endfor %}
                             </div>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -522,7 +491,144 @@
     <!-- JavaScript Libraries -->
     <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="{% static 'assets/js/dashboard_reports.js' %}"></script>
+
+    <!-- Chart.js Dashboard Charts Initialization -->
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // ===== 1. Weekly Revenue Trends Line Chart =====
+        const revCanvas = document.getElementById('weeklyRevenueChart');
+        if (revCanvas) {
+            const ctxRev = revCanvas.getContext('2d');
+            
+            const revLabels = [{% for d in day_names %}"{{ d }}"{% if not forloop.last %}, {% endif %}{% endfor %}];
+            const revValues = [{% for r in weekly_revenue %}{{ r }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+            
+            const gradientRev = ctxRev.createLinearGradient(0, 0, 0, 220);
+            gradientRev.addColorStop(0, 'rgba(245, 158, 11, 0.35)');
+            gradientRev.addColorStop(1, 'rgba(245, 158, 11, 0.01)');
+
+            new Chart(ctxRev, {
+                type: 'line',
+                data: {
+                    labels: revLabels,
+                    datasets: [{
+                        label: 'Revenue (₹)',
+                        data: revValues,
+                        borderColor: '#f59e0b',
+                        borderWidth: 3,
+                        backgroundColor: gradientRev,
+                        fill: true,
+                        tension: 0.38,
+                        pointBackgroundColor: '#ffffff',
+                        pointBorderColor: '#f59e0b',
+                        pointBorderWidth: 3,
+                        pointRadius: 5,
+                        pointHoverRadius: 8,
+                        pointHoverBackgroundColor: '#f59e0b',
+                        pointHoverBorderColor: '#ffffff',
+                        pointHoverBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#1e293b',
+                            titleFont: { size: 13, weight: '600' },
+                            bodyFont: { size: 13 },
+                            padding: 10,
+                            cornerRadius: 8,
+                            displayColors: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return ' Revenue: ₹' + Number(context.parsed.y).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#64748b', font: { size: 12, weight: '500' } }
+                        },
+                        y: {
+                            grid: { color: 'rgba(226, 232, 240, 0.7)', drawBorder: false },
+                            ticks: {
+                                color: '#64748b',
+                                font: { size: 11 },
+                                callback: function(value) {
+                                    return '₹' + value;
+                                }
+                            },
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // ===== 2. Route Productivity Doughnut Chart =====
+        const routeCanvas = document.getElementById('routeProductivityChart');
+        if (routeCanvas) {
+            const ctxRoute = routeCanvas.getContext('2d');
+            
+            const routeLabels = [{% for item in route_data %}"{{ item.route|escapejs }}"{% if not forloop.last %}, {% endif %}{% endfor %}];
+            const routePcts = [{% for item in route_data %}{{ item.percentage }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+            const routeRevs = [{% for item in route_data %}{{ item.revenue }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+            
+            const chartColors = ['#f59e0b', '#3b82f6', '#10b981', '#06b6d4', '#ef4444', '#8b5cf6', '#ec4899', '#6366f1'];
+
+            new Chart(ctxRoute, {
+                type: 'doughnut',
+                data: {
+                    labels: routeLabels,
+                    datasets: [{
+                        data: routePcts,
+                        backgroundColor: chartColors.slice(0, routeLabels.length),
+                        borderWidth: 2,
+                        borderColor: '#ffffff',
+                        hoverOffset: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '68%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                boxWidth: 12,
+                                padding: 10,
+                                font: { size: 11, weight: '500' },
+                                color: '#334155'
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: '#1e293b',
+                            titleFont: { size: 13, weight: '600' },
+                            bodyFont: { size: 12 },
+                            padding: 10,
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: function(context) {
+                                    const idx = context.dataIndex;
+                                    const pct = routePcts[idx];
+                                    const rev = routeRevs[idx];
+                                    return ` Share: ${pct}% (₹${Number(rev).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})})`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    });
+    </script>
 </body>
 
 </html>
