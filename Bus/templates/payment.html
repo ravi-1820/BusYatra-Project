@@ -12,6 +12,42 @@
                     </h4>
                 </div>
                 <div class="card-body">
+                    {% if is_round_trip %}
+                    <table class="table">
+                        <tr>
+                            <th>Departure Bus</th>
+                            <td>{{ departure_bus.bus_name }} ({{ departure_bus.source }} → {{ departure_bus.destination }})</td>
+                        </tr>
+                        <tr>
+                            <th>Departure Date & Seats</th>
+                            <td>{{ travel_date }} | Seats: {{ dep_seats }}</td>
+                        </tr>
+                        <tr>
+                            <th>Return Bus</th>
+                            <td>{{ return_bus.bus_name }} ({{ return_bus.source }} → {{ return_bus.destination }})</td>
+                        </tr>
+                        <tr>
+                            <th>Return Date & Seats</th>
+                            <td>{{ return_date }} | Seats: {{ ret_seats }}</td>
+                        </tr>
+                        <tr>
+                            <th>Subtotal</th>
+                            <td>₹{{ subtotal }}</td>
+                        </tr>
+                        <tr>
+                            <th>GST (5%)</th>
+                            <td>₹{{ gst_fees }}</td>
+                        </tr>
+                        <tr>
+                            <th>Convenience Fee</th>
+                            <td>₹{{ convenience_fee }}</td>
+                        </tr>
+                        <tr class="table-success">
+                            <th>Total Amount</th>
+                            <th>₹{{ total_price }}</th>
+                        </tr>
+                    </table>
+                    {% else %}
                     <table class="table">
                         <tr>
                             <th>Bus</th>
@@ -46,7 +82,8 @@
                             <th>₹{{ total_price }}</th>
                         </tr>
                     </table>
-                    <button id="rzp-button" class="btn btn-success w-100">
+                    {% endif %}
+                    <button id="rzp-button" class="btn btn-success w-100 fw-bold py-3 fs-5">
                         Pay ₹{{ total_price }}
                     </button>
                     {% if is_mock %}
@@ -65,33 +102,30 @@
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
 <script>
-
     var options = {
-
         key: "{{ razorpay_key }}",
-
         amount: "{{ payment.amount }}",
-
         currency: "INR",
-
         name: "BusYatra",
-
         description: "Bus Ticket Booking",
-
         image: "/static/images/logo.png",
-
         {% if payment.id and not is_mock %}
         order_id: "{{ payment.id }}",
         {% endif %}
-
         handler: function (response) {
-
+            {% if is_round_trip %}
+            window.location.href =
+                "{% url 'ticket' %}?round_trip=1"
+                + "&razorpay_payment_id=" + (response.razorpay_payment_id || "mock_pay_id")
+                + "&razorpay_order_id=" + (response.razorpay_order_id || "mock_order_id")
+                + "&razorpay_signature=" + (response.razorpay_signature || "mock_sig");
+            {% else %}
             window.location.href =
                 "{% url 'ticket' %}?booking_ids={{ booking_ids }}"
                 + "&razorpay_payment_id=" + (response.razorpay_payment_id || "mock_pay_id")
                 + "&razorpay_order_id=" + (response.razorpay_order_id || "mock_order_id")
                 + "&razorpay_signature=" + (response.razorpay_signature || "mock_sig");
-
+            {% endif %}
         },
         prefill: {
             name: "{{ request.session.name }}",

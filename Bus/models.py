@@ -73,6 +73,20 @@ class Booking(models.Model):
         max_length=20,
         default='pending'
     )
+    round_trip_id = models.UUIDField(
+        null=True,
+        blank=True,
+        default=None
+    )
+    JOURNEY_TYPE_CHOICES = [
+        ('ONE_WAY', 'One Way'),
+        ('ROUND_TRIP', 'Round Trip'),
+    ]
+    journey_type = models.CharField(
+        max_length=20,
+        choices=JOURNEY_TYPE_CHOICES,
+        default='ONE_WAY'
+    )
 
     def __str__(self):
         return f"{self.user.name} - {self.bus.bus_name}"
