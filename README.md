@@ -134,7 +134,7 @@ python myenv/BusYatra/manage.py test Bus
 ## Screenshots
 
 ### 1. Home-page
-![home Page](docs/Images/home-page.png)
+![Home Page](docs/Images/Home-page.png)
 
 ### 2. Login-page
 ![Login Page](docs/Images/Login-page.png)
