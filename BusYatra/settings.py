@@ -30,6 +30,7 @@ ALLOWED_HOSTS = [
     "127.0.0.1",
     "localhost",
     ".onrender.com",
+    "testserver",
 ]
 render_external_host = os.getenv("RENDER_EXTERNAL_HOSTNAME")
 if render_external_host:
@@ -144,9 +145,8 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 STORAGES = {
     "default": {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
@@ -169,4 +169,6 @@ EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 
 RAZORPAY_KEY_ID = os.getenv('RAZORPAY_KEY_ID', '')
 RAZORPAY_KEY_SECRET = os.getenv('RAZORPAY_KEY_SECRET', '')
-SECURE_CROSS_ORIGIN_POLICY = "same-origin-allow-popups"
+SECURE_CROSS_ORIGIN_POLICY = "same-origin-allow-popups"
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
