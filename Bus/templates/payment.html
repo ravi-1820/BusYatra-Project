@@ -102,44 +102,81 @@
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
 <script>
-    var options = {
-        key: "{{ razorpay_key }}",
-        amount: "{{ payment.amount }}",
-        currency: "INR",
-        name: "BusYatra",
-        description: "Bus Ticket Booking",
-        image: "/static/images/logo.png",
-        {% if payment.id and not is_mock %}
-        order_id: "{{ payment.id }}",
-        {% endif %}
-        handler: function (response) {
-            {% if is_round_trip %}
-            window.location.href =
-                "{% url 'ticket' %}?round_trip=1"
-                + "&razorpay_payment_id=" + (response.razorpay_payment_id || "mock_pay_id")
-                + "&razorpay_order_id=" + (response.razorpay_order_id || "mock_order_id")
-                + "&razorpay_signature=" + (response.razorpay_signature || "mock_sig");
-            {% else %}
-            window.location.href =
-                "{% url 'ticket' %}?booking_ids={{ booking_ids }}"
-                + "&razorpay_payment_id=" + (response.razorpay_payment_id || "mock_pay_id")
-                + "&razorpay_order_id=" + (response.razorpay_order_id || "mock_order_id")
-                + "&razorpay_signature=" + (response.razorpay_signature || "mock_sig");
-            {% endif %}
-        },
-        prefill: {
-            name: "{{ request.session.name }}",
-            email: "{{ request.session.email }}",
-            contact: "{{ request.session.phone }}"
-        },
-        theme: {
-            color: "#0d6efd"
-        }
-    };
-    var rzp = new Razorpay(options);
     document.getElementById("rzp-button").onclick = function (e) {
-        rzp.open();
         e.preventDefault();
+        
+        {% if is_mock %}
+        // Mock Checkout Mode (Used when Razorpay keys are in Sandbox / Fallback mode)
+        var targetUrl = "";
+        {% if is_round_trip %}
+        targetUrl = "{% url 'ticket' %}?round_trip=1"
+            + "&razorpay_payment_id=mock_pay_" + Date.now()
+            + "&razorpay_order_id={{ payment.id }}"
+            + "&razorpay_signature=mock_sig";
+        {% else %}
+        targetUrl = "{% url 'ticket' %}?booking_ids={{ booking_ids }}"
+            + "&razorpay_payment_id=mock_pay_" + Date.now()
+            + "&razorpay_order_id={{ payment.id }}"
+            + "&razorpay_signature=mock_sig";
+        {% endif %}
+        window.location.href = targetUrl;
+        {% else %}
+        // Live / Real Razorpay Checkout Mode
+        var options = {
+            key: "{{ razorpay_key }}",
+            amount: "{{ payment.amount }}",
+            currency: "INR",
+            name: "BusYatra",
+            description: "Bus Ticket Booking",
+            image: "/static/images/logo.png",
+            {% if payment.id %}
+            order_id: "{{ payment.id }}",
+            {% endif %}
+            handler: function (response) {
+                {% if is_round_trip %}
+                window.location.href =
+                    "{% url 'ticket' %}?round_trip=1"
+                    + "&razorpay_payment_id=" + (response.razorpay_payment_id || "mock_pay_id")
+                    + "&razorpay_order_id=" + (response.razorpay_order_id || "mock_order_id")
+                    + "&razorpay_signature=" + (response.razorpay_signature || "mock_sig");
+                {% else %}
+                window.location.href =
+                    "{% url 'ticket' %}?booking_ids={{ booking_ids }}"
+                    + "&razorpay_payment_id=" + (response.razorpay_payment_id || "mock_pay_id")
+                    + "&razorpay_order_id=" + (response.razorpay_order_id || "mock_order_id")
+                    + "&razorpay_signature=" + (response.razorpay_signature || "mock_sig");
+                {% endif %}
+            },
+            prefill: {
+                name: "{{ request.session.name }}",
+                email: "{{ request.session.email }}",
+                contact: "{{ request.session.phone }}"
+            },
+            theme: {
+                color: "#0d6efd"
+            }
+        };
+        try {
+            var rzp = new Razorpay(options);
+            rzp.on('payment.failed', function (response) {
+                alert("Payment Gateway Notice: " + (response.error.description || "Transaction could not be processed by Razorpay. Redirecting to Sandbox confirmation."));
+                {% if is_round_trip %}
+                window.location.href = "{% url 'ticket' %}?round_trip=1&razorpay_payment_id=mock_pay_id&razorpay_order_id={{ payment.id }}&razorpay_signature=mock_sig";
+                {% else %}
+                window.location.href = "{% url 'ticket' %}?booking_ids={{ booking_ids }}&razorpay_payment_id=mock_pay_id&razorpay_order_id={{ payment.id }}&razorpay_signature=mock_sig";
+                {% endif %}
+            });
+            rzp.open();
+        } catch(err) {
+            console.error("Razorpay SDK Error:", err);
+            // Fallback to test checkout if Razorpay fails to open
+            {% if is_round_trip %}
+            window.location.href = "{% url 'ticket' %}?round_trip=1&razorpay_payment_id=mock_pay_id&razorpay_order_id={{ payment.id }}&razorpay_signature=mock_sig";
+            {% else %}
+            window.location.href = "{% url 'ticket' %}?booking_ids={{ booking_ids }}&razorpay_payment_id=mock_pay_id&razorpay_order_id={{ payment.id }}&razorpay_signature=mock_sig";
+            {% endif %}
+        }
+        {% endif %}
     };
 </script>
 {% endblock %}

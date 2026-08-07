@@ -12,9 +12,13 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 import os
 from pathlib import Path
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load environment variables from .env file if present
+load_dotenv(BASE_DIR / '.env')
 
 
 # Quick-start development settings - unsuitable for production
@@ -167,8 +171,8 @@ EMAIL_PORT = 587
 EMAIL_HOST_USER = 'ravitech090@gmail.com'
 EMAIL_HOST_PASSWORD = 'potl abet ampb gjag'
 
-RAZORPAY_KEY_ID = 'rzp_test_qR4RRcX7iYEtFH'
-RAZORPAY_KEY_SECRET = '1WVI4f7rnhwRhYSunmR3JDl6'
+RAZORPAY_KEY_ID = os.getenv('RAZORPAY_KEY_ID', 'rzp_test_qR4RRcX7iYEtFH')
+RAZORPAY_KEY_SECRET = os.getenv('RAZORPAY_KEY_SECRET', '1WVI4f7rnhwRhYSunmR3JDl6')
 SECURE_CROSS_ORIGIN_POLICY = "same-origin-allow-popups"
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
