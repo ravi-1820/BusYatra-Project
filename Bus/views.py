@@ -585,21 +585,27 @@ def forgot_password(request):
             email = request.POST.get("email", "").strip()
             user = User.objects.get(email=email)
             otp = random.randint(100000, 999999)
-            request.session['forgot_email'] = email
-            request.session['forgot_otp'] = str(otp)
 
-            logger.info(f"Forgot password OTP generated for {email}: {otp}")
+            logger.info(f"Forgot password OTP generated for user ID {user.id}")
 
+            from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', None) or settings.EMAIL_HOST_USER
             try:
                 send_mail(
                     "BusYatra Reset Password OTP",
                     f"Hello {user.name},\n\nYour OTP to reset password is: {otp}\n\nDo not share this OTP with anyone.\n\nBusYatra Team",
-                    settings.EMAIL_HOST_USER,
+                    from_email,
                     [email],
                     fail_silently=False,
                 )
             except Exception as email_err:
-                logger.error(f"Forgot password OTP email could not be sent: {email_err}")
+                logger.error(f"Forgot password OTP email could not be sent for user ID {user.id}: {email_err}")
+                request.session.pop('forgot_email', None)
+                request.session.pop('forgot_otp', None)
+                return render(request, "forgot_password.html", {"msg": "Failed to send OTP email. Please try again or contact support."})
+
+            # Store OTP state in session only after email succeeds
+            request.session['forgot_email'] = email
+            request.session['forgot_otp'] = str(otp)
 
             return redirect('verify_forgot_otp')
         except User.DoesNotExist:
@@ -1000,11 +1006,13 @@ def payment(request):
         return redirect("login")
 
     try:
-        # Check Round Trip checkout from session
-        if request.GET.get("round_trip") == "1" or "round_trip_booking" in request.session:
+        booking_ids_raw = request.GET.get("booking_ids")
+
+        # Check Round Trip checkout from session (only if booking_ids is not passed directly)
+        if (request.GET.get("round_trip") == "1" or "round_trip_booking" in request.session) and not booking_ids_raw:
             rt_data = request.session.get("round_trip_booking")
             if not rt_data:
-                return redirect("index")
+                return redirect("my_orders")
 
             dep_bus = Bus.objects.get(id=rt_data["departure_bus_id"])
             ret_bus = Bus.objects.get(id=rt_data["return_bus_id"])
@@ -1052,10 +1060,22 @@ def payment(request):
             })
 
         # One Way payment flow
-        booking_ids = request.GET.get("booking_ids")
-        bookings = get_customer_bookings(customer, booking_ids)
+        if not booking_ids_raw:
+            logger.warning(f"Payment view called without booking_ids parameter by user {customer.id}")
+            return redirect("my_orders")
+
+        parsed_ids = parse_booking_ids(booking_ids_raw)
+        if not parsed_ids:
+            logger.warning(f"Payment view called with invalid booking_ids '{booking_ids_raw}' by user {customer.id}")
+            return redirect("my_orders")
+
+        booking_ids_str = ",".join(str(i) for i in parsed_ids)
+        bookings = get_customer_bookings(customer, booking_ids_str)
         if not bookings.exists():
-            return redirect("index")
+            logger.warning(f"Payment view called with non-existent or unauthorized booking_ids '{booking_ids_str}' for user {customer.id}")
+            return redirect("my_orders")
+
+        logger.info(f"Payment view initialized for user {customer.id}, booking_ids: {booking_ids_str}")
 
         subtotal, gst_fees, convenience_fee, total_price = calculate_payment_summary(bookings)
         client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
@@ -1079,9 +1099,9 @@ def payment(request):
         first_booking = bookings.first()
         return render(request, "payment.html", {
             "bookings": bookings,
-            "booking_ids": booking_ids,
-            "bus": first_booking.bus,
-            "travel_date": first_booking.travel_date,
+            "booking_ids": booking_ids_str,
+            "bus": first_booking.bus if first_booking else None,
+            "travel_date": first_booking.travel_date if first_booking else "",
             "seats": ", ".join([booking.seat_number for booking in bookings]),
             "subtotal": subtotal,
             "gst_fees": gst_fees,
@@ -1514,19 +1534,22 @@ def ticket(request):
 
     try:
         round_trip_id_param = request.GET.get("round_trip_id")
-        booking_ids = request.GET.get("booking_ids")
+        booking_ids_raw = request.GET.get("booking_ids")
         payment_id = request.GET.get("razorpay_payment_id")
         order_id = request.GET.get("razorpay_order_id")
         signature = request.GET.get("razorpay_signature")
 
+        logger.info(f"Ticket view called by user {customer.id} | raw_booking_ids: '{booking_ids_raw}' | round_trip_id: '{round_trip_id_param}' | payment_id: '{payment_id}'")
+
         # Round Trip Verification & Atomic Creation
-        if request.GET.get("round_trip") == "1" or "round_trip_booking" in request.session:
+        is_rt_flow = (request.GET.get("round_trip") == "1") or ("round_trip_booking" in request.session and not booking_ids_raw)
+        if is_rt_flow:
             rt_data = request.session.get("round_trip_booking")
             if not rt_data:
                 if round_trip_id_param:
                     bookings = Booking.objects.filter(round_trip_id=round_trip_id_param, user=customer)
                     if bookings.exists():
-                        subtotal = sum(b.amount for b in bookings)
+                        subtotal = sum(b.amount for b in bookings if b.amount)
                         gst = int((subtotal * 5) / 100)
                         return render(request, "ticket.html", {
                             "is_round_trip": True,
@@ -1536,7 +1559,8 @@ def ticket(request):
                             "gst": gst,
                             "total_amount": subtotal + gst,
                         })
-                return redirect("index")
+                logger.warning(f"Ticket view round-trip flow missing rt_data for user {customer.id}")
+                return redirect("my_orders")
 
             if payment_id or signature:
                 verified = signature == "mock_sig"
@@ -1645,8 +1669,9 @@ def ticket(request):
         if round_trip_id_param:
             bookings = Booking.objects.filter(round_trip_id=round_trip_id_param, user=customer)
             if not bookings.exists():
-                return redirect("index")
-            subtotal = sum(b.amount for b in bookings)
+                logger.warning(f"Round trip booking ID '{round_trip_id_param}' not found or unauthorized for user {customer.id}")
+                return redirect("my_orders")
+            subtotal = sum(b.amount for b in bookings if b.amount)
             gst = int((subtotal * 5) / 100)
             return render(request, "ticket.html", {
                 "is_round_trip": True,
@@ -1658,9 +1683,20 @@ def ticket(request):
             })
 
         # One-Way ticket flow
-        bookings = get_customer_bookings(customer, booking_ids)
+        if not booking_ids_raw:
+            logger.warning(f"Ticket view called without booking_ids parameter for user {customer.id}")
+            return redirect("my_orders")
+
+        parsed_ids = parse_booking_ids(booking_ids_raw)
+        if not parsed_ids:
+            logger.warning(f"Ticket view called with invalid/unparseable booking_ids '{booking_ids_raw}' for user {customer.id}")
+            return redirect("my_orders")
+
+        booking_ids_str = ",".join(str(i) for i in parsed_ids)
+        bookings = get_customer_bookings(customer, booking_ids_str)
         if not bookings.exists():
-            return redirect("index")
+            logger.warning(f"Ticket view called with non-existent or unauthorized booking_ids '{booking_ids_str}' for user {customer.id}")
+            return redirect("my_orders")
 
         if payment_id or signature:
             verified = signature == "mock_sig"
@@ -1686,35 +1722,40 @@ def ticket(request):
             try:
                 from django.core.mail import EmailMessage
                 pdf_bytes = generate_ticket_pdf_bytes(bookings)
-                passenger_names = ", ".join([booking.passenger_name for booking in bookings])
-                seat_numbers = ", ".join([booking.seat_number for booking in bookings])
+                first_b = bookings.first()
+                if first_b and first_b.user and first_b.user.email:
+                    passenger_names = ", ".join([booking.passenger_name for booking in bookings if booking.passenger_name])
+                    seat_numbers = ", ".join([booking.seat_number for booking in bookings if booking.seat_number])
 
-                email_msg = EmailMessage(
-                    subject="BusYatra Ticket Confirmation",
-                    body=f"Dear {customer.name},\nThank you for choosing BusYatra. Your booking has been successfully confirmed!\nPassenger(s): {passenger_names}\nSeat(s): {seat_numbers}\nPlease find your attached e-ticket PDF containing details and guidelines.\nWarm regards,\nBusYatra Team",
-                    from_email=settings.EMAIL_HOST_USER,
-                    to=[bookings.first().user.email]
-                )
-                email_msg.attach('BusYatra_Ticket.pdf', pdf_bytes, 'application/pdf')
-                email_msg.send()
+                    email_msg = EmailMessage(
+                        subject="BusYatra Ticket Confirmation",
+                        body=f"Dear {customer.name},\nThank you for choosing BusYatra. Your booking has been successfully confirmed!\nPassenger(s): {passenger_names}\nSeat(s): {seat_numbers}\nPlease find your attached e-ticket PDF containing details and guidelines.\nWarm regards,\nBusYatra Team",
+                        from_email=settings.EMAIL_HOST_USER,
+                        to=[first_b.user.email]
+                    )
+                    email_msg.attach('BusYatra_Ticket.pdf', pdf_bytes, 'application/pdf')
+                    email_msg.send()
             except Exception as email_err:
                 logger.error(f"Failed to send confirmation email: {email_err}")
 
-            return redirect(f"/ticket/?booking_ids={booking_ids}")
+            clean_ids = ",".join(str(b.id) for b in bookings)
+            logger.info(f"Payment success for user {customer.id}. Redirecting to /ticket/?booking_ids={clean_ids}")
+            return redirect(f"/ticket/?booking_ids={clean_ids}")
 
-        subtotal = sum(booking.amount for booking in bookings)
+        clean_ids = ",".join(str(b.id) for b in bookings)
+        subtotal = sum(booking.amount for booking in bookings if booking.amount)
         gst = int((subtotal * 5) / 100)
 
         return render(request, "ticket.html", {
             "bookings": bookings,
-            "booking_ids_str": booking_ids,
+            "booking_ids_str": clean_ids,
             "subtotal": subtotal,
             "gst": gst,
             "total_amount": subtotal + gst,
         })
     except Exception as e:
-        logger.error(f"Ticket Detail Page Error: {e}")
-        return HttpResponse(f"Error occurred: {e}")
+        logger.error(f"Ticket Detail Page Error: {e}", exc_info=True)
+        return redirect("my_orders")
 
 def download_ticket_pdf(request):
     customer = get_customer_user(request)

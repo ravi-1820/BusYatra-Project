@@ -105,6 +105,15 @@
     document.getElementById("rzp-button").onclick = function (e) {
         e.preventDefault();
         
+        var bookingIds = "{{ booking_ids|default:'' }}";
+        {% if not is_round_trip %}
+        if (!bookingIds) {
+            alert("Invalid booking request. Redirecting to My Orders.");
+            window.location.href = "{% url 'my_orders' %}";
+            return;
+        }
+        {% endif %}
+
         {% if is_mock %}
         // Mock Checkout Mode (Used when Razorpay keys are in Sandbox / Fallback mode)
         var targetUrl = "";
@@ -114,7 +123,7 @@
             + "&razorpay_order_id={{ payment.id }}"
             + "&razorpay_signature=mock_sig";
         {% else %}
-        targetUrl = "{% url 'ticket' %}?booking_ids={{ booking_ids }}"
+        targetUrl = "{% url 'ticket' %}?booking_ids=" + encodeURIComponent(bookingIds)
             + "&razorpay_payment_id=mock_pay_" + Date.now()
             + "&razorpay_order_id={{ payment.id }}"
             + "&razorpay_signature=mock_sig";
@@ -141,7 +150,7 @@
                     + "&razorpay_signature=" + (response.razorpay_signature || "mock_sig");
                 {% else %}
                 window.location.href =
-                    "{% url 'ticket' %}?booking_ids={{ booking_ids }}"
+                    "{% url 'ticket' %}?booking_ids=" + encodeURIComponent(bookingIds)
                     + "&razorpay_payment_id=" + (response.razorpay_payment_id || "mock_pay_id")
                     + "&razorpay_order_id=" + (response.razorpay_order_id || "mock_order_id")
                     + "&razorpay_signature=" + (response.razorpay_signature || "mock_sig");
@@ -163,7 +172,7 @@
                 {% if is_round_trip %}
                 window.location.href = "{% url 'ticket' %}?round_trip=1&razorpay_payment_id=mock_pay_id&razorpay_order_id={{ payment.id }}&razorpay_signature=mock_sig";
                 {% else %}
-                window.location.href = "{% url 'ticket' %}?booking_ids={{ booking_ids }}&razorpay_payment_id=mock_pay_id&razorpay_order_id={{ payment.id }}&razorpay_signature=mock_sig";
+                window.location.href = "{% url 'ticket' %}?booking_ids=" + encodeURIComponent(bookingIds) + "&razorpay_payment_id=mock_pay_id&razorpay_order_id={{ payment.id }}&razorpay_signature=mock_sig";
                 {% endif %}
             });
             rzp.open();
@@ -173,7 +182,7 @@
             {% if is_round_trip %}
             window.location.href = "{% url 'ticket' %}?round_trip=1&razorpay_payment_id=mock_pay_id&razorpay_order_id={{ payment.id }}&razorpay_signature=mock_sig";
             {% else %}
-            window.location.href = "{% url 'ticket' %}?booking_ids={{ booking_ids }}&razorpay_payment_id=mock_pay_id&razorpay_order_id={{ payment.id }}&razorpay_signature=mock_sig";
+            window.location.href = "{% url 'ticket' %}?booking_ids=" + encodeURIComponent(bookingIds) + "&razorpay_payment_id=mock_pay_id&razorpay_order_id={{ payment.id }}&razorpay_signature=mock_sig";
             {% endif %}
         }
         {% endif %}
