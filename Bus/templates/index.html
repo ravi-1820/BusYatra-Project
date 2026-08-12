@@ -87,23 +87,13 @@
                     </div>
                 </div>
 
-                <!-- Travel Date Field -->
-                <div class="col-lg-3 col-md-6" id="travelDateCol">
+                <!-- Date Field -->
+                <div class="col-lg-3 col-md-6">
                     <label class="form-label fw-semibold text-secondary">Travel Date</label>
                     <div class="input-group-custom">
                         <i class="bi bi-calendar-event-fill text-primary"></i>
                         <input type="date" class="form-control" name="date" id="travelDate" required>
                     </div>
-                </div>
-
-                <!-- Return Date Field (For Round Trip) -->
-                <div class="col-lg-3 col-md-6 d-none" id="returnDateCol">
-                    <label class="form-label fw-semibold text-secondary">Return Date</label>
-                    <div class="input-group-custom">
-                        <i class="bi bi-calendar-check-fill text-primary"></i>
-                        <input type="date" class="form-control" name="return_date" id="returnDate">
-                    </div>
-                    <small id="returnDateError" class="text-danger fw-semibold mt-1 d-none"></small>
                 </div>
 
                 <!-- Passengers Field -->
@@ -378,40 +368,20 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-    const tripOneWay = document.getElementById("tripOneWay");
-    const tripRoundTrip = document.getElementById("tripRoundTrip");
-    const returnDateCol = document.getElementById("returnDateCol");
-    const returnDateInput = document.getElementById("returnDate");
-    const travelDateInput = document.getElementById("travelDate");
-    const returnDateError = document.getElementById("returnDateError");
+    const homeOneWay = document.getElementById("homeOneWay");
+    const homeRoundTrip = document.getElementById("homeRoundTrip");
 
-    function toggleTripType() {
-        if (tripRoundTrip && tripRoundTrip.checked) {
-            if (returnDateCol) returnDateCol.classList.remove("d-none");
-            if (returnDateInput) returnDateInput.required = true;
-        } else {
-            if (returnDateCol) returnDateCol.classList.add("d-none");
-            if (returnDateInput) {
-                returnDateInput.required = false;
-                returnDateInput.value = "";
+    if (homeOneWay && homeRoundTrip) {
+        homeOneWay.addEventListener("change", function () {
+            if (this.checked) {
+                homeRoundTrip.checked = false;
             }
-            if (returnDateError) {
-                returnDateError.innerText = "";
-                returnDateError.classList.add("d-none");
-            }
-        }
-    }
-
-    if (tripOneWay) tripOneWay.addEventListener("change", toggleTripType);
-    if (tripRoundTrip) tripRoundTrip.addEventListener("change", toggleTripType);
-
-    if (travelDateInput) {
-        travelDateInput.addEventListener("change", function () {
-            if (returnDateInput && this.value) {
-                returnDateInput.min = this.value;
-                if (returnDateInput.value && returnDateInput.value < this.value) {
-                    returnDateInput.value = this.value;
-                }
+        });
+        homeRoundTrip.addEventListener("change", function () {
+            if (this.checked) {
+                homeOneWay.checked = false;
+            } else {
+                homeOneWay.checked = true;
             }
         });
     }
@@ -419,11 +389,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const searchForm = document.getElementById("busSearchForm");
     if (searchForm) {
         searchForm.addEventListener("submit", function (e) {
-            if (returnDateError) {
-                returnDateError.innerText = "";
-                returnDateError.classList.add("d-none");
-            }
-
             const fromCity = document.getElementById("fromCity");
             const toCity = document.getElementById("toCity");
 
@@ -449,33 +414,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 const validationModal = new bootstrap.Modal(document.getElementById('searchValidationModal'));
                 validationModal.show();
-                return;
-            }
-
-            // Inline validation for Return Date in Round Trip mode (No browser alert)
-            if (tripRoundTrip && tripRoundTrip.checked) {
-                const depDate = travelDateInput ? travelDateInput.value : "";
-                const retDate = returnDateInput ? returnDateInput.value : "";
-
-                if (!retDate) {
-                    e.preventDefault();
-                    if (returnDateError) {
-                        returnDateError.innerText = "Please select a valid Return Date.";
-                        returnDateError.classList.remove("d-none");
-                    }
-                    returnDateInput.focus();
-                    return;
-                }
-
-                if (depDate && retDate < depDate) {
-                    e.preventDefault();
-                    if (returnDateError) {
-                        returnDateError.innerText = "Return Date cannot be earlier than Journey Date.";
-                        returnDateError.classList.remove("d-none");
-                    }
-                    returnDateInput.focus();
-                    return;
-                }
             }
         });
     }

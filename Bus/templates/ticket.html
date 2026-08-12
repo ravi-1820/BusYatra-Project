@@ -155,11 +155,11 @@
         <!-- Action Buttons -->
         <div class="text-center mt-4 print-hide action-buttons">
             <!-- Print Ticket uses backend PDF inline view (which opens in native browser print-friendly viewer) -->
-            <a href="{% url 'download_ticket_pdf' %}{% if is_round_trip %}?round_trip_id={{ round_trip_id }}&inline=1{% else %}?booking_ids={{ booking_ids_str }}&inline=1{% endif %}" target="_blank" class="btn btn-primary-custom px-4 py-2 me-2" id="btnPrint"><i
+            <a href="{% url 'download_ticket_pdf' %}?booking_ids={{ booking_ids_str }}&inline=1" target="_blank" class="btn btn-primary-custom px-4 py-2 me-2" id="btnPrint"><i
                     class="bi bi-printer me-2"></i>Print Ticket</a>
             
             <!-- Download PDF triggers backend PDF attachment download -->
-            <a href="{% url 'download_ticket_pdf' %}{% if is_round_trip %}?round_trip_id={{ round_trip_id }}{% else %}?booking_ids={{ booking_ids_str }}{% endif %}" class="btn btn-outline-primary px-4 py-2 me-2" id="btnDownload"><i
+            <a href="{% url 'download_ticket_pdf' %}?booking_ids={{ booking_ids_str }}" class="btn btn-outline-primary px-4 py-2 me-2" id="btnDownload"><i
                     class="bi bi-download me-2"></i>Download PDF</a>
             
             <a href="{% url 'index' %}" class="btn btn-amber-custom px-4 py-2"><i class="bi bi-house-door me-2"></i>Book Another Ticket</a>
