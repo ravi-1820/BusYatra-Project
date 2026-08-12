@@ -94,9 +94,9 @@
 
         },
         prefill: {
-            name: "{{ request.session.name }}",
-            email: "{{ request.session.email }}",
-            contact: "{{ request.session.phone }}"
+            name: "{{ login_user.name|default:'' }}",
+            email: "{{ login_user.email|default:'' }}",
+            contact: "{{ login_user.phone|default:'' }}"
         },
         theme: {
             color: "#0d6efd"

@@ -26,7 +26,7 @@
     <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css" rel="stylesheet">
     <!-- Custom Style Sheet -->
-    <link rel="stylesheet" href="{% static 'assets/css/style.css' %}?v=1.2">
+    <link rel="stylesheet" href="{% static 'assets/css/style.css' %}?v=1.4">
     <!-- Swiper CSS for Modern Carousel Slider -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
 </head>
@@ -37,7 +37,7 @@
     <nav class="navbar navbar-expand-lg navbar-custom sticky-top">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center" href="{% url 'index' %}">
-                <img src="{% static 'assets/images/logo.png' %}" alt="BusYatra Logo" height="65">
+                <img src="{% static 'assets/images/logo.png' %}" alt="BusYatra Logo" height="52">
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
                 aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
@@ -46,44 +46,59 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto align-items-center">
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'index' %}">Home</a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'index' %}active{% endif %}" href="{% url 'index' %}">Home</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'bus_list' %}">Search Buses</a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'bus_list' %}active{% endif %}" href="{% url 'bus_list' %}">Buses</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'my_orders' %}">History</a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'my_orders' %}active{% endif %}" href="{% url 'my_orders' %}">My bookings</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'about' %}">About Us</a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'about' %}active{% endif %}" href="{% url 'about' %}">About us</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'contact' %}">Contact</a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'contact' %}active{% endif %}" href="{% url 'contact' %}">Contact</a>
                     </li>
-                    <li class="nav-item ms-lg-3 mt-2 mt-lg-0 d-flex align-items-center gap-2" id="navUserArea">
+
+                    <!-- Language Translator Dropdown (Placed First on Right) -->
+                    <li class="nav-item dropdown ms-lg-3 mt-2 mt-lg-0">
+                        <a class="nav-lang-btn dropdown-toggle" href="#" role="button" id="languageDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <span id="selectedLanguageText">English</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 mt-2" aria-labelledby="languageDropdown">
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="javascript:void(0);" onclick="changeLanguage('en', 'English')">
+                                    <span>🇬🇧</span> English
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="javascript:void(0);" onclick="changeLanguage('hi', 'हिंदी')">
+                                    <span>🇮🇳</span> Hindi (हिंदी)
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="javascript:void(0);" onclick="changeLanguage('gu', 'ગુજરાતી')">
+                                    <span>🇮🇳</span> Gujarati (ગુજરાતી)
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+
+                    <!-- User Account Area (Placed Second on Right) -->
+                    <li class="nav-item ms-lg-2 mt-2 mt-lg-0" id="navUserArea">
                         {% if request.session.email %}
                         <div class="dropdown profile-dropdown">
-                            {% if login_user and login_user.profile and login_user.profile.name %}
-                            <!-- Dropdown toggle button for users with custom profile photos -->
-                            <a href="#"
-                                class="dropdown-toggle ms-2 d-inline-flex align-items-center gap-2 text-dark text-decoration-none"
-                                role="button" data-bs-toggle="dropdown" data-bs-offset="0,8" aria-expanded="false"
-                                title="{{ login_user.name|default:request.session.name }}">
-                                <img src="{{ login_user.profile.url }}" width="42" height="42"
-                                    class="rounded-circle border border-2 object-fit-cover">
-                                <span class="fw-semibold text-black notranslate" style="color: #000 !important;">{{ login_user.name|default:request.session.name }}</span>
+                            <a href="#" class="nav-user-capsule dropdown-toggle" role="button" data-bs-toggle="dropdown" data-bs-offset="0,8" aria-expanded="false" title="{{ login_user.name }}">
+                                {% if login_user and login_user.profile and login_user.profile.name %}
+                                    <img src="{{ login_user.profile.url }}" class="nav-user-avatar-img" alt="User Profile">
+                                {% else %}
+                                    <div class="nav-user-avatar-circle">
+                                        {{ login_user.name|slice:":2"|upper }}
+                                    </div>
+                                {% endif %}
+                                <span class="nav-user-name notranslate">{{ login_user.name|truncatewords:1 }}</span>
                             </a>
-                            {% else %}
-                            <!-- Dropdown toggle button for users without profile photos (default icon) -->
-                            <a href="#"
-                                class="dropdown-toggle ms-2 d-inline-flex align-items-center gap-2 text-dark text-decoration-none"
-                                role="button" data-bs-toggle="dropdown" data-bs-offset="0,8" aria-expanded="false"
-                                title="{{ login_user.name|default:request.session.name }}">
-                                <i class="bi bi-person-circle fs-2 text-dark"></i>
-                                <span class="fw-semibold text-black notranslate" style="color: #000 !important;">{{ login_user.name|default:request.session.name }}</span>
-                            </a>
-                            {% endif %}
-                            <!-- Redesigned profile menu list -->
                             <ul class="dropdown-menu dropdown-menu-end header-profile-menu">
                                 <li>
                                     <a class="dropdown-item" href="{% url 'account' %}">
@@ -98,40 +113,10 @@
                             </ul>
                         </div>
                         {% else %}
-                        <a href="{% url 'login' %}" class="btn btn-outline-nav btn-sm">
+                        <a href="{% url 'login' %}" class="btn btn-outline-nav btn-sm ms-1">
                             <i class="bi bi-box-arrow-in-right me-1"></i>Login
                         </a>
                         {% endif %}
-                    </li>
-                    <!-- Language Translator Dropdown (Placed AFTER Login button) -->
-                    <li class="nav-item dropdown ms-lg-2 mt-2 mt-lg-0">
-                        <a class="nav-link dropdown-toggle d-inline-flex align-items-center gap-1 bg-white border border-light-subtle rounded-pill px-3 py-1 shadow-sm text-dark fw-medium"
-                            href="#" role="button" id="languageDropdown" data-bs-toggle="dropdown"
-                            aria-expanded="false">
-                            <i class="bi bi-translate text-primary me-1 fs-6"></i>
-                            <span id="selectedLanguageText">English</span>
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 mt-2"
-                            aria-labelledby="languageDropdown">
-                            <li>
-                                <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="javascript:void(0);"
-                                    onclick="changeLanguage('en', 'English')">
-                                    <span>🇬🇧</span> English
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="javascript:void(0);"
-                                    onclick="changeLanguage('hi', 'हिंदी')">
-                                    <span>🇮🇳</span> Hindi (हिंदी)
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="javascript:void(0);"
-                                    onclick="changeLanguage('gu', 'ગુજરાતી')">
-                                    <span>🇮🇳</span> Gujarati (ગુજરાતી)
-                                </a>
-                            </li>
-                        </ul>
                     </li>
                 </ul>
             </div>

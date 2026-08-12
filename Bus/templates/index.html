@@ -19,7 +19,7 @@
             </div>
             <div class="col-lg-6 text-center">
                 <div class="position-relative d-inline-block">
-                    <img src="{% static 'assets/images/hero-bus.jpg' %}" alt="Travel Bus Banner"
+                    <img src="{% static 'assets/images/hero-bus.jpg' %}?v=2" alt="Travel Bus Banner"
                         class="img-fluid rounded-4 shadow-lg border border-secondary border-opacity-25"
                         style="max-height: 400px; object-fit: cover;">
                     <span
@@ -341,27 +341,28 @@
 
 <!-- Search Validation Modal -->
 <div class="modal fade" id="searchValidationModal" tabindex="-1" aria-labelledby="searchValidationModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
-            <div class="modal-header border-0 text-white p-4" style="background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);">
-                <h5 class="modal-title fw-bold text-white d-flex align-items-center gap-2 m-0" id="searchValidationModalLabel" style="color: #ffffff !important;">
-                    <i class="bi bi-exclamation-circle-fill text-warning" style="font-size: 1.25rem;"></i>
-                    <span style="color: #ffffff !important;">Selection Required</span>
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
+        <div class="modal-content modal-content-clean text-center">
+            <!-- Close Button (Top Right Inside White Card) -->
+            <button type="button" class="modal-close-btn-clean" data-bs-dismiss="modal" aria-label="Close">
+                <i class="bi bi-x-lg"></i>
+            </button>
+
+            <!-- Center Layered Blue Location Ring -->
+            <div class="validation-icon-ring">
+                <i class="bi bi-geo-alt-fill"></i>
             </div>
-            <div class="modal-body p-4 text-center">
-                <div class="mb-3">
-                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle p-3 shadow-sm" style="background-color: #EFF6FF;">
-                        <i class="bi bi-geo-alt-fill text-primary display-5"></i>
-                    </div>
-                </div>
-                <h5 class="fw-bold text-dark mb-2" id="searchValidationMessage">Please select Source and Destination city.</h5>
-                <p class="text-muted small mb-0">Choose your origin and destination from the dropdown list to search available buses.</p>
-            </div>
-            <div class="modal-footer border-0 justify-content-center pb-4 pt-1">
-                <button type="button" class="btn btn-primary-custom fw-bold px-4 py-2 rounded-pill shadow-sm" data-bs-dismiss="modal">OK, Got It</button>
-            </div>
+
+            <!-- Title -->
+            <h4 class="modal-title-clean" id="searchValidationModalLabel">Select Origin &amp; Destination</h4>
+
+            <!-- Description -->
+            <p class="modal-text-clean" id="searchValidationMessage">
+                Please choose your source and destination cities from the dropdown to view available buses.
+            </p>
+
+            <!-- Action Button -->
+            <button type="button" class="btn-validation-pill" data-bs-dismiss="modal">Got It, Thanks</button>
         </div>
     </div>
 </div>
@@ -402,11 +403,11 @@ document.addEventListener("DOMContentLoaded", function () {
                 e.preventDefault();
                 let msg = "";
                 if (isFromEmpty && isToEmpty) {
-                    msg = "Please select Source and Destination city.";
+                    msg = "Please choose your source and destination cities from the dropdown to view available buses.";
                 } else if (isFromEmpty) {
-                    msg = "Please select Source city.";
+                    msg = "Please choose your source city from the dropdown to view available buses.";
                 } else {
-                    msg = "Please select Destination city.";
+                    msg = "Please choose your destination city from the dropdown to view available buses.";
                 }
 
                 const msgEl = document.getElementById("searchValidationMessage");
