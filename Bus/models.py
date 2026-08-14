@@ -29,6 +29,8 @@ class Bus(models.Model):
     def __str__(self):
         return f'{self.bus_name}'
     
+import uuid
+
 class Booking(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     bus = models.ForeignKey(Bus, on_delete=models.CASCADE)
@@ -39,6 +41,21 @@ class Booking(models.Model):
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     booking_date = models.DateField(auto_now_add=True)
     travel_date = models.DateField()
+    JOURNEY_TYPE_CHOICES = [
+        ('ONE_WAY', 'One Way'),
+        ('ROUND_TRIP', 'Round Trip'),
+    ]
+    journey_type = models.CharField(
+        max_length=20,
+        choices=JOURNEY_TYPE_CHOICES,
+        default='ONE_WAY'
+    )
+    round_trip_id = models.UUIDField(
+        default=None,
+        null=True,
+        blank=True,
+        db_index=True
+    )
     STATUS_CHOICES = [
         ('booked', 'Booked'),
         ('cancelled', 'Cancelled'),

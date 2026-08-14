@@ -112,8 +112,9 @@
                     {% endif %}
                 </h5>
                 <p class="mb-0 small opacity-75 text-white">
-                    <i class="bi bi-calendar-event me-1"></i> Journey Date: {{ travel_date }} &nbsp;|&nbsp; 
-                    <i class="bi bi-people-fill me-1"></i> Passengers: {{ passengers }}
+                    <i class="bi bi-calendar-event me-1"></i> Departure: {{ travel_date }}
+                    {% if round_trip %}&nbsp;|&nbsp; <i class="bi bi-calendar2-check me-1"></i> Return: {{ return_date }}{% endif %}
+                    &nbsp;|&nbsp; <i class="bi bi-people-fill me-1"></i> Passengers: {{ passengers }}
                 </p>
             </div>
             
@@ -127,6 +128,171 @@
 </div>
 
 <div class="container mb-5">
+
+{% if round_trip %}
+
+    <!-- ROUND TRIP MODE: 2 SECTIONS -->
+    <div class="d-flex flex-column gap-4 mb-5">
+        
+        <!-- SECTION 1: DEPARTURE JOURNEY -->
+        <div class="p-3 bg-light rounded-4 border border-primary border-opacity-25">
+            <h4 class="fw-bold text-navy-dark mb-1">
+                <span class="badge bg-primary me-2">1</span>Departure Journey: {{ from_city }} <i class="bi bi-arrow-right text-primary"></i> {{ to_city }}
+            </h4>
+            <p class="text-muted small mb-3">Travel Date: <strong>{{ travel_date }}</strong> &nbsp;|&nbsp; Select 1 Departure Bus</p>
+
+            <div class="d-flex flex-column gap-3">
+                {% for bus in dep_buses %}
+                <div class="card bus-card dep-bus-card shadow-sm" data-bus-id="{{ bus.id }}" data-bus-name="{{ bus.bus_name }}" data-dep-time="{{ bus.departure_time|time:'H:i' }}" data-arr-time="{{ bus.arrival_time|time:'H:i' }}" data-available-seats="{{ bus.available_seats }}">
+                    <div class="card-body p-4">
+                        <div class="row g-4 align-items-center">
+                            <div class="col-12 col-left-img text-center text-md-start">
+                                <img src="{% if bus.image %}{{ bus.image.url }}{% else %}{% static 'assets/images/hero-bus.png' %}{% endif %}" alt="{{ bus.bus_name }}" class="bus-img">
+                            </div>
+                            <div class="col-12 col-left-details">
+                                <h5 class="fw-bold text-dark mb-1">{{ bus.bus_name }}</h5>
+                                <p class="text-muted small mb-3">{{ bus.bus_type }}</p>
+                                <div class="d-flex align-items-center">
+                                    <span class="bus-rating-badge me-2">
+                                        <i class="bi bi-star-fill me-1" style="font-size: 0.75rem;"></i><span class="rating-val">4.4</span>
+                                    </span>
+                                    <span class="text-muted small reviews-val">200 Reviews</span>
+                                </div>
+                            </div>
+                            <div class="col-12 col-center-timeline">
+                                <div class="route-timeline">
+                                    <div class="text-start">
+                                        <p class="fw-semibold text-dark mb-1">{{ bus.source }}</p>
+                                        <h4 class="fw-bold text-dark mb-0 d-inline-block">{{ bus.departure_time|time:"H:i" }}</h4>
+                                        <span class="text-muted small ms-2 dep-date">--</span>
+                                    </div>
+                                    <div class="duration-line">
+                                        <span class="duration-text">--h --m</span>
+                                    </div>
+                                    <div class="text-end">
+                                        <p class="fw-semibold text-dark mb-1">{{ bus.destination }}</p>
+                                        <h4 class="fw-bold text-dark mb-0 d-inline-block">{{ bus.arrival_time|time:"H:i" }}</h4>
+                                        <span class="text-muted small ms-2 arr-date">--</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-right-action text-center text-md-end d-flex flex-column align-items-center align-items-md-end justify-content-between">
+                                <div class="mb-3 mb-md-2">
+                                    <h3 class="fw-bold text-dark mb-1">₹{{ bus.fare }}</h3>
+                                    <p class="text-muted small mb-0">
+                                        <span class="fw-semibold text-danger">{{ bus.available_seats }} Seats Left</span>
+                                    </p>
+                                </div>
+                                <button type="button" class="btn select-seats-btn w-100 select-dep-btn" data-bus-id="{{ bus.id }}" data-bus-name="{{ bus.bus_name }}">
+                                    SELECT BUS
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="alert alert-warning text-center py-4 rounded-3 mb-0">
+                    <i class="bi bi-exclamation-circle-fill fs-4 d-block mb-2"></i>
+                    No departure buses available for {{ from_city }} to {{ to_city }} on {{ travel_date }}.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- SECTION 2: RETURN JOURNEY -->
+        <div class="p-3 bg-light rounded-4 border border-success border-opacity-25 mt-3">
+            <h4 class="fw-bold text-navy-dark mb-1">
+                <span class="badge bg-success me-2">2</span>Return Journey: {{ to_city }} <i class="bi bi-arrow-right text-success"></i> {{ from_city }}
+            </h4>
+            <p class="text-muted small mb-3">Return Date: <strong>{{ return_date }}</strong> &nbsp;|&nbsp; Select 1 Return Bus</p>
+
+            <div class="d-flex flex-column gap-3">
+                {% for bus in ret_buses %}
+                <div class="card bus-card ret-bus-card shadow-sm" data-bus-id="{{ bus.id }}" data-bus-name="{{ bus.bus_name }}" data-dep-time="{{ bus.departure_time|time:'H:i' }}" data-arr-time="{{ bus.arrival_time|time:'H:i' }}" data-available-seats="{{ bus.available_seats }}">
+                    <div class="card-body p-4">
+                        <div class="row g-4 align-items-center">
+                            <div class="col-12 col-left-img text-center text-md-start">
+                                <img src="{% if bus.image %}{{ bus.image.url }}{% else %}{% static 'assets/images/hero-bus.png' %}{% endif %}" alt="{{ bus.bus_name }}" class="bus-img">
+                            </div>
+                            <div class="col-12 col-left-details">
+                                <h5 class="fw-bold text-dark mb-1">{{ bus.bus_name }}</h5>
+                                <p class="text-muted small mb-3">{{ bus.bus_type }}</p>
+                                <div class="d-flex align-items-center">
+                                    <span class="bus-rating-badge me-2">
+                                        <i class="bi bi-star-fill me-1" style="font-size: 0.75rem;"></i><span class="rating-val">4.4</span>
+                                    </span>
+                                    <span class="text-muted small reviews-val">200 Reviews</span>
+                                </div>
+                            </div>
+                            <div class="col-12 col-center-timeline">
+                                <div class="route-timeline">
+                                    <div class="text-start">
+                                        <p class="fw-semibold text-dark mb-1">{{ bus.source }}</p>
+                                        <h4 class="fw-bold text-dark mb-0 d-inline-block">{{ bus.departure_time|time:"H:i" }}</h4>
+                                        <span class="text-muted small ms-2 dep-date">--</span>
+                                    </div>
+                                    <div class="duration-line">
+                                        <span class="duration-text">--h --m</span>
+                                    </div>
+                                    <div class="text-end">
+                                        <p class="fw-semibold text-dark mb-1">{{ bus.destination }}</p>
+                                        <h4 class="fw-bold text-dark mb-0 d-inline-block">{{ bus.arrival_time|time:"H:i" }}</h4>
+                                        <span class="text-muted small ms-2 arr-date">--</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-right-action text-center text-md-end d-flex flex-column align-items-center align-items-md-end justify-content-between">
+                                <div class="mb-3 mb-md-2">
+                                    <h3 class="fw-bold text-dark mb-1">₹{{ bus.fare }}</h3>
+                                    <p class="text-muted small mb-0">
+                                        <span class="fw-semibold text-danger">{{ bus.available_seats }} Seats Left</span>
+                                    </p>
+                                </div>
+                                <button type="button" class="btn select-seats-btn btn-success w-100 select-ret-btn" data-bus-id="{{ bus.id }}" data-bus-name="{{ bus.bus_name }}" style="background-color:#198754; border-color:#198754;">
+                                    SELECT BUS
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="alert alert-warning text-center py-4 rounded-3 mb-0">
+                    <i class="bi bi-exclamation-circle-fill fs-4 d-block mb-2"></i>
+                    No return buses available for {{ to_city }} to {{ from_city }} on {{ return_date }}.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+
+    <!-- STICKY SELECTION BAR FOR ROUND TRIP -->
+    <div class="fixed-bottom bg-white border-top shadow-lg p-3 z-3">
+        <div class="container d-flex flex-column flex-md-row align-items-center justify-content-between gap-3">
+            <div>
+                <div class="small text-muted">Selected Round Trip Buses:</div>
+                <div class="fw-bold">
+                    Departure: <span id="depBusSummary" class="text-primary">None</span> &nbsp;|&nbsp; 
+                    Return: <span id="retBusSummary" class="text-success">None</span>
+                </div>
+            </div>
+            <form action="{% url 'seat_booking' %}" method="GET" id="roundTripSelectionForm">
+                <input type="hidden" name="dep_bus_id" id="hiddenDepBusId">
+                <input type="hidden" name="ret_bus_id" id="hiddenRetBusId">
+                <input type="hidden" name="date" value="{{ travel_date }}">
+                <input type="hidden" name="return_date" value="{{ return_date }}">
+                <input type="hidden" name="passengers" value="{{ passengers }}">
+                <input type="hidden" name="round_trip" value="1">
+                <button type="submit" id="continueBtn" class="btn btn-primary-custom btn-lg rounded-pill px-5 fw-bold" disabled>
+                    Proceed to Seat Selection <i class="bi bi-arrow-right ms-2"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+{% else %}
+
+    <!-- ONE WAY MODE (UNCHANGED) -->
     <div class="d-flex flex-column gap-4">
 
     {% for bus in buses %}
@@ -208,7 +374,6 @@
     {% if buses.paginator.num_pages > 1 %}
     <nav aria-label="Bus list pagination" class="mt-4">
         <ul class="pagination justify-content-center shadow-sm rounded-4 bg-white p-2" style="max-width: fit-content; margin: 0 auto;">
-            <!-- Previous Button -->
             {% if buses.has_previous %}
                 <li class="page-item">
                     <a class="page-link border-0 text-primary fw-bold" href="?page={{ buses.previous_page_number }}{% if from_city %}&from={{ from_city }}{% endif %}{% if to_city %}&to={{ to_city }}{% endif %}{% if travel_date %}&date={{ travel_date }}{% endif %}{% if passengers %}&passengers={{ passengers }}{% endif %}{% if round_trip %}&round_trip=1{% endif %}" aria-label="Previous">
@@ -221,7 +386,6 @@
                 </li>
             {% endif %}
 
-            <!-- Page Numbers -->
             {% for num in buses.paginator.page_range %}
                 {% if buses.number == num %}
                     <li class="page-item active" aria-current="page">
@@ -234,7 +398,6 @@
                 {% endif %}
             {% endfor %}
 
-            <!-- Next Button -->
             {% if buses.has_next %}
                 <li class="page-item">
                     <a class="page-link border-0 text-primary fw-bold" href="?page={{ buses.next_page_number }}{% if from_city %}&from={{ from_city }}{% endif %}{% if to_city %}&to={{ to_city }}{% endif %}{% if travel_date %}&date={{ travel_date }}{% endif %}{% if passengers %}&passengers={{ passengers }}{% endif %}{% if round_trip %}&round_trip=1{% endif %}" aria-label="Next">
@@ -249,6 +412,8 @@
         </ul>
     </nav>
     {% endif %}
+
+{% endif %}
 
 </div>
 
@@ -336,6 +501,78 @@ document.addEventListener("DOMContentLoaded", function() {
         if (singleSeatsEl) {
             singleSeatsEl.textContent = `${singleSeats} Single Seats`;
         }
+    });
+
+    // Round trip selection logic
+    let selectedDepBusId = null;
+    let selectedRetBusId = null;
+
+    const depButtons = document.querySelectorAll('.select-dep-btn');
+    const retButtons = document.querySelectorAll('.select-ret-btn');
+    const hiddenDepInput = document.getElementById('hiddenDepBusId');
+    const hiddenRetInput = document.getElementById('hiddenRetBusId');
+    const depSummary = document.getElementById('depBusSummary');
+    const retSummary = document.getElementById('retBusSummary');
+    const continueBtn = document.getElementById('continueBtn');
+
+    function checkContinueState() {
+        if (selectedDepBusId && selectedRetBusId && continueBtn) {
+            continueBtn.disabled = false;
+        } else if (continueBtn) {
+            continueBtn.disabled = true;
+        }
+    }
+
+    depButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const busId = this.getAttribute('data-bus-id');
+            const busName = this.getAttribute('data-bus-name');
+            selectedDepBusId = busId;
+            if (hiddenDepInput) hiddenDepInput.value = busId;
+            if (depSummary) depSummary.textContent = busName;
+
+            document.querySelectorAll('.dep-bus-card').forEach(c => {
+                c.classList.remove('border-primary', 'border-3');
+                const b = c.querySelector('.select-dep-btn');
+                if (b) {
+                    b.textContent = "SELECT BUS";
+                    b.classList.remove('btn-primary');
+                }
+            });
+
+            const card = this.closest('.dep-bus-card');
+            if (card) card.classList.add('border-primary', 'border-3');
+            this.textContent = "SELECTED ✓";
+            this.classList.add('btn-primary');
+
+            checkContinueState();
+        });
+    });
+
+    retButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const busId = this.getAttribute('data-bus-id');
+            const busName = this.getAttribute('data-bus-name');
+            selectedRetBusId = busId;
+            if (hiddenRetInput) hiddenRetInput.value = busId;
+            if (retSummary) retSummary.textContent = busName;
+
+            document.querySelectorAll('.ret-bus-card').forEach(c => {
+                c.classList.remove('border-success', 'border-3');
+                const b = c.querySelector('.select-ret-btn');
+                if (b) {
+                    b.textContent = "SELECT BUS";
+                    b.classList.remove('btn-success');
+                }
+            });
+
+            const card = this.closest('.ret-bus-card');
+            if (card) card.classList.add('border-success', 'border-3');
+            this.textContent = "SELECTED ✓";
+            this.classList.add('btn-success');
+
+            checkContinueState();
+        });
     });
 });
 </script>

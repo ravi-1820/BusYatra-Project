@@ -2,7 +2,17 @@
 {% load static %}
 {% block content %}
 <script>
-    // Initialize session storage with current bus details from backend to prevent main.js from overwriting it with old data
+    {% if is_round_trip %}
+    var IS_ROUND_TRIP = true;
+    var DEP_BUS_ID = "{{ dep_bus.id }}";
+    var RET_BUS_ID = "{{ ret_bus.id }}";
+    var DEP_BUS_FARE = parseFloat("{{ dep_bus.fare }}") || 0;
+    var RET_BUS_FARE = parseFloat("{{ ret_bus.fare }}") || 0;
+    var PASSENGERS_COUNT = parseInt("{{ passengers_count }}") || 1;
+    var DEP_BOOKED_SEATS = {{ dep_booked_seats|safe }};
+    var RET_BOOKED_SEATS = {{ ret_booked_seats|safe }};
+    {% else %}
+    var IS_ROUND_TRIP = false;
     sessionStorage.setItem("selectedBusName", "{{ bus.bus_name|escapejs }}");
     sessionStorage.setItem("selectedBusType", "{{ bus.bus_type|escapejs }}");
     sessionStorage.setItem("selectedBusPrice", "{{ bus.fare|escapejs }}");
@@ -11,504 +21,419 @@
     sessionStorage.setItem("journeyTo", "{{ bus.destination|escapejs }}");
     sessionStorage.setItem("journeyDate", "{{ travel_date|escapejs }}");
     
-    // Define global variables for main.js
     var BUS_NAME = "{{ bus.bus_name|escapejs }}";
     var BUS_TYPE = "{{ bus.bus_type|escapejs }}";
     var BUS_FARE = "{{ bus.fare|escapejs }}";
     var BUS_ROUTE = "{{ bus.source|escapejs }} → {{ bus.destination|escapejs }}";
     var BUS_ID = "{{ bus.id }}";
     var BOOKED_SEATS = {{ booked_seats|safe }};
+    {% endif %}
 </script>
 
-<!-- Custom Styling for Premium Seat Booking Experience -->
 <style>
-    /* Premium Color System & UI variables */
     :root {
         --seat-available: #ffffff;
         --seat-available-border: #cbd5e1;
-        --seat-available-hover: #f1f5f9;
-
         --seat-occupied: #e2e8f0;
         --seat-occupied-border: #cbd5e1;
         --seat-occupied-text: #94a3b8;
-
         --seat-selected: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
         --seat-selected-border: #1d4ed8;
-
-        --seat-ladies: #fdf2f8;
-        --seat-ladies-border: #fbcfe8;
-        --seat-ladies-text: #db2777;
-
-        --seat-ladies-occupied: #f3e8ff;
-        --seat-ladies-occupied-border: #e9d5ff;
-        --seat-ladies-occupied-text: #9333ea;
-
-        --glass-bg: rgba(255, 255, 255, 0.9);
+        --glass-bg: rgba(255, 255, 255, 0.95);
         --glass-border: rgba(226, 232, 240, 0.8);
     }
-
-    /* Core Layout Styles */
     .booking-wrapper {
         background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.05) 0%, transparent 60%);
         min-height: calc(100vh - 120px);
         padding: 2.5rem 0;
     }
-
     .premium-banner {
-        background: linear-gradient(135deg, var(--navy-dark) 0%, var(--navy-light) 100%);
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
         border-radius: 20px;
         padding: 2rem;
         color: #ffffff;
         box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15);
         margin-bottom: 2rem;
-        position: relative;
-        overflow: hidden;
     }
-
-    .premium-banner::before {
-        content: '';
-        position: absolute;
-        width: 300px;
-        height: 300px;
-        background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%);
-        top: -50px;
-        right: -50px;
-        border-radius: 50%;
-        pointer-events: none;
-    }
-
-    /* Seat Map Styles */
     .seat-selection-card {
         background: var(--glass-bg);
-        backdrop-filter: blur(16px);
         border: 1px solid var(--glass-border);
         border-radius: 24px;
-        box-shadow: var(--shadow-lg);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
         padding: 2rem;
-        transition: var(--transition-smooth);
     }
-
-    .deck-tab-container {
-        display: flex;
-        justify-content: center;
-        background: #f1f5f9;
-        padding: 0.35rem;
-        border-radius: 12px;
-        margin-bottom: 2rem;
-    }
-
-    .deck-tab-btn {
-        flex: 1;
-        border: none;
-        background: transparent;
-        padding: 0.6rem;
-        border-radius: 10px;
-        font-weight: 600;
-        font-size: 0.9rem;
-        color: var(--text-muted);
-        transition: var(--transition-smooth);
-    }
-
-    .deck-tab-btn.active {
-        background: #ffffff;
-        color: var(--blue-primary);
-        box-shadow: var(--shadow-sm);
-    }
-
     .cabin-layout {
-        position: relative;
         border: 3px solid #e2e8f0;
         border-radius: 28px;
-        padding: 2rem 1.5rem;
+        padding: 1.5rem;
         background: #ffffff;
         max-width: 380px;
         margin: 0 auto;
-        box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.02);
     }
-
     .cabin-steering {
         border-bottom: 2px dashed #e2e8f0;
-        padding-bottom: 1.25rem;
-        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        margin-bottom: 1.5rem;
         display: flex;
         justify-content: space-between;
         align-items: center;
     }
-
-    .cabin-steering .driver-icon {
-        width: 44px;
-        height: 44px;
-        border-radius: 12px;
-        background: #f8fafc;
-        border: 1.5px solid #e2e8f0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--text-muted);
-        font-size: 1.35rem;
-        transform: rotate(0deg);
-        transition: transform 0.8s ease;
-    }
-
-    .cabin-layout:hover .driver-icon {
-        transform: rotate(360deg);
-    }
-
-    /* Grid layout styling */
     .grid-container {
         display: flex;
         flex-direction: column;
-        gap: 0.85rem;
+        gap: 0.75rem;
     }
-
     .seat-row-custom {
         display: flex;
         justify-content: space-between;
         align-items: center;
         gap: 0.5rem;
     }
-
-    .seat-pair {
-        display: flex;
-        gap: 0.6rem;
-    }
-
-    .seat-gap {
-        width: 45px;
-    }
-
-    /* Custom Seats & Sleepers styling */
+    .seat-pair { display: flex; gap: 0.5rem; }
+    .seat-gap { width: 35px; }
     .bus-seat {
-        width: 40px;
-        height: 40px;
-        border-radius: 10px;
+        width: 38px;
+        height: 38px;
+        border-radius: 8px;
         border: 1.5px solid var(--seat-available-border);
         background: var(--seat-available);
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 0.78rem;
+        font-size: 0.75rem;
         font-weight: 700;
         cursor: pointer;
-        transition: var(--transition-smooth);
-        position: relative;
         user-select: none;
-        color: var(--text-main);
+        color: #0f172a;
     }
-
-    /* Little seat cushion look */
-    .bus-seat::before {
-        content: '';
-        position: absolute;
-        bottom: -1px;
-        left: 4px;
-        right: 4px;
-        height: 4px;
-        background: var(--seat-available-border);
-        border-radius: 2px;
-        transition: var(--transition-smooth);
-    }
-
-    /* Seater Hover state */
-    .bus-seat:hover:not(.occupied) {
-        border-color: var(--blue-primary);
-        background: var(--blue-light);
-        color: var(--blue-primary);
-        transform: translateY(-2px) scale(1.05);
-        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
-    }
-
-    /* Sleeper Berth formatting */
-    .bus-seat.sleeper-vertical {
-        height: 85px;
-    }
-
-    .bus-seat.sleeper-vertical::before {
-        height: 6px;
-        left: 5px;
-        right: 5px;
-        bottom: 2px;
-    }
-
-    /* State modifier styles */
     .bus-seat.selected {
         background: var(--seat-selected) !important;
         border-color: var(--seat-selected-border) !important;
         color: #ffffff !important;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 15px rgba(59, 130, 246, 0.35);
     }
-
-    .bus-seat.selected::before {
-        background: #1e40af !important;
-    }
-
     .bus-seat.occupied {
         background: var(--seat-occupied) !important;
         border-color: var(--seat-occupied-border) !important;
         color: var(--seat-occupied-text) !important;
         cursor: not-allowed;
     }
-
-    .bus-seat.occupied::before {
-        background: #cbd5e1 !important;
-    }
-
-    /* Stripes for occupied seat to make it look premium */
-    .bus-seat.occupied::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-image: linear-gradient(135deg, rgba(148, 163, 184, 0.05) 25%, transparent 25%, transparent 50%, rgba(148, 163, 184, 0.05) 50%, rgba(148, 163, 184, 0.05) 75%, transparent 75%, transparent);
-        background-size: 8px 8px;
-        border-radius: 8px;
-    }
-
-    .bus-seat.ladies {
-        background: var(--seat-ladies) !important;
-        border-color: var(--seat-ladies-border) !important;
-        color: var(--seat-ladies-text) !important;
-    }
-
-    .bus-seat.ladies::before {
-        background: #f472b6 !important;
-    }
-
-    .bus-seat.ladies-occupied {
-        background: var(--seat-ladies-occupied) !important;
-        border-color: var(--seat-ladies-occupied-border) !important;
-        color: var(--seat-ladies-occupied-text) !important;
-        cursor: not-allowed;
-    }
-
-    .bus-seat.ladies-occupied::before {
-        background: #c084fc !important;
-    }
-
-    /* Premium interactive legends */
-    .legend-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-        gap: 1rem;
-        padding: 1.5rem 0 0 0;
-        border-top: 1.5px dashed var(--glass-border);
-        margin-top: 2rem;
-    }
-
-    .legend-pill {
-        display: flex;
-        align-items: center;
-        gap: 0.65rem;
-        font-size: 0.85rem;
-        font-weight: 600;
-        color: var(--text-main);
-    }
-
-    /* Sidebar summary card */
     .glass-checkout-card {
         background: var(--glass-bg);
-        backdrop-filter: blur(20px);
         border: 1px solid var(--glass-border);
         border-radius: 24px;
-        box-shadow: var(--shadow-lg);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
         padding: 2rem;
         position: sticky;
         top: 6.5rem;
-        transition: var(--transition-smooth);
-    }
-
-    /* Coupon card badges styling */
-    .coupon-badge {
-        background: rgba(245, 158, 11, 0.1);
-        border: 1px dashed var(--amber-accent);
-        color: var(--amber-hover);
-        padding: 0.35rem 0.75rem;
-        border-radius: 8px;
-        font-weight: 700;
-        font-size: 0.8rem;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.35rem;
-        cursor: pointer;
-        transition: var(--transition-smooth);
-    }
-
-    .coupon-badge:hover {
-        background: var(--amber-accent);
-        color: #ffffff;
-        transform: translateY(-1px);
-    }
-
-    /* Dynamic inputs transitions */
-    .passenger-entry-box {
-        animation: slideInDown 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-        transform-origin: top;
-    }
-
-    @keyframes slideInDown {
-        from {
-            opacity: 0;
-            transform: translateY(-12px) scale(0.98);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-        }
-    }
-
-    /* Modern notifications style */
-    .custom-alert-toast {
-        position: fixed;
-        bottom: 24px;
-        right: 24px;
-        z-index: 1060;
-        background: var(--navy-dark);
-        color: #ffffff;
-        padding: 1rem 1.5rem;
-        border-radius: 12px;
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        border-left: 5px solid var(--amber-accent);
-        transform: translateY(100px);
-        opacity: 0;
-        transition: all 0.40s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-
-    .custom-alert-toast.show {
-        transform: translateY(0);
-        opacity: 1;
     }
 </style>
 
 <div class="booking-wrapper">
     <div class="container">
 
-        <!-- Premium Detail Banner -->
+        {% if msg %}
+        <div class="alert alert-danger alert-dismissible fade show rounded-4 shadow-sm mb-4" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> {{ msg }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endif %}
+
+        {% if is_round_trip %}
+
+        <!-- ROUND TRIP SEAT BOOKING HEADER -->
         <div class="premium-banner">
             <div class="row align-items-center">
-                <div class="col-lg-8">
-                    <div class="d-flex align-items-center gap-3 mb-2 flex-wrap">
-                        <h2 class="mb-0 fw-bold fs-3 text-white" id="displayBusName">
-                            {{ bus.bus_name }}
-                        </h2>
-
-                        <span class="badge bg-primary px-3 py-1 rounded-pill fw-semibold" id="displayBusType">
-                            {{ bus.bus_type }}
-                        </span>
-                    </div>
-                    <p class="mb-0 text-white-50 small d-flex align-items-center flex-wrap gap-3">
-
-                        <span>
-                            <strong class="text-white" id="displayRoute">
-                                {{ bus.source }} → {{ bus.destination }}
-                            </strong>
-                        </span>
-
-                        <span>
-                            <i class="bi bi-clock-fill text-warning me-1"></i>
-                            Departure :
-                            <strong class="text-white" id="displayDepTime">
-                                {{ bus.departure_time|time:"h:i A" }}
-                            </strong>
-                        </span>
-
-                        <span>
-                            <i class="bi bi-calendar-event-fill text-warning me-1"></i>
-                            Journey Date :
-                            <strong class="text-white" id="displayDate">
-                                {{ travel_date }}
-                            </strong>
-                        </span>
-
+                <div class="col-lg-9">
+                    <span class="badge bg-primary px-3 py-1 rounded-pill mb-2">Round Trip Booking</span>
+                    <h3 class="fw-bold text-white mb-2">Select Seats for Departure & Return Journeys</h3>
+                    <p class="text-white-50 mb-0 small">
+                        <strong>Departure:</strong> {{ dep_bus.source }} → {{ dep_bus.destination }} ({{ travel_date }}) &nbsp;|&nbsp;
+                        <strong>Return:</strong> {{ ret_bus.source }} → {{ ret_bus.destination }} ({{ return_date }}) &nbsp;|&nbsp;
+                        <strong>Passengers:</strong> {{ passengers_count }}
                     </p>
                 </div>
-                <div class="col-lg-4 text-lg-end text-start mt-3 mt-lg-0">
-                    <a href="{% url 'bus_list' %}"
-                        class="btn btn-outline-light border-2 px-4 py-2 rounded-4 fw-bold shadow-sm transition-all"><i
-                            class="bi bi-arrow-left me-2"></i>Change Trip</a>
+                <div class="col-lg-3 text-lg-end mt-3 mt-lg-0">
+                    <a href="{% url 'bus_list' %}" class="btn btn-outline-light btn-sm rounded-pill px-3">
+                        <i class="bi bi-arrow-left me-1"></i> Change Buses
+                    </a>
                 </div>
             </div>
         </div>
 
         <div class="row g-4">
-            <!-- Left Side: Interactive Cabin Seat Builder -->
+            <!-- Left Side: Departure & Return Seat Maps -->
+            <div class="col-lg-7">
+                <div class="d-flex flex-column gap-4">
+                    
+                    <!-- 1. DEPARTURE SEATS -->
+                    <div class="seat-selection-card">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="fw-bold text-navy-dark mb-0">
+                                <span class="badge bg-primary me-2">1</span>Departure Seats ({{ dep_bus.bus_name }})
+                            </h5>
+                            <span class="small fw-bold text-primary" id="rtDepCountLabel">Selected: 0 / {{ passengers_count }}</span>
+                        </div>
+                        <div class="cabin-layout shadow-sm mb-3">
+                            <div class="cabin-steering">
+                                <span class="badge bg-light text-secondary border px-3 py-1 rounded-pill small">Entry / Front</span>
+                                <div class="driver-icon"><i class="bi bi-steering"></i></div>
+                            </div>
+                            <div class="grid-container" id="rtDepCabinGrid"></div>
+                        </div>
+                    </div>
+
+                    <!-- 2. RETURN SEATS -->
+                    <div class="seat-selection-card">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="fw-bold text-navy-dark mb-0">
+                                <span class="badge bg-success me-2">2</span>Return Seats ({{ ret_bus.bus_name }})
+                            </h5>
+                            <span class="small fw-bold text-success" id="rtRetCountLabel">Selected: 0 / {{ passengers_count }}</span>
+                        </div>
+                        <div class="cabin-layout shadow-sm mb-3">
+                            <div class="cabin-steering">
+                                <span class="badge bg-light text-secondary border px-3 py-1 rounded-pill small">Entry / Front</span>
+                                <div class="driver-icon"><i class="bi bi-steering"></i></div>
+                            </div>
+                            <div class="grid-container" id="rtRetCabinGrid"></div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Right Side: Single Passenger Details Form & Fare Summary -->
+            <div class="col-lg-5">
+                <div class="glass-checkout-card">
+                    <h5 class="fw-bold mb-4 text-navy-dark"><i class="bi bi-receipt text-primary me-2"></i>Round Trip Fare Summary</h5>
+                    
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted small">Departure Seats:</span>
+                        <span class="fw-bold text-primary" id="rtDepSeatsText">None</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted small">Return Seats:</span>
+                        <span class="fw-bold text-success" id="rtRetSeatsText">None</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted small">Departure Subtotal:</span>
+                        <span class="fw-semibold text-navy-dark" id="rtDepSubtotal">₹0</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted small">Return Subtotal:</span>
+                        <span class="fw-semibold text-navy-dark" id="rtRetSubtotal">₹0</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted small">GST (5%) & Fees:</span>
+                        <span class="fw-semibold text-navy-dark" id="rtTaxes">₹0</span>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center my-3 bg-light p-3 rounded-4 border">
+                        <span class="fw-bold text-navy-dark text-uppercase small">Grand Total</span>
+                        <span class="fw-extrabold text-success fs-4" id="rtGrandTotal">₹0</span>
+                    </div>
+
+                    <!-- SINGLE PASSENGER FORM -->
+                    <form id="rtBookingForm" method="POST" action="{% url 'seat_booking' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="round_trip" value="1">
+                        <input type="hidden" name="dep_bus_id" value="{{ dep_bus.id }}">
+                        <input type="hidden" name="ret_bus_id" value="{{ ret_bus.id }}">
+                        <input type="hidden" name="date" value="{{ travel_date }}">
+                        <input type="hidden" name="return_date" value="{{ return_date }}">
+                        <input type="hidden" name="passengers" value="{{ passengers_count }}">
+                        <input type="hidden" name="dep_selected_seats" id="rtDepSelectedInput">
+                        <input type="hidden" name="ret_selected_seats" id="rtRetSelectedInput">
+
+                        <h6 class="fw-bold text-navy-dark mb-3 border-bottom pb-2">
+                            <i class="bi bi-people-fill text-primary me-2"></i>Passenger Information (Filled Once)
+                        </h6>
+
+                        {% for i in "x"|rjust:passengers_count %}
+                        <div class="p-3 border rounded-4 bg-white shadow-sm mb-3">
+                            <span class="badge bg-primary text-white rounded-pill mb-2">Passenger {{ forloop.counter }}</span>
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <input type="text" name="passenger_name_{{ forloop.counter }}" class="form-control form-control-sm" placeholder="Full Name" required>
+                                </div>
+                                <div class="col-md-3 col-6">
+                                    <input type="number" name="passenger_age_{{ forloop.counter }}" class="form-control form-control-sm" placeholder="Age" min="5" max="100" required>
+                                </div>
+                                <div class="col-md-3 col-6">
+                                    <select name="passenger_gender_{{ forloop.counter }}" class="form-select form-select-sm" required>
+                                        <option value="" disabled selected>Gender</option>
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+
+                        <button type="submit" id="rtSubmitBtn" class="btn btn-warning btn-lg w-100 py-3 rounded-4 fw-bold text-navy-dark border-0 shadow-sm mt-2" disabled>
+                            <i class="bi bi-wallet2 me-2"></i>Proceed to Booking Summary
+                        </button>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+
+        <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const rtDepSeats = [];
+            const rtRetSeats = [];
+
+            const depGrid = document.getElementById("rtDepCabinGrid");
+            const retGrid = document.getElementById("rtRetCabinGrid");
+
+            function createGrid(container, prefix, bookedList, selectedArr, countLabelId, seatsTextId) {
+                if (!container) return;
+                container.innerHTML = "";
+                for (let r = 1; r <= 6; r++) {
+                    const row = document.createElement("div");
+                    row.className = "seat-row-custom";
+
+                    const seatsInRow = ["S" + (4*r - 3), "S" + (4*r - 2), "S" + (4*r - 1), "S" + (4*r)];
+                    
+                    const g1 = document.createElement("div"); g1.className = "seat-pair";
+                    const gap = document.createElement("div"); gap.className = "seat-gap";
+                    const g2 = document.createElement("div"); g2.className = "seat-pair";
+
+                    seatsInRow.forEach((code, idx) => {
+                        const seat = document.createElement("div");
+                        seat.className = "bus-seat";
+                        seat.textContent = code;
+                        
+                        if (bookedList.includes(code)) {
+                            seat.classList.add("occupied");
+                        } else {
+                            seat.addEventListener("click", function() {
+                                const pos = selectedArr.indexOf(code);
+                                if (pos > -1) {
+                                    selectedArr.splice(pos, 1);
+                                    seat.classList.remove("selected");
+                                } else {
+                                    if (selectedArr.length >= PASSENGERS_COUNT) {
+                                        alert("You can only select " + PASSENGERS_COUNT + " seat(s) for this journey!");
+                                        return;
+                                    }
+                                    selectedArr.push(code);
+                                    seat.classList.add("selected");
+                                }
+                                updateSummary();
+                            });
+                        }
+
+                        if (idx < 2) g1.appendChild(seat);
+                        else g2.appendChild(seat);
+                    });
+
+                    row.appendChild(g1);
+                    row.appendChild(gap);
+                    row.appendChild(g2);
+                    container.appendChild(row);
+                }
+            }
+
+            function updateSummary() {
+                document.getElementById("rtDepSeatsText").textContent = rtDepSeats.length ? rtDepSeats.join(", ") : "None";
+                document.getElementById("rtRetSeatsText").textContent = rtRetSeats.length ? rtRetSeats.join(", ") : "None";
+                
+                document.getElementById("rtDepCountLabel").textContent = "Selected: " + rtDepSeats.length + " / " + PASSENGERS_COUNT;
+                document.getElementById("rtRetCountLabel").textContent = "Selected: " + rtRetSeats.length + " / " + PASSENGERS_COUNT;
+
+                document.getElementById("rtDepSelectedInput").value = rtDepSeats.join(",");
+                document.getElementById("rtRetSelectedInput").value = rtRetSeats.join(",");
+
+                const depSub = rtDepSeats.length * DEP_BUS_FARE;
+                const retSub = rtRetSeats.length * RET_BUS_FARE;
+                const subtotal = depSub + retSub;
+                const gst = Math.round(subtotal * 0.05);
+                const fee = 40 * PASSENGERS_COUNT;
+                const grandTotal = subtotal + gst + fee;
+
+                document.getElementById("rtDepSubtotal").textContent = "₹" + depSub;
+                document.getElementById("rtRetSubtotal").textContent = "₹" + retSub;
+                document.getElementById("rtTaxes").textContent = "₹" + (gst + fee);
+                document.getElementById("rtGrandTotal").textContent = "₹" + grandTotal;
+
+                const submitBtn = document.getElementById("rtSubmitBtn");
+                if (rtDepSeats.length === PASSENGERS_COUNT && rtRetSeats.length === PASSENGERS_COUNT) {
+                    submitBtn.disabled = false;
+                } else {
+                    submitBtn.disabled = true;
+                }
+            }
+
+            createGrid(depGrid, "dep", DEP_BOOKED_SEATS, rtDepSeats, "rtDepCountLabel", "rtDepSeatsText");
+            createGrid(retGrid, "ret", RET_BOOKED_SEATS, rtRetSeats, "rtRetCountLabel", "rtRetSeatsText");
+        });
+        </script>
+
+        {% else %}
+
+        <!-- ONE WAY SEAT BOOKING CONTAINER -->
+        <div class="premium-banner">
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <div class="d-flex align-items-center gap-3 mb-2 flex-wrap">
+                        <h2 class="mb-0 fw-bold fs-3 text-white" id="displayBusName">{{ bus.bus_name }}</h2>
+                        <span class="badge bg-primary px-3 py-1 rounded-pill fw-semibold" id="displayBusType">{{ bus.bus_type }}</span>
+                    </div>
+                    <p class="mb-0 text-white-50 small d-flex align-items-center flex-wrap gap-3">
+                        <span><strong class="text-white" id="displayRoute">{{ bus.source }} → {{ bus.destination }}</strong></span>
+                        <span><i class="bi bi-clock-fill text-warning me-1"></i>Departure : <strong class="text-white" id="displayDepTime">{{ bus.departure_time|time:"h:i A" }}</strong></span>
+                        <span><i class="bi bi-calendar-event-fill text-warning me-1"></i>Journey Date : <strong class="text-white" id="displayDate">{{ travel_date }}</strong></span>
+                    </p>
+                </div>
+                <div class="col-lg-4 text-lg-end text-start mt-3 mt-lg-0">
+                    <a href="{% url 'bus_list' %}" class="btn btn-outline-light border-2 px-4 py-2 rounded-4 fw-bold shadow-sm transition-all"><i class="bi bi-arrow-left me-2"></i>Change Trip</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
             <div class="col-lg-7">
                 <div class="seat-selection-card">
                     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-                        <h4 class="mb-0 fw-bold text-navy-dark"><i
-                                class="bi bi-grid-3x3-gap-fill text-primary me-2"></i>Choose Seats</h4>
-                        <span class="text-muted small fw-semibold" id="seatSelectionCount">Selected: <strong
-                                class="text-primary">0 / 5</strong> max</span>
+                        <h4 class="mb-0 fw-bold text-navy-dark"><i class="bi bi-grid-3x3-gap-fill text-primary me-2"></i>Choose Seats</h4>
+                        <span class="text-muted small fw-semibold" id="seatSelectionCount">Selected: <strong class="text-primary">0 / 5</strong> max</span>
                     </div>
-
-                    <!-- Deck toggle selector for Sleeper buses -->
                     <div class="deck-tab-container d-none" id="deckSelector">
-                        <button class="deck-tab-btn active" id="lowerDeckBtn" onclick="switchDeck('lower')">Lower
-                            Deck</button>
+                        <button class="deck-tab-btn active" id="lowerDeckBtn" onclick="switchDeck('lower')">Lower Deck</button>
                         <button class="deck-tab-btn" id="upperDeckBtn" onclick="switchDeck('upper')">Upper Deck</button>
                     </div>
-
-                    <!-- Main Bus Cabin Container -->
                     <div class="cabin-layout shadow-sm" id="cabinMain">
                         <div class="cabin-steering">
-                            <span
-                                class="badge bg-light text-secondary border px-3 py-1.5 rounded-pill fw-semibold">Entry
-                                / Front</span>
+                            <span class="badge bg-light text-secondary border px-3 py-1.5 rounded-pill fw-semibold">Entry / Front</span>
                             <div class="driver-icon" title="Driver's Cabin"><i class="bi bi-steering"></i></div>
                         </div>
-
-                        <!-- Layout Grid (Populated dynamically) -->
-                        <div class="grid-container" id="cabinGrid">
-                            <!-- JS will inject seater grid or sleeper grid -->
-                        </div>
+                        <div class="grid-container" id="cabinGrid"></div>
                     </div>
-
-                    <!-- Realistic Seat Legends -->
                     <div class="legend-grid">
                         <div class="legend-pill">
-                            <div class="bus-seat" style="width:22px; height:22px; font-size: 0px; border-radius:5px;">
-                            </div>
+                            <div class="bus-seat" style="width:22px; height:22px; font-size: 0px; border-radius:5px;"></div>
                             <span>Available</span>
                         </div>
                         <div class="legend-pill">
-                            <div class="bus-seat occupied"
-                                style="width:22px; height:22px; font-size: 0px; border-radius:5px;"></div>
+                            <div class="bus-seat occupied" style="width:22px; height:22px; font-size: 0px; border-radius:5px;"></div>
                             <span>Occupied</span>
                         </div>
                         <div class="legend-pill">
-                            <div class="bus-seat selected"
-                                style="width:22px; height:22px; font-size: 0px; border-radius:5px;"></div>
+                            <div class="bus-seat selected" style="width:22px; height:22px; font-size: 0px; border-radius:5px;"></div>
                             <span>Your Selection</span>
-                        </div>
-                        <div class="legend-pill">
-                            <div class="bus-seat ladies"
-                                style="width:22px; height:22px; font-size: 0px; border-radius:5px;"></div>
-                            <span>Ladies Only</span>
-                        </div>
-                        <div class="legend-pill">
-                            <div class="bus-seat ladies-occupied"
-                                style="width:22px; height:22px; font-size: 0px; border-radius:5px;"></div>
-                            <span>Ladies Booked</span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Right Side: Booking Summary & Details Form -->
             <div class="col-lg-5">
                 <div class="glass-checkout-card">
                     <h5 class="fw-bold mb-4 text-navy-dark d-flex align-items-center justify-content-between">
                         <span><i class="bi bi-receipt text-primary me-2"></i>Fare Details</span>
-                        <i class="bi bi-info-circle text-muted fs-6" title="Dynamic Pricing Summary"></i>
                     </h5>
-
-                    <!-- Fare breakups -->
                     <div class="d-flex justify-content-between mb-2">
                         <span class="text-muted font-medium">Selected Seat(s)</span>
                         <span class="fw-bold text-navy-dark" id="displaySelectedSeats">None</span>
@@ -521,96 +446,44 @@
                         <span class="text-muted font-medium">Convenience & GST Fee</span>
                         <span class="fw-semibold text-navy-dark" id="calcTaxes">₹0</span>
                     </div>
-                    <div class="d-flex justify-content-between mb-3 text-success d-none" id="couponDiscountRow">
-                        <span class="font-medium">Coupon Discount</span>
-                        <span class="fw-bold" id="calcDiscount">-₹0</span>
-                    </div>
-
-                    <!-- Coupons Container -->
-                    <!-- <div class="mb-4 pt-3 border-top">
-                        <label class="form-label small fw-bold text-secondary mb-2">Available Promo Coupons</label>
-                        <div class="d-flex gap-2 flex-wrap mb-2">
-                            <div class="coupon-badge" id="c1" onclick="selectPromo('BUSYATRA100')">
-                                <i class="bi bi-tag-fill"></i>BUSYATRA100
-                            </div>
-                            <div class="coupon-badge" id="c2" onclick="selectPromo('YATRA150')">
-                                <i class="bi bi-tag-fill"></i>YATRA150
-                            </div>
-                        </div>
-                        <div class="input-group input-group-sm">
-                            <input type="text" class="form-control rounded-start-3" placeholder="Enter coupon code"
-                                id="promoCodeInput" style="text-transform: uppercase;">
-                            <button class="btn btn-primary fw-bold px-3 rounded-end-3" type="button"
-                                onclick="applyPromo()">Apply</button>
-                        </div>
-                        <div class="small mt-1.5 fw-semibold d-none" id="promoMessage"></div>
-                    </div> -->
-
-                    <!-- Grand total -->
                     <div class="d-flex justify-content-between align-items-center mb-4 bg-light p-3 rounded-4 border">
                         <span class="fw-bold text-navy-dark text-uppercase small letter-spacing-1">Amount to Pay</span>
                         <span class="fw-extrabold text-success fs-4" id="calcTotal">₹0</span>
                     </div>
 
-                    <!-- Dynamic Passenger Info Form -->
-                    <form id="bookingCheckoutForm" class="d-none" method="POST" action="{% url 'seat_booking' bus.id %}"
-                        onsubmit="handleProceedCheckout(event)">
+                    <form id="bookingCheckoutForm" class="d-none" method="POST" action="{% url 'seat_booking' bus.id %}" onsubmit="handleProceedCheckout(event)">
                         {% csrf_token %}
                         <input type="hidden" name="selected_seats" id="selectedSeatsInput">
                         <input type="hidden" name="date" value="{{ travel_date }}">
-                        <h6 class="fw-bold text-navy-dark mb-3 border-bottom pb-2"><i
-                                class="bi bi-people-fill text-primary me-2"></i>Passenger Information</h6>
-
-                        <div id="dynamicPassengerFields" class="d-flex flex-column gap-3 mb-4">
-                            <!-- Injected by JS -->
-                        </div>
-
-                        <!-- Contact information block -->
-                        <h6 class="fw-bold text-navy-dark mb-3 border-top pt-3"><i
-                                class="bi bi-envelope-at-fill text-primary me-2"></i>Contact Details</h6>
-                        <div class="row g-2 mb-4">
-                            <div class="col-md-6">
-                                <label class="form-label small fw-semibold text-muted">Email Address</label>
-                                <input type="email" class="form-control form-control-sm rounded-3" id="primaryEmail"
-                                    required placeholder="Enter Email">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label small fw-semibold text-muted">Mobile Number</label>
-                                <input type="tel" class="form-control form-control-sm rounded-3" id="primaryMobile"
-                                    required placeholder="Enter Mobile" pattern="[6-9][0-9]{9}">
-                            </div>
-                        </div>
-
-                        <button type="submit"
-                            class="btn btn-warning btn-lg w-100 py-3 rounded-4 fw-bold shadow-md transition-all text-navy-dark border-0 hover-scale">
+                        <h6 class="fw-bold text-navy-dark mb-3 border-bottom pb-2"><i class="bi bi-people-fill text-primary me-2"></i>Passenger Information</h6>
+                        <div id="dynamicPassengerFields" class="d-flex flex-column gap-3 mb-4"></div>
+                        <button type="submit" class="btn btn-warning btn-lg w-100 py-3 rounded-4 fw-bold text-navy-dark border-0 hover-scale">
                             <i class="bi bi-wallet2 me-2"></i>Proceed to Payment
                         </button>
                     </form>
 
-                    <!-- Unselected state details -->
-                    <div class="text-center p-4 text-muted border border-dashed rounded-4 bg-light"
-                        id="unselectedPlaceholder">
+                    <div class="text-center p-4 text-muted border border-dashed rounded-4 bg-light" id="unselectedPlaceholder">
                         <i class="bi bi-cursor-fill fs-3 mb-2 d-block text-primary opacity-50"></i>
-                        <p class="mb-0 fw-medium small">Please select seats from the interactive bus grid to view
-                            details and proceed.</p>
+                        <p class="mb-0 fw-medium small">Please select seats from the interactive bus grid to view details and proceed.</p>
                     </div>
                 </div>
             </div>
         </div>
+
+        {% endif %}
+
     </div>
 </div>
 
-<!-- Custom Notification Toast -->
 <div class="custom-alert-toast" id="customToast">
     <i class="bi bi-exclamation-triangle-fill text-warning fs-5"></i>
     <span id="toastMsg" class="small fw-bold"></span>
 </div>
 
-<!-- Custom Page Javascript -->
 <script>
     var options = {
-        "key": "rzp_test_3iCOPLbchUyIwQ", // Enter the Key ID generated from the Dashboard
-        "amount": "{{ payment.amount|default:'0' }}", // Amount is in currency subunits. Default currency is INR. Hence, 50000 refers to 50000 paise
+        "key": "rzp_test_3iCOPLbchUyIwQ",
+        "amount": "{{ payment.amount|default:'0' }}",
         "currency": "INR",
         "name": "BusYatra",
         "description": "Test Payment", // This is a sample Order ID. Pass the id obtained in the response of Step 1

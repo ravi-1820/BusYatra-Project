@@ -88,11 +88,23 @@
                 </div>
 
                 <!-- Date Field -->
-                <div class="col-lg-3 col-md-6">
+                <div class="col-lg-2 col-md-6" id="travelDateCol">
                     <label class="form-label fw-semibold text-secondary">Travel Date</label>
                     <div class="input-group-custom">
                         <i class="bi bi-calendar-event-fill text-primary"></i>
                         <input type="date" class="form-control" name="date" id="travelDate" required>
+                    </div>
+                </div>
+
+                <!-- Return Date Field (Visible only in Round Trip mode) -->
+                <div class="col-lg-2 col-md-6" id="returnDateCol" style="display: none;">
+                    <label class="form-label fw-semibold text-secondary">Return Date</label>
+                    <div class="input-group-custom">
+                        <i class="bi bi-calendar2-check-fill text-primary"></i>
+                        <input type="date" class="form-control" name="return_date" id="returnDate">
+                    </div>
+                    <div id="returnDateError" class="text-danger small mt-1 fw-semibold" style="display: none;">
+                        Return date cannot be earlier than travel date.
                     </div>
                 </div>
 
@@ -369,23 +381,66 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-    const homeOneWay = document.getElementById("homeOneWay");
-    const homeRoundTrip = document.getElementById("homeRoundTrip");
+    const tripOneWay = document.getElementById("tripOneWay");
+    const tripRoundTrip = document.getElementById("tripRoundTrip");
+    const returnDateCol = document.getElementById("returnDateCol");
+    const travelDate = document.getElementById("travelDate");
+    const returnDate = document.getElementById("returnDate");
+    const returnDateError = document.getElementById("returnDateError");
 
-    if (homeOneWay && homeRoundTrip) {
-        homeOneWay.addEventListener("change", function () {
-            if (this.checked) {
-                homeRoundTrip.checked = false;
+    // Set min date to today for travelDate
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (travelDate) {
+        travelDate.min = todayStr;
+        if (!travelDate.value) {
+            travelDate.value = todayStr;
+        }
+    }
+
+    function toggleReturnDate() {
+        if (tripRoundTrip && tripRoundTrip.checked) {
+            if (returnDateCol) returnDateCol.style.display = "block";
+            if (returnDate) {
+                returnDate.required = true;
+                returnDate.min = travelDate ? travelDate.value : todayStr;
+                if (!returnDate.value || returnDate.value < (travelDate ? travelDate.value : todayStr)) {
+                    returnDate.value = travelDate ? travelDate.value : todayStr;
+                }
             }
+        } else {
+            if (returnDateCol) returnDateCol.style.display = "none";
+            if (returnDate) {
+                returnDate.required = false;
+            }
+            if (returnDateError) returnDateError.style.display = "none";
+        }
+    }
+
+    if (tripOneWay) tripOneWay.addEventListener("change", toggleReturnDate);
+    if (tripRoundTrip) tripRoundTrip.addEventListener("change", toggleReturnDate);
+    if (travelDate) {
+        travelDate.addEventListener("change", function () {
+            if (returnDate) {
+                returnDate.min = travelDate.value;
+                if (returnDate.value && returnDate.value < travelDate.value) {
+                    returnDate.value = travelDate.value;
+                }
+            }
+            if (returnDateError) returnDateError.style.display = "none";
         });
-        homeRoundTrip.addEventListener("change", function () {
-            if (this.checked) {
-                homeOneWay.checked = false;
+    }
+
+    if (returnDate) {
+        returnDate.addEventListener("change", function () {
+            if (travelDate && returnDate.value < travelDate.value) {
+                if (returnDateError) returnDateError.style.display = "block";
             } else {
-                homeOneWay.checked = true;
+                if (returnDateError) returnDateError.style.display = "none";
             }
         });
     }
+
+    toggleReturnDate();
 
     const searchForm = document.getElementById("busSearchForm");
     if (searchForm) {
@@ -415,6 +470,15 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 const validationModal = new bootstrap.Modal(document.getElementById('searchValidationModal'));
                 validationModal.show();
+                return;
+            }
+
+            if (tripRoundTrip && tripRoundTrip.checked) {
+                if (returnDate && travelDate && returnDate.value < travelDate.value) {
+                    e.preventDefault();
+                    if (returnDateError) returnDateError.style.display = "block";
+                    return;
+                }
             }
         });
     }

@@ -4,6 +4,7 @@ from .models import User, Bus, Booking, Route, SeatBooking, Schedule, Contact
 from django.core.mail import send_mail
 from django.conf import settings
 from django.views.decorators.csrf import csrf_protect, csrf_exempt
+from django.db import transaction
 from django.db.models import Sum, Count, Q
 from django.db.models.functions import TruncMonth
 from django.core.paginator import Paginator, Page, EmptyPage, PageNotAnInteger
@@ -11,6 +12,7 @@ import random
 import razorpay
 import json
 import logging
+import uuid
 from datetime import date, timedelta
 
 # Reportlab imports for PDF ticket generation
@@ -127,6 +129,7 @@ def get_search_details(request):
         raw_from = request.GET.get('from') or request.GET.get('source')
         raw_to = request.GET.get('to') or request.GET.get('destination')
         raw_date = request.GET.get('date')
+        raw_return_date = request.GET.get('return_date')
         raw_passengers = request.GET.get('passengers')
 
         from_city = normalize_search_city(raw_from)
@@ -145,19 +148,31 @@ def get_search_details(request):
         raw_round_trip = request.GET.get('round_trip')
         is_round_trip = True if raw_round_trip in ['1', 'true', 'True', 'on'] else False
 
+        if is_round_trip and is_valid_date(raw_return_date):
+            clean_return = raw_return_date.strip()
+            if clean_return >= travel_date:
+                return_date = clean_return
+            else:
+                return_date = travel_date
+        else:
+            return_date = travel_date
+
         return {
             'from_city': from_city,
             'to_city': to_city,
             'travel_date': travel_date,
+            'return_date': return_date,
             'passengers': passengers,
             'round_trip': is_round_trip,
         }
     except Exception as e:
         logger.error(f"Error getting search details: {e}")
+        today_str = date.today().strftime("%Y-%m-%d")
         return {
             'from_city': '',
             'to_city': '',
-            'travel_date': date.today().strftime("%Y-%m-%d"),
+            'travel_date': today_str,
+            'return_date': today_str,
             'passengers': '1',
             'round_trip': False,
         }
@@ -235,7 +250,13 @@ def build_order_groups(bookings):
         group_by_key = {}
 
         for booking in bookings:
-            key = (booking.bus.id, booking.travel_date, booking.booking_date, booking.status, booking.payment)
+            j_type = getattr(booking, 'journey_type', 'ONE_WAY')
+            rt_id = getattr(booking, 'round_trip_id', None)
+
+            if j_type == 'ROUND_TRIP' and rt_id:
+                key = ('ROUND_TRIP', str(rt_id))
+            else:
+                key = (booking.bus.id, booking.travel_date, booking.booking_date, booking.status, booking.payment)
 
             if key not in group_by_key:
                 group_by_key[key] = {
@@ -249,19 +270,47 @@ def build_order_groups(bookings):
                     'seat_numbers': [],
                     'passengers': [],
                     'total_fare': 0,
+                    'journey_type': j_type,
+                    'round_trip_id': str(rt_id) if rt_id else None,
+                    'dep_bus': None,
+                    'ret_bus': None,
+                    'dep_date': None,
+                    'ret_date': None,
+                    'dep_seats': [],
+                    'ret_seats': [],
                 }
                 groups.append(group_by_key[key])
 
             group = group_by_key[key]
             group['booking_ids'].append(str(booking.id))
             group['seat_numbers'].append(booking.seat_number)
-            group['passengers'].append(make_passenger_dict(booking))
+
+            p_dict = make_passenger_dict(booking)
+            p_key = (p_dict['name'], p_dict['age'], p_dict['gender'])
+            existing_p_keys = [(p['name'], p['age'], p['gender']) for p in group['passengers']]
+            if p_key not in existing_p_keys:
+                group['passengers'].append(p_dict)
+
             group['total_fare'] += booking.amount
 
+            if j_type == 'ROUND_TRIP':
+                if not group['dep_bus']:
+                    group['dep_bus'] = booking.bus
+                    group['dep_date'] = booking.travel_date
+                    group['dep_seats'].append(booking.seat_number)
+                elif group['dep_bus'].id == booking.bus.id:
+                    group['dep_seats'].append(booking.seat_number)
+                else:
+                    group['ret_bus'] = booking.bus
+                    group['ret_date'] = booking.travel_date
+                    group['ret_seats'].append(booking.seat_number)
+
         for group in groups:
-            group['seat_numbers_str'] = ", ".join(group['seat_numbers'])
+            group['seat_numbers_str'] = ", ".join(list(dict.fromkeys(group['seat_numbers'])))
             group['booking_ids_str'] = ",".join(group['booking_ids'])
             group['num_seats'] = len(group['seat_numbers'])
+            group['dep_seats_str'] = ", ".join(list(dict.fromkeys(group['dep_seats'])))
+            group['ret_seats_str'] = ", ".join(list(dict.fromkeys(group['ret_seats'])))
 
         return groups
     except Exception as e:
@@ -691,19 +740,39 @@ def delete_account(request):
 
 def bus_list(request):
     search = get_search_details(request)
+
+    if search.get('round_trip') and search['from_city'] and search['to_city']:
+        dep_buses = list(Bus.objects.filter(
+            source__iexact=search['from_city'],
+            destination__iexact=search['to_city']
+        ).order_by('id'))
+
+        ret_buses = list(Bus.objects.filter(
+            source__iexact=search['to_city'],
+            destination__iexact=search['from_city']
+        ).order_by('id'))
+
+        set_live_available_seats(dep_buses, search['travel_date'])
+        set_live_available_seats(ret_buses, search['return_date'])
+
+        return render(request, 'bus_list.html', {
+            'dep_buses': dep_buses,
+            'ret_buses': ret_buses,
+            'from_city': search['from_city'],
+            'to_city': search['to_city'],
+            'travel_date': search['travel_date'],
+            'return_date': search['return_date'],
+            'passengers': search['passengers'],
+            'round_trip': True,
+        })
+
     buses = Bus.objects.all().order_by('id')
 
     if search['from_city'] and search['to_city']:
-        if search.get('round_trip'):
-            buses = buses.filter(
-                (Q(source__iexact=search['from_city']) & Q(destination__iexact=search['to_city'])) |
-                (Q(source__iexact=search['to_city']) & Q(destination__iexact=search['from_city']))
-            )
-        else:
-            buses = buses.filter(
-                source__iexact=search['from_city'],
-                destination__iexact=search['to_city']
-            )
+        buses = buses.filter(
+            source__iexact=search['from_city'],
+            destination__iexact=search['to_city']
+        )
     elif search['from_city']:
         buses = buses.filter(source__iexact=search['from_city'])
     elif search['to_city']:
@@ -738,8 +807,9 @@ def bus_list(request):
         'from_city': search['from_city'],
         'to_city': search['to_city'],
         'travel_date': search['travel_date'],
+        'return_date': search['return_date'],
         'passengers': search['passengers'],
-        'round_trip': search.get('round_trip', False),
+        'round_trip': False,
     })
 
 def bus_detail(request, pk):
@@ -765,6 +835,126 @@ def seat_booking(request, pk=None):
         return redirect("login")
 
     try:
+        is_round_trip = (request.GET.get("round_trip") == "1" or request.POST.get("round_trip") == "1" or bool(request.GET.get("ret_bus_id")) or bool(request.POST.get("ret_bus_id")))
+
+        if is_round_trip:
+            dep_bus_id = request.GET.get("dep_bus_id") or request.POST.get("dep_bus_id") or pk
+            ret_bus_id = request.GET.get("ret_bus_id") or request.POST.get("ret_bus_id")
+
+            dep_bus = Bus.objects.filter(id=dep_bus_id).first() if dep_bus_id else None
+            ret_bus = Bus.objects.filter(id=ret_bus_id).first() if ret_bus_id else None
+
+            if not dep_bus or not ret_bus:
+                return redirect("bus_list")
+
+            raw_dep_date = request.GET.get("date") or request.POST.get("date") or request.session.get("journey_date")
+            raw_ret_date = request.GET.get("return_date") or request.POST.get("return_date") or request.session.get("return_date")
+
+            travel_date = raw_dep_date if is_valid_date(raw_dep_date) else date.today().strftime("%Y-%m-%d")
+            return_date = raw_ret_date if (is_valid_date(raw_ret_date) and raw_ret_date >= travel_date) else travel_date
+
+            request.session["journey_date"] = travel_date
+            request.session["return_date"] = return_date
+
+            passengers_count = int(request.GET.get("passengers") or request.POST.get("passengers") or "1")
+
+            if request.method == "POST":
+                dep_selected_seats = request.POST.get("dep_selected_seats", "")
+                ret_selected_seats = request.POST.get("ret_selected_seats", "")
+
+                dep_seats = [seat.strip() for seat in dep_selected_seats.split(",") if seat.strip()]
+                ret_seats = [seat.strip() for seat in ret_selected_seats.split(",") if seat.strip()]
+
+                if len(dep_seats) != passengers_count or len(ret_seats) != passengers_count:
+                    return render(request, "seat_booking.html", {
+                        "is_round_trip": True,
+                        "dep_bus": dep_bus,
+                        "ret_bus": ret_bus,
+                        "bus": dep_bus,
+                        "travel_date": travel_date,
+                        "return_date": return_date,
+                        "passengers_count": passengers_count,
+                        "booked_seats": json.dumps(get_booked_seats(dep_bus, travel_date)),
+                        "dep_booked_seats": json.dumps(get_booked_seats(dep_bus, travel_date)),
+                        "ret_booked_seats": json.dumps(get_booked_seats(ret_bus, return_date)),
+                        "msg": f"Please select exactly {passengers_count} departure seat(s) and {passengers_count} return seat(s)."
+                    })
+
+                dep_already_booked = SeatBooking.objects.filter(bus=dep_bus, journey_date=travel_date, seat_number__in=dep_seats).exists()
+                ret_already_booked = SeatBooking.objects.filter(bus=ret_bus, journey_date=return_date, seat_number__in=ret_seats).exists()
+
+                if dep_already_booked or ret_already_booked:
+                    return render(request, "seat_booking.html", {
+                        "is_round_trip": True,
+                        "dep_bus": dep_bus,
+                        "ret_bus": ret_bus,
+                        "bus": dep_bus,
+                        "travel_date": travel_date,
+                        "return_date": return_date,
+                        "passengers_count": passengers_count,
+                        "booked_seats": json.dumps(get_booked_seats(dep_bus, travel_date)),
+                        "dep_booked_seats": json.dumps(get_booked_seats(dep_bus, travel_date)),
+                        "ret_booked_seats": json.dumps(get_booked_seats(ret_bus, return_date)),
+                        "msg": "One or more selected seats are no longer available. Please select different seats."
+                    })
+
+                with transaction.atomic():
+                    rt_id = uuid.uuid4()
+                    created_booking_ids = []
+
+                    for i in range(1, passengers_count + 1):
+                        p_name = request.POST.get(f"passenger_name_{i}", f"Passenger {i}").strip() or f"Passenger {i}"
+                        p_age_str = request.POST.get(f"passenger_age_{i}", "25").strip()
+                        p_age = int(p_age_str) if p_age_str.isdigit() and int(p_age_str) > 0 else 25
+                        p_gender = request.POST.get(f"passenger_gender_{i}", "Male").strip() or "Male"
+
+                        b_dep = Booking.objects.create(
+                            user=customer,
+                            bus=dep_bus,
+                            seat_number=dep_seats[i - 1],
+                            passenger_name=p_name,
+                            passenger_age=p_age,
+                            passenger_gender=p_gender,
+                            amount=dep_bus.fare,
+                            travel_date=travel_date,
+                            journey_type="ROUND_TRIP",
+                            round_trip_id=rt_id,
+                            status="booked",
+                            payment=False
+                        )
+                        created_booking_ids.append(str(b_dep.id))
+
+                        b_ret = Booking.objects.create(
+                            user=customer,
+                            bus=ret_bus,
+                            seat_number=ret_seats[i - 1],
+                            passenger_name=p_name,
+                            passenger_age=p_age,
+                            passenger_gender=p_gender,
+                            amount=ret_bus.fare,
+                            travel_date=return_date,
+                            journey_type="ROUND_TRIP",
+                            round_trip_id=rt_id,
+                            status="booked",
+                            payment=False
+                        )
+                        created_booking_ids.append(str(b_ret.id))
+
+                return redirect(f"/payment/?booking_ids={','.join(created_booking_ids)}&round_trip=1")
+
+            return render(request, "seat_booking.html", {
+                "is_round_trip": True,
+                "dep_bus": dep_bus,
+                "ret_bus": ret_bus,
+                "bus": dep_bus,
+                "travel_date": travel_date,
+                "return_date": return_date,
+                "passengers_count": passengers_count,
+                "booked_seats": json.dumps(get_booked_seats(dep_bus, travel_date)),
+                "dep_booked_seats": json.dumps(get_booked_seats(dep_bus, travel_date)),
+                "ret_booked_seats": json.dumps(get_booked_seats(ret_bus, return_date)),
+            })
+
         bus = Bus.objects.get(id=pk) if pk else Bus.objects.first()
         if not bus:
             return redirect("bus_list")
@@ -878,6 +1068,33 @@ def payment(request):
         if not bookings.exists():
             return redirect("index")
 
+        is_round_trip = any(getattr(b, 'journey_type', 'ONE_WAY') == 'ROUND_TRIP' for b in bookings) or request.GET.get("round_trip") == "1"
+
+        if is_round_trip:
+            first_b = bookings.first()
+            dep_bookings = [b for b in bookings if b.bus.source.lower() == first_b.bus.source.lower()]
+            ret_bookings = [b for b in bookings if b.bus.source.lower() != first_b.bus.source.lower()]
+            if not ret_bookings and len(bookings) > 1:
+                half = len(bookings) // 2
+                dep_bookings = list(bookings)[:half]
+                ret_bookings = list(bookings)[half:]
+
+            dep_bus = dep_bookings[0].bus if dep_bookings else first_b.bus
+            ret_bus = ret_bookings[0].bus if ret_bookings else None
+            dep_seats = ", ".join(list(dict.fromkeys([b.seat_number for b in dep_bookings]))) if dep_bookings else ""
+            ret_seats = ", ".join(list(dict.fromkeys([b.seat_number for b in ret_bookings]))) if ret_bookings else ""
+            dep_date = dep_bookings[0].travel_date if dep_bookings else first_b.travel_date
+            ret_date = ret_bookings[0].travel_date if ret_bookings else None
+        else:
+            dep_bookings = None
+            ret_bookings = None
+            dep_bus = bookings.first().bus
+            ret_bus = None
+            dep_seats = ", ".join([b.seat_number for b in bookings])
+            ret_seats = ""
+            dep_date = bookings.first().travel_date
+            ret_date = None
+
         subtotal, gst_fees, convenience_fee, total_price = calculate_payment_summary(bookings)
         client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
 
@@ -897,13 +1114,19 @@ def payment(request):
             }
             logger.warning(f"Razorpay fallback to mock: {razorpay_err}")
 
-        first_booking = bookings.first()
         return render(request, "payment.html", {
             "bookings": bookings,
             "booking_ids": booking_ids,
-            "bus": first_booking.bus,
-            "travel_date": first_booking.travel_date,
-            "seats": ", ".join([booking.seat_number for booking in bookings]),
+            "bus": dep_bus,
+            "dep_bus": dep_bus,
+            "ret_bus": ret_bus,
+            "travel_date": dep_date,
+            "dep_date": dep_date,
+            "ret_date": ret_date,
+            "seats": dep_seats,
+            "dep_seats": dep_seats,
+            "ret_seats": ret_seats,
+            "is_round_trip": is_round_trip,
             "subtotal": subtotal,
             "gst_fees": gst_fees,
             "convenience_fee": convenience_fee,
@@ -932,8 +1155,6 @@ def generate_ticket_pdf_bytes(bookings):
         except Exception: return str(d)
 
     buffer = BytesIO()
-    
-    # 0.5 inch margins (36 points) for maximum space utilization and clean framing
     doc = SimpleDocTemplate(
         buffer,
         pagesize=letter,
@@ -944,8 +1165,7 @@ def generate_ticket_pdf_bytes(bookings):
     )
 
     styles = getSampleStyleSheet()
-    
-    # Custom styles to establish beautiful visual hierarchy
+
     brand_style = ParagraphStyle(
         'BrandTitle', parent=styles['Heading1'], fontName='Helvetica-Bold', fontSize=22, leading=26, textColor=HexColor('#0F172A')
     )
@@ -991,9 +1211,7 @@ def generate_ticket_pdf_bytes(bookings):
 
     elements = []
     first_b = bookings.first()
-    bus = first_b.bus
-    
-    # 1. Company Branding Header Section
+
     logo_path = finders.find('assets/images/logo.png')
     if logo_path:
         try:
@@ -1003,7 +1221,6 @@ def generate_ticket_pdf_bytes(bookings):
     else:
         logo_element = Paragraph("<b>BusYatra</b>", brand_style)
 
-    # Wrap logo with tagline below it
     header_left_data = [
         [logo_element],
         [Paragraph("Premium Bus Ticket Reservation", tagline_style)]
@@ -1016,11 +1233,10 @@ def generate_ticket_pdf_bytes(bookings):
     ]))
 
     booking_date_str = format_date(first_b.booking_date)
-    header_right_text = f"<b>E-Ticket Receipt</b><br/><font color='#64748B'>Booking Date: {booking_date_str}</font>"
-    header_right_p = Paragraph(header_right_text, receipt_meta_style)
-    
+    is_round_trip = any(getattr(b, 'journey_type', 'ONE_WAY') == 'ROUND_TRIP' for b in bookings) or len(set(b.bus.id for b in bookings)) > 1
+
     header_right_data = [
-        [Paragraph("E-Ticket Receipt", receipt_title_style)],
+        [Paragraph("Round Trip E-Ticket" if is_round_trip else "E-Ticket Receipt", receipt_title_style)],
         [Paragraph(f"Booking Date: {booking_date_str}", receipt_meta_style)]
     ]
     header_right_table = Table(header_right_data, colWidths=[270])
@@ -1037,7 +1253,6 @@ def generate_ticket_pdf_bytes(bookings):
     ]))
     elements.append(header_table)
 
-    # Professional divider line
     divider = Table([['']], colWidths=[540])
     divider.setStyle(TableStyle([
         ('LINEBELOW', (0, 0), (-1, -1), 1, HexColor('#E2E8F0')),
@@ -1046,120 +1261,107 @@ def generate_ticket_pdf_bytes(bookings):
     elements.append(divider)
     elements.append(Spacer(1, 8))
 
-    # 2. Journey Details & QR Code (Side-by-Side)
-    departure_time_str = format_time(bus.departure_time)
-    arrival_time_str = format_time(bus.arrival_time)
-    travel_date_str = format_date(first_b.travel_date)
+    def build_journey_section(journey_title, b_list):
+        if not b_list: return
+        b_first = b_list[0]
+        b_bus = b_first.bus
+        dep_time_str = format_time(b_bus.departure_time)
+        arr_time_str = format_time(b_bus.arrival_time)
+        trv_date_str = format_date(b_first.travel_date)
 
-    # Route display: Source → Destination (Single row)
-    route_html = f"<font size=10><b>{bus.source}</b></font> <font size=10 color='#3B82F6'><b>→</b></font> <font size=10><b>{bus.destination}</b></font>"
-    route_p = Paragraph(route_html, route_style)
+        r_html = f"<font size=10><b>{b_bus.source}</b></font> <font size=10 color='#3B82F6'><b>→</b></font> <font size=10><b>{b_bus.destination}</b></font>"
+        r_p = Paragraph(r_html, route_style)
 
-    journey_left_data = [
-        [Paragraph("<b>Route:</b>", label_style), route_p],
-        [Paragraph("<b>Bus Name:</b>", label_style), Paragraph(bus.bus_name, value_style)],
-        [Paragraph("<b>Bus Number:</b>", label_style), Paragraph(bus.bus_number, value_style)],
-        [Paragraph("<b>Travel Date:</b>", label_style), Paragraph(travel_date_str, value_style)],
-        [Paragraph("<b>Departure:</b>", label_style), Paragraph(departure_time_str, value_style)],
-        [Paragraph("<b>Arrival:</b>", label_style), Paragraph(arrival_time_str, value_style)],
-    ]
-    journey_left_table = Table(journey_left_data, colWidths=[100, 260])
-    journey_left_table.setStyle(TableStyle([
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('TOPPADDING', (0, 0), (-1, -1), 3),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
-    ]))
+        j_left = [
+            [Paragraph("<b>Route:</b>", label_style), r_p],
+            [Paragraph("<b>Bus Name:</b>", label_style), Paragraph(b_bus.bus_name, value_style)],
+            [Paragraph("<b>Bus Number:</b>", label_style), Paragraph(b_bus.bus_number, value_style)],
+            [Paragraph("<b>Travel Date:</b>", label_style), Paragraph(trv_date_str, value_style)],
+            [Paragraph("<b>Departure:</b>", label_style), Paragraph(dep_time_str, value_style)],
+            [Paragraph("<b>Arrival:</b>", label_style), Paragraph(arr_time_str, value_style)],
+        ]
+        j_left_tbl = Table(j_left, colWidths=[100, 260])
+        j_left_tbl.setStyle(TableStyle([
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('TOPPADDING', (0, 0), (-1, -1), 2),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
+        ]))
 
-    # Generate QR Code details
-    booking_ids_list = [f"BY-{b.id}" for b in bookings]
-    seat_numbers_list = [b.seat_number for b in bookings]
-    passenger_names_list = [b.passenger_name for b in bookings]
-    
-    payment_status_str = getattr(first_b, 'payment_status', 'SUCCESS' if first_b.payment else 'FAILED').upper()
-    booking_status_str = getattr(first_b, 'booking_status', first_b.status).upper()
+        b_ids = [f"BY-{b.id}" for b in b_list]
+        s_nums = [b.seat_number for b in b_list]
+        p_names = [b.passenger_name for b in b_list]
+        p_stat = getattr(b_first, 'payment_status', 'SUCCESS' if b_first.payment else 'FAILED').upper()
+        b_stat = getattr(b_first, 'booking_status', b_first.status).upper()
 
-    qr_data = (
-        f"Booking ID: {', '.join(booking_ids_list)}\n"
-        f"Passenger: {', '.join(passenger_names_list)}\n"
-        f"Bus: {bus.bus_number}\n"
-        f"Date: {travel_date_str}\n"
-        f"Seat: {', '.join(seat_numbers_list)}\n"
-        f"Payment: {payment_status_str}\n"
-        f"Booking: {booking_status_str}"
-    )
-    
-    qr = qrcode.QRCode(version=1, box_size=3, border=1)
-    qr.add_data(qr_data)
-    qr.make(fit=True)
-    qr_img = qr.make_image(fill_color="#0F172A", back_color="white")
-    
-    qr_buffer = BytesIO()
-    qr_img.save(qr_buffer, format="PNG")
-    qr_buffer.seek(0)
-    
-    qr_flowable = Image(qr_buffer, width=105, height=105)
-    
-    # Package QR Code and subtitle
-    journey_right_data = [
-        [qr_flowable],
-        [Paragraph("Show QR while Boarding", qr_text_style)]
-    ]
-    journey_right_table = Table(journey_right_data, colWidths=[150])
-    journey_right_table.setStyle(TableStyle([
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
-        ('TOPPADDING', (0, 0), (-1, -1), 2),
-    ]))
-
-    # Outer Section Table for Journey & QR
-    journey_section_table = Table([[journey_left_table, journey_right_table]], colWidths=[380, 160])
-    journey_section_table.setStyle(TableStyle([
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
-    ]))
-
-    elements.append(Paragraph("Journey Details", section_heading_style))
-    elements.append(journey_section_table)
-    elements.append(Spacer(1, 10))
-
-    # 3. Status Badges and Transaction Details
-    def make_badge(text, badge_type):
-        if badge_type == 'success':
-            bg = HexColor('#ECFDF5')
-            fg = HexColor('#047857')
-        elif badge_type == 'warning':
-            bg = HexColor('#FEF3C7')
-            fg = HexColor('#B45309')
-        else: # danger
-            bg = HexColor('#FEE2E2')
-            fg = HexColor('#B91C1C')
-            
-        badge_p_style = ParagraphStyle(
-            'BadgeP',
-            parent=styles['Normal'],
-            fontName='Helvetica-Bold',
-            fontSize=8,
-            leading=10,
-            alignment=1, # Center
-            textColor=fg
+        q_data = (
+            f"Booking ID: {', '.join(b_ids)}\n"
+            f"Passenger: {', '.join(p_names)}\n"
+            f"Bus: {b_bus.bus_number}\n"
+            f"Date: {trv_date_str}\n"
+            f"Seat: {', '.join(s_nums)}\n"
+            f"Payment: {p_stat}\n"
+            f"Booking: {b_stat}"
         )
-        b_table = Table([[Paragraph(text, badge_p_style)]], colWidths=[70], rowHeights=[16])
-        b_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, -1), bg),
-            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        qr = qrcode.QRCode(version=1, box_size=3, border=1)
+        qr.add_data(q_data)
+        qr.make(fit=True)
+        qr_img = qr.make_image(fill_color="#0F172A", back_color="white")
+        qr_buf = BytesIO()
+        qr_img.save(qr_buf, format="PNG")
+        qr_buf.seek(0)
+        qr_flow = Image(qr_buf, width=95, height=95)
+
+        j_right = [
+            [qr_flow],
+            [Paragraph("Show QR while Boarding", qr_text_style)]
+        ]
+        j_right_tbl = Table(j_right, colWidths=[150])
+        j_right_tbl.setStyle(TableStyle([
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 1),
             ('TOPPADDING', (0, 0), (-1, -1), 1),
         ]))
-        return b_table
 
-    # Build Badges
-    p_badge_type = 'success' if payment_status_str in ['PAID', 'SUCCESS'] else ('warning' if payment_status_str == 'PENDING' else 'danger')
-    b_badge_type = 'success' if booking_status_str in ['BOOKED', 'SUCCESS', 'COMPLETED'] else 'danger'
-    
-    pay_badge = make_badge(payment_status_str, p_badge_type)
-    book_badge = make_badge(booking_status_str, b_badge_type)
+        j_sec_tbl = Table([[j_left_tbl, j_right_tbl]], colWidths=[380, 160])
+        j_sec_tbl.setStyle(TableStyle([
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
+        ]))
+
+        elements.append(Paragraph(journey_title, section_heading_style))
+        elements.append(j_sec_tbl)
+        elements.append(Spacer(1, 6))
+
+    if is_round_trip:
+        dep_b_list = [b for b in bookings if b.bus.source.lower() == first_b.bus.source.lower()]
+        ret_b_list = [b for b in bookings if b.bus.source.lower() != first_b.bus.source.lower()]
+        if not ret_b_list and len(bookings) > 1:
+            half = len(bookings) // 2
+            dep_b_list = list(bookings)[:half]
+            ret_b_list = list(bookings)[half:]
+
+        build_journey_section("Departure Journey", dep_b_list)
+        build_journey_section("Return Journey", ret_b_list)
+    else:
+        build_journey_section("Journey Details", list(bookings))
+
+    def make_badge(text, badge_type):
+        bg = HexColor('#ECFDF5') if badge_type == 'success' else (HexColor('#FEF3C7') if badge_type == 'warning' else HexColor('#FEE2E2'))
+        fg = HexColor('#047857') if badge_type == 'success' else (HexColor('#B45309') if badge_type == 'warning' else HexColor('#B91C1C'))
+        b_p = ParagraphStyle('BadgeP', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=8, leading=10, alignment=1, textColor=fg)
+        bt = Table([[Paragraph(text, b_p)]], colWidths=[70], rowHeights=[16])
+        bt.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), bg),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ]))
+        return bt
+
+    payment_status_str = getattr(first_b, 'payment_status', 'SUCCESS' if first_b.payment else 'FAILED').upper()
+    booking_status_str = getattr(first_b, 'booking_status', first_b.status).upper()
+    pay_badge = make_badge(payment_status_str, 'success' if payment_status_str in ['PAID', 'SUCCESS'] else ('warning' if payment_status_str == 'PENDING' else 'danger'))
+    book_badge = make_badge(booking_status_str, 'success' if booking_status_str in ['BOOKED', 'SUCCESS', 'COMPLETED'] else 'danger')
 
     payment_id_val = first_b.payment_id or "N/A"
     subtotal = sum(b.amount for b in bookings)
@@ -1169,26 +1371,24 @@ def generate_ticket_pdf_bytes(bookings):
 
     payment_data = [
         [Paragraph("<b>Payment ID:</b>", label_style), Paragraph(payment_id_val, value_style), Paragraph("<b>Payment Status:</b>", label_style), pay_badge],
-        # Display the total paid amount using "Rs." instead of "₹" to prevent rendering issues in PDF readers
         [Paragraph("<b>Booking Status:</b>", label_style), book_badge, Paragraph("<b>Total Paid:</b>", label_style), Paragraph(f"Rs. {total_amount:.2f} (incl. GST & fees)", value_style)],
         [Paragraph("<b>Payment Method:</b>", label_style), Paragraph("Online (Razorpay)", value_style), Paragraph("", label_style), Paragraph("", value_style)]
     ]
     payment_table = Table(payment_data, colWidths=[100, 170, 100, 170])
     payment_table.setStyle(TableStyle([
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('TOPPADDING', (0, 0), (-1, -1), 4),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ('TOPPADDING', (0, 0), (-1, -1), 3),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
     ]))
 
     elements.append(Paragraph("Transaction Details", section_heading_style))
     elements.append(payment_table)
-    elements.append(Spacer(1, 10))
+    elements.append(Spacer(1, 8))
 
-    # 4. Passenger Details Table
     table_data = [[
         Paragraph("Booking ID", table_header_style),
+        Paragraph("Journey", table_header_style),
         Paragraph("Passenger Name", table_header_style),
-        Paragraph("Email", table_header_style),
         Paragraph("Age", table_header_style),
         Paragraph("Gender", table_header_style),
         Paragraph("Seat No", table_header_style),
@@ -1196,37 +1396,35 @@ def generate_ticket_pdf_bytes(bookings):
     ]]
 
     for b in bookings:
+        j_label = f"{b.bus.source} → {b.bus.destination}"
         table_data.append([
             Paragraph(f"BY-{b.id}", table_cell_style),
+            Paragraph(j_label, table_cell_style),
             Paragraph(b.passenger_name, table_cell_style),
-            Paragraph(b.user.email, table_cell_style), # booking.user.email
             Paragraph(str(b.passenger_age), table_cell_style),
             Paragraph(b.passenger_gender, table_cell_style),
             Paragraph(b.seat_number, table_cell_style),
-            # Display passenger fare using "Rs." instead of "₹" to prevent rendering issues in PDF readers
             Paragraph(f"Rs. {b.amount:.2f}", table_cell_style)
         ])
 
-    passenger_table = Table(table_data, colWidths=[75, 100, 140, 30, 50, 65, 80])
+    passenger_table = Table(table_data, colWidths=[60, 120, 110, 30, 45, 55, 65])
     passenger_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), HexColor('#0F172A')),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ('GRID', (0, 0), (-1, -1), 0.5, HexColor('#CBD5E1')),
-        ('TOPPADDING', (0, 0), (-1, -1), 5),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
-        ('LEFTPADDING', (0, 0), (-1, -1), 6),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+        ('TOPPADDING', (0, 0), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ('LEFTPADDING', (0, 0), (-1, -1), 5),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 5),
     ]))
     
     elements.append(Paragraph("Passenger & Seat Details", section_heading_style))
     elements.append(passenger_table)
-    elements.append(Spacer(1, 10))
+    elements.append(Spacer(1, 8))
 
-    # 5. Thank You & Have a Safe Journey Section
     elements.append(Paragraph("Thank you for choosing BusYatra. Have a Safe Journey!", thankyou_style))
-    elements.append(Spacer(1, 5))
+    elements.append(Spacer(1, 4))
 
-    # 6. Terms & Conditions Section Box
     terms_html = (
         "<b>Terms & Conditions:</b><br/>"
         "• Carry a valid Government ID.<br/>"
@@ -1234,28 +1432,23 @@ def generate_ticket_pdf_bytes(bookings):
         "• Keep this ticket until journey completion.<br/>"
         "• Ticket is non-transferable.<br/>"
         "• Cancellation and refund are subject to BusYatra policy.<br/>"
-        "• BusYatra is not responsible for delays caused by weather or traffic.<br/>"
-        "• Show this QR Code while boarding.<br/>"
         "• Contact Support: <b>support@busyatra.com</b>"
     )
-    terms_p = Paragraph(terms_html, terms_style)
-    terms_table = Table([[terms_p]], colWidths=[540])
+    terms_table = Table([[Paragraph(terms_html, terms_style)]], colWidths=[540])
     terms_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, -1), HexColor('#F8FAFC')),
         ('BOX', (0, 0), (-1, -1), 0.5, HexColor('#E2E8F0')),
-        ('TOPPADDING', (0, 0), (-1, -1), 8),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
-        ('LEFTPADDING', (0, 0), (-1, -1), 12),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 12),
+        ('TOPPADDING', (0, 0), (-1, -1), 6),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ('LEFTPADDING', (0, 0), (-1, -1), 10),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 10),
     ]))
     elements.append(terms_table)
-    elements.append(Spacer(1, 12))
+    elements.append(Spacer(1, 8))
 
-    # 7. Footer
     footer_html = "BusYatra  •  Premium Bus Ticket Reservation  •  www.busyatra.com  •  support@busyatra.com"
     elements.append(Paragraph(footer_html, footer_text_style))
 
-    # Build the document
     doc.build(elements)
     buffer.seek(0)
     return buffer.getvalue()

@@ -4,15 +4,39 @@
 
 <div class="container mt-5 mb-5">
     <div class="row justify-content-center">
-        <div class="col-lg-6">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white">
-                    <h4 class="mb-0">
-                        BusYatra Payment
+        <div class="col-lg-7">
+            <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+                <div class="card-header bg-primary text-white p-3">
+                    <h4 class="mb-0 fw-bold">
+                        <i class="bi bi-credit-card-fill me-2"></i>
+                        {% if is_round_trip %}Round Trip Payment{% else %}BusYatra Payment Summary{% endif %}
                     </h4>
                 </div>
-                <div class="card-body">
-                    <table class="table">
+                <div class="card-body p-4">
+                    {% if is_round_trip %}
+                    <!-- ROUND TRIP BREAKDOWN -->
+                    <div class="p-3 bg-light rounded-4 border mb-3">
+                        <h6 class="fw-bold text-primary mb-2"><i class="bi bi-box-arrow-up-right me-2"></i>Departure Journey</h6>
+                        <div class="row g-2 small">
+                            <div class="col-6"><strong>Bus:</strong> {{ dep_bus.bus_name }}</div>
+                            <div class="col-6"><strong>Route:</strong> {{ dep_bus.source }} → {{ dep_bus.destination }}</div>
+                            <div class="col-6"><strong>Date:</strong> {{ dep_date }}</div>
+                            <div class="col-6"><strong>Seats:</strong> {{ dep_seats }}</div>
+                        </div>
+                    </div>
+
+                    <div class="p-3 bg-light rounded-4 border mb-4">
+                        <h6 class="fw-bold text-success mb-2"><i class="bi bi-box-arrow-in-down-left me-2"></i>Return Journey</h6>
+                        <div class="row g-2 small">
+                            <div class="col-6"><strong>Bus:</strong> {{ ret_bus.bus_name }}</div>
+                            <div class="col-6"><strong>Route:</strong> {{ ret_bus.source }} → {{ ret_bus.destination }}</div>
+                            <div class="col-6"><strong>Date:</strong> {{ ret_date }}</div>
+                            <div class="col-6"><strong>Seats:</strong> {{ ret_seats }}</div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <!-- ONE WAY BREAKDOWN -->
+                    <table class="table align-middle">
                         <tr>
                             <th>Bus</th>
                             <td>{{ bus.bus_name }}</td>
@@ -29,29 +53,38 @@
                             <th>Seats</th>
                             <td>{{ seats }}</td>
                         </tr>
-                        <tr>
-                            <th>Subtotal</th>
-                            <td>₹{{ subtotal }}</td>
-                        </tr>
-                        <tr>
-                            <th>GST</th>
-                            <td>₹{{ gst_fees }}</td>
-                        </tr>
-                        <tr>
-                            <th>Convenience Fee</th>
-                            <td>₹{{ convenience_fee }}</td>
-                        </tr>
-                        <tr class="table-success">
-                            <th>Total</th>
-                            <th>₹{{ total_price }}</th>
-                        </tr>
                     </table>
-                    <button id="rzp-button" class="btn btn-success w-100">
-                        Pay ₹{{ total_price }}
+                    {% endif %}
+
+                    <!-- FARE BREAKDOWN -->
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-4">
+                            <tr>
+                                <th>Subtotal</th>
+                                <td class="text-end">₹{{ subtotal }}</td>
+                            </tr>
+                            <tr>
+                                <th>GST (5%)</th>
+                                <td class="text-end">₹{{ gst_fees }}</td>
+                            </tr>
+                            <tr>
+                                <th>Convenience Fee</th>
+                                <td class="text-end">₹{{ convenience_fee }}</td>
+                            </tr>
+                            <tr class="table-success fs-5">
+                                <th>Total Amount</th>
+                                <th class="text-end text-success">₹{{ total_price }}</th>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <button id="rzp-button" class="btn btn-success btn-lg w-100 py-3 rounded-4 fw-bold shadow-sm">
+                        Pay ₹{{ total_price }} & Confirm Booking
                     </button>
+
                     {% if is_mock %}
-                    <div class="text-center mt-2">
-                        <small class="text-muted">
+                    <div class="text-center mt-3">
+                        <small class="badge bg-warning text-dark px-3 py-2 rounded-pill fw-semibold">
                             <i class="bi bi-info-circle me-1"></i> Running in Test Checkout Mode
                         </small>
                     </div>
@@ -65,33 +98,22 @@
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
 <script>
-
     var options = {
-
         key: "{{ razorpay_key }}",
-
         amount: "{{ payment.amount }}",
-
         currency: "INR",
-
         name: "BusYatra",
-
         description: "Bus Ticket Booking",
-
-        image: "/static/images/logo.png",
-
+        image: "/static/assets/images/logo.png",
         {% if payment.id and not is_mock %}
         order_id: "{{ payment.id }}",
         {% endif %}
-
         handler: function (response) {
-
             window.location.href =
                 "{% url 'ticket' %}?booking_ids={{ booking_ids }}"
                 + "&razorpay_payment_id=" + (response.razorpay_payment_id || "mock_pay_id")
                 + "&razorpay_order_id=" + (response.razorpay_order_id || "mock_order_id")
                 + "&razorpay_signature=" + (response.razorpay_signature || "mock_sig");
-
         },
         prefill: {
             name: "{{ login_user.name|default:'' }}",
