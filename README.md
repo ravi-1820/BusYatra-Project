@@ -8,6 +8,9 @@ The platform includes full role-based access control with separate management da
 
 ---
 
+## Live demo:- 
+  https://ravisuthar.pythonanywhere.com/
+
 ## Features
 - **User Registration & Login** — Session-based authentication, user profile management, and password recovery
 - **Bus Search & Availability** — Search buses by source, destination, and travel date with dynamic real-time seat availability calculation
@@ -48,9 +51,6 @@ python myenv/BusYatra/seed_buses.py
 
 # 7. Create a superuser (admin account)
 python myenv/BusYatra/manage.py createsuperuser
-
-# 8. seed_buses file run command
- 
 
 # 8. Start the development server
 python myenv/BusYatra/manage.py runserver
