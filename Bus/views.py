@@ -959,7 +959,7 @@ def seat_booking(request, pk=None):
         if not bus:
             return redirect("bus_list")
 
-        raw_date = request.GET.get("date") or request.session.get("journey_date")
+        raw_date = request.GET.get("date") or request.POST.get("date") or request.session.get("journey_date")
         if is_valid_date(raw_date):
             travel_date = raw_date
         else:

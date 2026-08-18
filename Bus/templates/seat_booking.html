@@ -126,6 +126,39 @@
         position: sticky;
         top: 6.5rem;
     }
+    .deck-tab-container {
+        display: inline-flex;
+        align-items: center;
+        background: #f1f5f9;
+        padding: 5px;
+        border-radius: 14px;
+        gap: 6px;
+        margin-bottom: 1.5rem;
+        border: 1px solid #e2e8f0;
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+    }
+    .deck-tab-btn {
+        border: none;
+        background: transparent;
+        padding: 8px 20px;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: #64748b;
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+        outline: none;
+    }
+    .deck-tab-btn:hover:not(.active) {
+        color: #1e293b;
+        background: rgba(255, 255, 255, 0.6);
+    }
+    .deck-tab-btn.active {
+        background: #ffffff;
+        color: #1d4ed8;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        font-weight: 700;
+    }
 </style>
 
 <div class="booking-wrapper">
@@ -455,6 +488,8 @@
                         {% csrf_token %}
                         <input type="hidden" name="selected_seats" id="selectedSeatsInput">
                         <input type="hidden" name="date" value="{{ travel_date }}">
+                        <input type="hidden" id="primaryEmail" name="email" value="{{ request.session.email|default:'' }}">
+                        <input type="hidden" id="primaryMobile" name="mobile" value="{{ login_user.phone|default:'' }}">
                         <h6 class="fw-bold text-navy-dark mb-3 border-bottom pb-2"><i class="bi bi-people-fill text-primary me-2"></i>Passenger Information</h6>
                         <div id="dynamicPassengerFields" class="d-flex flex-column gap-3 mb-4"></div>
                         <button type="submit" class="btn btn-warning btn-lg w-100 py-3 rounded-4 fw-bold text-navy-dark border-0 hover-scale">
@@ -479,36 +514,5 @@
     <i class="bi bi-exclamation-triangle-fill text-warning fs-5"></i>
     <span id="toastMsg" class="small fw-bold"></span>
 </div>
-
-<script>
-    var options = {
-        "key": "rzp_test_3iCOPLbchUyIwQ",
-        "amount": "{{ payment.amount|default:'0' }}",
-        "currency": "INR",
-        "name": "BusYatra",
-        "description": "Test Payment", // This is a sample Order ID. Pass the id obtained in the response of Step 1
-        "handler": function (response) {
-            console.log(response);
-            window.location.href = `http://127.0.0.1:8000/success?razorpay_payment_id=${response.razorpay_payment_id}`;
-        },
-        "theme": {
-            "color": "#94CA21"
-        }
-    };
-    var rzp1 = new Razorpay(options);
-    rzp1.on('payment.failed', function (response) {
-        alert(response.error.code);
-        alert(response.error.description);
-        alert(response.error.source);
-        alert(response.error.step);
-        alert(response.error.reason);
-        alert(response.error.metadata.order_id);
-        alert(response.error.metadata.payment_id);
-    });
-    document.getElementById('rzp-button1').onclick = function (e) {
-        rzp1.open();
-        e.preventDefault();
-    }
-</script>
 
 {% endblock %}

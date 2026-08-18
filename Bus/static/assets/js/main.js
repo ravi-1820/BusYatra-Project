@@ -554,15 +554,21 @@ document.addEventListener("DOMContentLoaded", function () {
         window.handleProceedCheckout = function (e) {
             e.preventDefault();
 
-            const email = document.getElementById("primaryEmail").value;
-            const mobile = document.getElementById("primaryMobile").value;
+            const emailElem = document.getElementById("primaryEmail");
+            const mobileElem = document.getElementById("primaryMobile");
+            const email = emailElem ? emailElem.value : "";
+            const mobile = mobileElem ? mobileElem.value : "";
             const travelers = [];
 
             let isValid = true;
             document.querySelectorAll(".passenger-entry-box").forEach(box => {
-                const name = box.querySelector(".passenger-name-input").value.trim();
-                const age = box.querySelector(".passenger-age-input").value;
-                const gender = box.querySelector(".passenger-gender-select").value;
+                const nameEl = box.querySelector(".passenger-name-input");
+                const ageEl = box.querySelector(".passenger-age-input");
+                const genderEl = box.querySelector(".passenger-gender-select");
+
+                const name = nameEl ? nameEl.value.trim() : "";
+                const age = ageEl ? ageEl.value : "";
+                const gender = genderEl ? genderEl.value : "";
                 const seatCode = box.getAttribute("data-seat");
 
                 if (!name || !age || !gender) {
@@ -591,13 +597,13 @@ document.addEventListener("DOMContentLoaded", function () {
             discountValue = Math.min(discountValue, baseFare);
             const totalToPay = Math.max(0, baseFare + gstFee - discountValue);
 
-            sessionStorage.setItem("selectedBusName", busName);
-            sessionStorage.setItem("selectedBusType", busType);
-            sessionStorage.setItem("selectedBusPrice", busPrice);
-            sessionStorage.setItem("selectedBusDepTime", busTime);
-            sessionStorage.setItem("journeyFrom", route.split(" to ")[0]);
-            sessionStorage.setItem("journeyTo", route.split(" to ")[1] || "Goa");
-            sessionStorage.setItem("journeyDate", date);
+            sessionStorage.setItem("selectedBusName", busName || "");
+            sessionStorage.setItem("selectedBusType", busType || "");
+            sessionStorage.setItem("selectedBusPrice", busPrice || 0);
+            sessionStorage.setItem("selectedBusDepTime", busTime || "");
+            sessionStorage.setItem("journeyFrom", (route || "").split(" to ")[0] || "");
+            sessionStorage.setItem("journeyTo", (route || "").split(" to ")[1] || "");
+            sessionStorage.setItem("journeyDate", date || "");
             sessionStorage.setItem("bookingSeats", Array.from(selectedSeats).join(","));
             sessionStorage.setItem("bookingTotal", totalToPay);
             sessionStorage.setItem("bookingTaxes", gstFee);
@@ -609,9 +615,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
             // Set hidden seats field and submit the form to django backend
             const seatsInput = document.getElementById("selectedSeatsInput");
-            if (seatsInput) {
+            const checkoutForm = document.getElementById("bookingCheckoutForm");
+            if (seatsInput && checkoutForm) {
                 seatsInput.value = Array.from(selectedSeats).join(",");
-                document.getElementById("bookingCheckoutForm").submit();
+                checkoutForm.submit();
             } else {
                 window.location.href = "/payment/";
             }

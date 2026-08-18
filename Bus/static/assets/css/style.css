@@ -37,7 +37,13 @@ body {
 
 @media (min-width: 1200px) {
     .container {
-        max-width: 95% !important;
+        max-width: 1200px !important;
+    }
+}
+
+@media (min-width: 1400px) {
+    .container {
+        max-width: 1320px !important;
     }
 }
 
@@ -90,8 +96,8 @@ h1, h2, h3, h4, h5, h6 {
     padding-bottom: 0;
 }
 .navbar-custom .navbar-brand img {
-    height: 52px;
-    max-height: 52px;
+    height: 68px;
+    max-height: 68px;
     width: auto;
     object-fit: contain;
     transition: transform 0.25s ease;
@@ -107,33 +113,27 @@ h1, h2, h3, h4, h5, h6 {
     font-weight: 800;
 }
 .navbar-custom .nav-link {
-    color: #334155 !important;
+    color: #475569 !important;
     font-weight: 500;
-    font-size: 14px;
-    padding: 0.5rem 0.85rem !important;
+    font-size: 15px;
+    padding: 0.45rem 1.15rem !important;
+    border-radius: 50px !important;
+    transition: all 0.25s ease !important;
+    margin: 0 3px !important;
     position: relative;
-    border-radius: 0;
     background-color: transparent !important;
-    transition: color 0.2s ease;
 }
 .navbar-custom .nav-link:hover {
     color: #2563EB !important;
-    background-color: transparent !important;
-    transform: none !important;
+    background-color: #F1F5F9 !important;
 }
 .navbar-custom .nav-link.active {
     color: #2563EB !important;
-    font-weight: 600;
+    background-color: #EFF6FF !important;
+    font-weight: 600 !important;
 }
 .navbar-custom .nav-link.active::after {
-    content: '';
-    position: absolute;
-    bottom: -4px;
-    left: 0.85rem;
-    right: 0.85rem;
-    height: 2.5px;
-    background-color: #2563EB;
-    border-radius: 2px;
+    display: none !important;
 }
 
 .nav-lang-btn {
@@ -267,46 +267,121 @@ h1, h2, h3, h4, h5, h6 {
     color: var(--blue-hover) !important;
 }
 
-/* Hero Section - Soft Light Gradient */
+/* Hero Section - Scenic Landscape with Dark Ocean Blue Right Gradient */
 .hero-section {
-    background: linear-gradient(135deg, #F8FAFC 0%, #EFF6FF 100%);
     position: relative;
-    padding: 7rem 0 5rem 0;
+    background: linear-gradient(90deg, 
+                rgba(12, 35, 75, 0.25) 0%, 
+                rgba(8, 38, 92, 0.65) 38%, 
+                rgba(3, 35, 90, 0.95) 58%, 
+                rgba(1, 24, 68, 0.98) 100%),
+                url('../images/Hero-BG.png') no-repeat center center / cover;
+    padding: 5.5rem 0 6.5rem 0;
     overflow: hidden;
-    border-bottom: 1px solid var(--gray-border);
 }
-.hero-section::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-image: radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.06) 0%, transparent 50%);
-    pointer-events: none;
-}
+
 .hero-title {
-    color: var(--navy-dark);
-    font-size: 3.25rem;
+    color: #FFFFFF !important;
+    font-size: 3.65rem;
     font-weight: 800;
-    line-height: 1.15;
+    line-height: 1.12;
+    letter-spacing: -0.025em;
 }
 .hero-title span {
-    color: var(--blue-primary);
+    color: #FFFFFF !important;
 }
 .hero-subtitle {
-    color: var(--text-muted);
+    color: rgba(235, 243, 255, 0.92);
     font-size: 1.15rem;
+    line-height: 1.65;
     margin-bottom: 2.25rem;
+    max-width: 560px;
+}
+
+/* Floating Bus Image Card */
+.hero-bus-card-wrapper {
+    position: relative;
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.25);
+    max-width: 500px;
+    width: 100%;
+}
+.hero-bus-card-img {
+    width: 100%;
+    height: 380px;
+    object-fit: cover;
+    display: block;
+    border-radius: 24px;
+}
+.hero-rating-badge {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: #FACC15;
+    color: #0F172A;
+    font-weight: 700;
+    font-size: 0.95rem;
+    padding: 0.5rem 1.1rem;
+    border-radius: 50px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    z-index: 2;
+}
+
+/* Hero Buttons */
+.btn-hero-primary {
+    background-color: #2563EB;
+    border: 1.5px solid #2563EB;
+    color: #FFFFFF !important;
+    font-weight: 600;
+    padding: 0.85rem 2.25rem;
+    font-size: 1rem;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    box-shadow: 0 6px 18px rgba(37, 99, 235, 0.4);
+    height: 52px;
+    display: inline-flex;
+    align-items: center;
+}
+.btn-hero-primary:hover {
+    background-color: #1D4ED8;
+    border-color: #1D4ED8;
+    color: #FFFFFF !important;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(37, 99, 235, 0.5);
+}
+
+.btn-hero-outline {
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1.5px solid rgba(255, 255, 255, 0.5);
+    color: #FFFFFF !important;
+    font-weight: 600;
+    padding: 0.85rem 2.25rem;
+    font-size: 1rem;
+    border-radius: 12px;
+    backdrop-filter: blur(4px);
+    transition: all 0.3s ease;
+    height: 52px;
+    display: inline-flex;
+    align-items: center;
+}
+.btn-hero-outline:hover {
+    background-color: rgba(255, 255, 255, 0.18);
+    border-color: #FFFFFF;
+    color: #FFFFFF !important;
+    transform: translateY(-2px);
 }
 
 /* Floating Card / Search Form */
 .search-card {
     background: #FFFFFF;
-    border-radius: 20px;
-    box-shadow: var(--shadow-lg);
-    border: 1px solid rgba(226, 232, 240, 0.8);
-    padding: 2.25rem;
+    border-radius: 22px;
+    box-shadow: 0 15px 40px rgba(15, 23, 42, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    padding: 2.25rem 2.5rem;
     margin-top: -3.5rem;
     position: relative;
     z-index: 10;
@@ -318,10 +393,12 @@ h1, h2, h3, h4, h5, h6 {
 }
 .input-group-custom .form-control,
 .input-group-custom .form-select {
-    padding: 0.75rem 2.8rem 0.75rem 2.6rem !important;
+    height: 50px !important;
+    padding: 0.75rem 1rem 0.75rem 2.8rem !important;
     border-radius: 12px;
     border: 1.5px solid var(--gray-border);
     font-weight: 500;
+    font-size: 14px;
     color: var(--navy-dark);
     transition: var(--transition-smooth);
     background-color: #FFFFFF;
@@ -1191,8 +1268,16 @@ h1, h2, h3, h4, h5, h6 {
         width: 100%;
         min-height: auto;
     }
+    .hero-section {
+        background: linear-gradient(180deg, 
+                    rgba(12, 35, 75, 0.45) 0%, 
+                    rgba(3, 35, 90, 0.85) 45%, 
+                    rgba(1, 24, 68, 0.98) 100%),
+                    url('../images/Hero-BG.png') no-repeat center center / cover;
+        padding: 4.5rem 0 6rem 0;
+    }
     .hero-title {
-        font-size: 2.5rem;
+        font-size: 2.5rem !important;
     }
     .search-card {
         padding: 1.75rem;
@@ -2292,6 +2377,45 @@ body {
     box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4) !important;
     transform: translateY(-1px);
 }
+
+/* Deck Selector Switcher Tabs */
+.deck-tab-container {
+    display: inline-flex;
+    align-items: center;
+    background: #f1f5f9;
+    padding: 5px;
+    border-radius: 14px;
+    gap: 6px;
+    margin-bottom: 1.5rem;
+    border: 1px solid #e2e8f0;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.deck-tab-btn {
+    border: none;
+    background: transparent;
+    padding: 8px 20px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    outline: none;
+}
+
+.deck-tab-btn:hover:not(.active) {
+    color: #1e293b;
+    background: rgba(255, 255, 255, 0.6);
+}
+
+.deck-tab-btn.active {
+    background: #ffffff;
+    color: #1d4ed8;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    font-weight: 700;
+}
+
 
 
 
