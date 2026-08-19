@@ -1,4 +1,4 @@
-from .models import User
+from .models import User, SystemSettings
 
 def login_user(request):
     email = request.session.get('email')
@@ -9,3 +9,12 @@ def login_user(request):
         except User.DoesNotExist:
             pass
     return {'login_user': None}
+
+def bus_settings(request):
+    try:
+        settings = SystemSettings.get_settings()
+    except Exception:
+        settings = None
+    return {
+        'sys_settings': settings
+    }

@@ -243,7 +243,9 @@
                                                             <div class="d-flex flex-column gap-2 max-width-200 mx-auto">
                                                                 <a href="{% url 'ticket' %}?booking_ids={{ booking.booking_ids_str }}" class="btn btn-sm btn-outline-primary rounded-3"><i class="bi bi-ticket-detailed me-1"></i>View E-Ticket</a>
                                                                 <a href="{% url 'download_ticket_pdf' %}?booking_ids={{ booking.booking_ids_str }}" class="btn btn-sm btn-outline-secondary rounded-3"><i class="bi bi-download me-1"></i>Download PDF</a>
+                                                                <button type="button" onclick="openCancelModal('{{ booking.primary_booking_id }}')" class="btn btn-sm btn-outline-danger rounded-3"><i class="bi bi-x-circle me-1"></i>Cancel Ticket</button>
                                                             </div>
+
                                                         {% else %}
                                                             <div class="text-muted py-4">
                                                                 {% if booking.status == 'cancelled' %}
@@ -870,8 +872,9 @@
                     <div class="bg-danger-subtle text-danger p-3 rounded-3 small">
                         <h6 class="fw-bold mb-1"><i class="bi bi-info-circle me-1"></i>Cancellation & Refund Policy:</h6>
                         <ul class="mb-0 ps-3">
-                            <li>Cancellation made 24h prior: 100% Refund</li>
-                            <li>Refund will be credited to original source payment within 3-5 days.</li>
+                            <li>Cancellation ≥ {{ sys_settings.full_refund_hours|default:'24' }}h prior: 100% Refund</li>
+                            <li>Cancellation {{ sys_settings.half_refund_hours|default:'12' }}h–{{ sys_settings.full_refund_hours|default:'24' }}h prior: 50% Refund</li>
+                            <li>Refund will be processed to source payment within 3-5 days.</li>
                         </ul>
                     </div>
                 </div>
@@ -881,7 +884,16 @@
                 </div>
             </div>
         </div>
+    </div>
     <script>
+    function openCancelModal(bookingId) {
+        document.getElementById('modalBookingId').textContent = '#' + bookingId;
+        document.getElementById('btnConfirmCancel').onclick = function() {
+            window.location.href = '/cancel-booking/' + bookingId + '/';
+        };
+        new bootstrap.Modal(document.getElementById('cancelModal')).show();
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('form[action*="review/add"]').forEach(function(form) {
             form.addEventListener('submit', function(e) {
@@ -894,5 +906,6 @@
         });
     });
     </script>
+
 {% endblock %}
 

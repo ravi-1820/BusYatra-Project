@@ -64,9 +64,10 @@
                                 <td class="text-end">₹{{ subtotal }}</td>
                             </tr>
                             <tr>
-                                <th>GST (5%)</th>
+                                <th>GST ({{ sys_settings.gst_percentage|floatformat:0 }}%)</th>
                                 <td class="text-end">₹{{ gst_fees }}</td>
                             </tr>
+
                             <tr>
                                 <th>Convenience Fee</th>
                                 <td class="text-end">₹{{ convenience_fee }}</td>

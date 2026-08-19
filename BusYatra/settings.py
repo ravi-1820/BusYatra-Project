@@ -49,7 +49,9 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'Bus.middleware.MaintenanceModeMiddleware',
 ]
+
 
 ROOT_URLCONF = 'BusYatra.urls'
 
@@ -64,7 +66,9 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'Bus.context_processors.login_user',
+                'Bus.context_processors.bus_settings',
             ],
+
         },
     },
 ]

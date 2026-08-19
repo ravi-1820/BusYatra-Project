@@ -165,4 +165,27 @@ class Review(models.Model):
 
     def __str__(self):
         return f"Review by {self.user.name} for {self.bus.bus_name} - {self.rating} Stars"
+
+
+class SystemSettings(models.Model):
+    app_name = models.CharField(max_length=100, default="BusYatra")
+    currency = models.CharField(max_length=50, default="INR (₹)")
+    welcome_bonus = models.DecimalField(max_digits=10, decimal_places=2, default=100.00)
+    cashback_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=10.00)
+    gst_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=5.00)
+    convenience_fee = models.DecimalField(max_digits=10, decimal_places=2, default=20.00)
+    full_refund_hours = models.IntegerField(default=24)
+
+    half_refund_hours = models.IntegerField(default=12)
+    maintenance_mode = models.BooleanField(default=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    @classmethod
+    def get_settings(cls):
+        settings, _ = cls.objects.get_or_create(id=1)
+        return settings
+
+    def __str__(self):
+        return f"SystemSettings ({self.app_name})"
+
 

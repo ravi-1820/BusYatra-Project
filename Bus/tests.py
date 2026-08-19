@@ -1,6 +1,8 @@
+from decimal import Decimal
 from django.test import TestCase, Client
 from django.urls import reverse
-from .models import User, Contact, Bus
+from .models import User, Contact, Bus, Booking, Review, SystemSettings
+
 
 class BusYatraViewsTestCase(TestCase):
     def setUp(self):
@@ -775,6 +777,159 @@ class ReviewManagementTestCase(TestCase):
         Review.objects.all().update(is_featured=False)
         response = self.client.get(reverse('home'))
         self.assertEqual(response.status_code, 200)
+
+
+from Bus.models import SystemSettings
+
+class SystemSettingsTestCase(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.admin = User.objects.create(
+            name="Super Admin",
+            email="superadmin@busyatra.com",
+            phone="9876543210",
+            password="adminpassword",
+            usertype="admin"
+        )
+        self.manager = User.objects.create(
+            name="Manager One",
+            email="mgr_settings@busyatra.com",
+            phone="9876543211",
+            password="mgrpassword",
+            usertype="manager"
+        )
+        self.customer = User.objects.create(
+            name="Customer One",
+            email="cust_settings@busyatra.com",
+            phone="9876543212",
+            password="custpassword",
+            usertype="customer"
+        )
+        self.bus = Bus.objects.create(
+            manager=self.manager,
+            bus_name="Settings Express",
+            bus_number="GJ01SS1234",
+            bus_type="AC Sleeper",
+            source="Ahmedabad",
+            destination="Mumbai",
+            departure_time="20:00:00",
+            arrival_time="06:00:00",
+            total_seats=30,
+            available_seats=30,
+            fare=Decimal('1000.00')
+        )
+
+    def login_user(self, user):
+        session = self.client.session
+        session['email'] = user.email
+        session['name'] = user.name
+        session['usertype'] = user.usertype
+        session.save()
+
+    def test_01_admin_can_update_settings(self):
+        self.login_user(self.admin)
+        post_data = {
+            'app_name': 'BusYatra Pro',
+            'currency': 'INR (₹)',
+            'welcome_bonus': '250',
+            'cashback_percentage': '15',
+            'gst_percentage': '18',
+            'full_refund_hours': '48',
+            'half_refund_hours': '24',
+            'maintenance_mode': 'on'
+        }
+        response = self.client.post(reverse('admin_settings'), post_data)
+        self.assertEqual(response.status_code, 302)
+        settings = SystemSettings.get_settings()
+        self.assertEqual(settings.app_name, 'BusYatra Pro')
+        self.assertEqual(settings.welcome_bonus, Decimal('250'))
+        self.assertEqual(settings.cashback_percentage, Decimal('15'))
+        self.assertEqual(settings.gst_percentage, Decimal('18'))
+        self.assertEqual(settings.full_refund_hours, 48)
+        self.assertEqual(settings.half_refund_hours, 24)
+        self.assertTrue(settings.maintenance_mode)
+
+    def test_02_validation_blocks_invalid_settings(self):
+        self.login_user(self.admin)
+        post_data = {
+            'app_name': 'BusYatra',
+            'currency': 'INR (₹)',
+            'welcome_bonus': '100',
+            'cashback_percentage': '150',
+            'gst_percentage': '5',
+            'full_refund_hours': '24',
+            'half_refund_hours': '12',
+        }
+        response = self.client.post(reverse('admin_settings'), post_data)
+        self.assertEqual(response.status_code, 302)
+        settings = SystemSettings.get_settings()
+        self.assertNotEqual(settings.cashback_percentage, Decimal('150'))
+
+    def test_03_gst_percentage_affects_payment_summary(self):
+        settings = SystemSettings.get_settings()
+        settings.gst_percentage = Decimal('18')
+        settings.save()
+
+        booking = Booking.objects.create(
+            user=self.customer,
+            bus=self.bus,
+            seat_number="A1",
+            passenger_name="Test Passenger",
+            passenger_age=25,
+            passenger_gender="Male",
+            amount=Decimal('1000'),
+            travel_date=date.today() + timedelta(days=5),
+            status="booked",
+            payment=True,
+            payment_status="success"
+        )
+        from Bus.views import calculate_payment_summary
+        subtotal, gst_fees, convenience_fee, total_price = calculate_payment_summary([booking])
+        self.assertEqual(subtotal, Decimal('1000'))
+        self.assertEqual(gst_fees, 180)
+        self.assertEqual(convenience_fee, 20)
+
+
+    def test_04_cancellation_thresholds_affect_refund(self):
+        settings = SystemSettings.get_settings()
+        settings.full_refund_hours = 48
+        settings.half_refund_hours = 24
+        settings.save()
+
+        future_date = date.today() + timedelta(days=3)
+        booking = Booking.objects.create(
+            user=self.customer,
+            bus=self.bus,
+            seat_number="A2",
+            passenger_name="Test Passenger",
+            passenger_age=25,
+            passenger_gender="Male",
+            amount=Decimal('1000'),
+            travel_date=future_date,
+            status="booked",
+            payment=True,
+            payment_status="success"
+        )
+
+        self.login_user(self.customer)
+        response = self.client.get(reverse('cancel_booking', args=[booking.id]))
+        self.assertEqual(response.status_code, 302)
+        booking.refresh_from_db()
+        self.assertEqual(booking.status, 'cancelled')
+
+    def test_05_maintenance_mode_customer_behavior_and_admin_bypass(self):
+        settings = SystemSettings.get_settings()
+        settings.maintenance_mode = True
+        settings.save()
+
+        response = self.client.get(reverse('home'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Website Under Scheduled Maintenance")
+
+        self.login_user(self.admin)
+        admin_response = self.client.get(reverse('admin_settings'))
+        self.assertEqual(admin_response.status_code, 200)
+
 
 
 

@@ -439,7 +439,11 @@ document.addEventListener("DOMContentLoaded", function () {
             if (displaySeats) displaySeats.innerText = seatsArray.join(", ");
 
             const baseFare = selectedSeats.size * busPrice;
-            const gstFee = Math.round(baseFare * 0.05 + 40 * selectedSeats.size);
+            const gstRate = (typeof window.BUSYATRA_GST_RATE !== 'undefined') ? (window.BUSYATRA_GST_RATE / 100.0) : 0.05;
+            const feePerSeat = (typeof window.BUSYATRA_CONVENIENCE_FEE !== 'undefined') ? window.BUSYATRA_CONVENIENCE_FEE : 20;
+            const gstFee = Math.round(baseFare * gstRate + feePerSeat * selectedSeats.size);
+
+
 
             let discountValue = 0;
             if (activeCoupon === "BUSYATRA100") {
@@ -589,7 +593,11 @@ document.addEventListener("DOMContentLoaded", function () {
             }
 
             const baseFare = selectedSeats.size * busPrice;
-            const gstFee = Math.round(baseFare * 0.05 + 40 * selectedSeats.size);
+            const gstRate = (typeof window.BUSYATRA_GST_RATE !== 'undefined') ? (window.BUSYATRA_GST_RATE / 100.0) : 0.05;
+            const feePerSeat = (typeof window.BUSYATRA_CONVENIENCE_FEE !== 'undefined') ? window.BUSYATRA_CONVENIENCE_FEE : 20;
+            const gstFee = Math.round(baseFare * gstRate + feePerSeat * selectedSeats.size);
+
+
             let discountValue = 0;
             if (activeCoupon === "BUSYATRA100") discountValue = 100;
             if (activeCoupon === "YATRA150") discountValue = 150;

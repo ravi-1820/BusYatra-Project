@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, JsonResponse, HttpResponseForbidden
-from .models import User, Bus, Booking, Route, SeatBooking, Schedule, Contact, Review
+from .models import User, Bus, Booking, Route, SeatBooking, Schedule, Contact, Review, SystemSettings
 from django.contrib import messages
 from django.core.mail import send_mail
 from django.conf import settings
@@ -14,7 +14,9 @@ import razorpay
 import json
 import logging
 import uuid
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
+from decimal import Decimal
+
 
 # Reportlab imports for PDF ticket generation
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
@@ -224,14 +226,17 @@ def get_booked_seats(bus, travel_date):
 
 def calculate_payment_summary(bookings):
     try:
+        sys_settings = SystemSettings.get_settings()
         subtotal = sum(booking.amount for booking in bookings)
-        gst_fees = int((subtotal * 5) / 100)
-        convenience_fee = 40 * len(bookings)
+        gst_fees = int((subtotal * sys_settings.gst_percentage) / 100)
+        convenience_fee = int(sys_settings.convenience_fee) * len(bookings)
         total_price = subtotal + gst_fees + convenience_fee
         return subtotal, gst_fees, convenience_fee, total_price
     except Exception as e:
         logger.error(f"Error calculating payment summary: {e}")
         return 0, 0, 0, 0
+
+
 
 def make_passenger_dict(booking):
     try:
@@ -558,8 +563,9 @@ def register(request):
             )
 
             # Send welcome email notification
-            welcome_subject = "Welcome to BusYatra"
-            welcome_message = f"Hello {name},\nWelcome to BusYatra!\nYour account has been created successfully For BusYatra.\nLogin Email: {email}\nRegards,\nBusYatra Team"
+            sys_settings = SystemSettings.get_settings()
+            welcome_subject = f"Welcome to {sys_settings.app_name}"
+            welcome_message = f"Hello {name},\nWelcome to {sys_settings.app_name}!\nYour account has been created successfully.\nA welcome bonus of Rs. {sys_settings.welcome_bonus:g} has been added to your wallet!\nLogin Email: {email}\nRegards,\n{sys_settings.app_name} Team"
             try:
                 send_mail(
                     welcome_subject,
@@ -570,6 +576,7 @@ def register(request):
                 )
             except Exception as mail_err:
                 logger.error(f"Welcome email could not be sent to {email}: {mail_err}")
+
 
             success_msg = "Registration completed successfully. You can now log in."
             return render(request, "register.html", {"msg1": success_msg})
@@ -1614,10 +1621,12 @@ def generate_ticket_pdf_bytes(bookings):
     book_badge = make_badge(booking_status_str, 'success' if booking_status_str in ['BOOKED', 'SUCCESS', 'COMPLETED'] else 'danger')
 
     payment_id_val = first_b.payment_id or "N/A"
+    sys_settings = SystemSettings.get_settings()
     subtotal = sum(b.amount for b in bookings)
-    gst_fees = int((subtotal * 5) / 100)
-    convenience_fee = 40 * len(bookings)
+    gst_fees = int((subtotal * sys_settings.gst_percentage) / 100)
+    convenience_fee = int(sys_settings.convenience_fee) * len(bookings)
     total_amount = subtotal + gst_fees + convenience_fee
+
 
     payment_data = [
         [Paragraph("<b>Payment ID:</b>", label_style), Paragraph(payment_id_val, value_style), Paragraph("<b>Payment Status:</b>", label_style), pay_badge],
@@ -3505,14 +3514,114 @@ def admin_reports(request):
         return redirect('login')
 
 def admin_settings(request):
-    try:
-        admin = get_admin_user(request)
-        if not admin:
-            return redirect('login')
-        return render(request, 'admin-settings.html', {'login_user': admin})
-    except Exception as e:
-        logger.error(f"Error in admin settings view: {e}")
+    admin = get_admin_user(request)
+    if not admin:
         return redirect('login')
+
+    sys_settings = SystemSettings.get_settings()
+
+    if request.method == 'POST':
+        try:
+            app_name = request.POST.get('app_name', 'BusYatra').strip()
+            currency = request.POST.get('currency', 'INR (₹)').strip()
+            welcome_bonus = Decimal(request.POST.get('welcome_bonus', '100'))
+            cashback_percentage = Decimal(request.POST.get('cashback_percentage', '10'))
+            gst_percentage = Decimal(request.POST.get('gst_percentage', '5'))
+            convenience_fee = Decimal(request.POST.get('convenience_fee', '20'))
+            full_refund_hours = int(request.POST.get('full_refund_hours', '24'))
+            half_refund_hours = int(request.POST.get('half_refund_hours', '12'))
+            maintenance_mode = request.POST.get('maintenance_mode') == 'on'
+
+            if cashback_percentage < 0 or cashback_percentage > 100:
+                messages.error(request, 'Wallet Cashback Percentage must be between 0% and 100%.')
+                return redirect('admin_settings')
+
+            if gst_percentage < 0 or gst_percentage > 100:
+                messages.error(request, 'Booking GST Rate must be between 0% and 100%.')
+                return redirect('admin_settings')
+
+            if convenience_fee < 0:
+                messages.error(request, 'Convenience Fee cannot be negative.')
+                return redirect('admin_settings')
+
+            if full_refund_hours <= 0:
+                messages.error(request, '100% Refund Threshold hours must be greater than 0.')
+                return redirect('admin_settings')
+
+            if half_refund_hours < 0:
+                messages.error(request, '50% Refund Threshold hours cannot be negative.')
+                return redirect('admin_settings')
+
+            if half_refund_hours > full_refund_hours:
+                messages.error(request, '50% Refund Threshold hours cannot be greater than 100% Refund Threshold hours.')
+                return redirect('admin_settings')
+
+            sys_settings.app_name = app_name
+            sys_settings.currency = currency
+            sys_settings.welcome_bonus = welcome_bonus
+            sys_settings.cashback_percentage = cashback_percentage
+            sys_settings.gst_percentage = gst_percentage
+            sys_settings.convenience_fee = convenience_fee
+            sys_settings.full_refund_hours = full_refund_hours
+            sys_settings.half_refund_hours = half_refund_hours
+            sys_settings.maintenance_mode = maintenance_mode
+            sys_settings.save()
+
+
+            messages.success(request, 'Global configuration saved successfully.')
+            return redirect('admin_settings')
+        except Exception as e:
+            logger.error(f"Error saving admin settings: {e}")
+            messages.error(request, 'Invalid values submitted. Please check inputs and try again.')
+            return redirect('admin_settings')
+
+    return render(request, 'admin-settings.html', {
+        'login_user': admin,
+        'sys_settings': sys_settings
+    })
+
+
+def cancel_booking(request, booking_id):
+    customer = get_customer_user(request)
+    if not customer:
+        messages.error(request, "Please log in to cancel a booking.")
+        return redirect('login')
+
+    try:
+        booking = Booking.objects.select_related('bus', 'user').get(id=booking_id, user=customer)
+        if booking.status == 'cancelled':
+            messages.warning(request, "This booking is already cancelled.", extra_tags='customer_review')
+            return redirect('/my-orders/?tab=cancelled')
+
+        sys_settings = SystemSettings.get_settings()
+
+        departure_dt = datetime.combine(booking.travel_date, booking.bus.departure_time)
+        now_dt = datetime.now()
+        hours_diff = (departure_dt - now_dt).total_seconds() / 3600.0
+
+        if hours_diff >= sys_settings.full_refund_hours:
+            refund_pct = 100
+        elif hours_diff >= sys_settings.half_refund_hours:
+            refund_pct = 50
+        else:
+            refund_pct = 0
+
+        refund_amount = (booking.amount * Decimal(refund_pct)) / Decimal('100')
+
+        booking.status = 'cancelled'
+        booking.booking_status = 'cancelled'
+        booking.save()
+
+        SeatBooking.objects.filter(booking=booking).delete()
+
+        msg = f"Ticket #{booking.id} cancelled successfully. Refund: {refund_pct}% (₹{refund_amount:.2f})."
+        messages.success(request, msg, extra_tags='customer_review')
+        return redirect('/my-orders/?tab=cancelled')
+    except Booking.DoesNotExist:
+        messages.error(request, "Booking not found or unauthorized.", extra_tags='customer_review')
+        return redirect('my_orders')
+
+
 
 
 #==========================================================================

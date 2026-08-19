@@ -257,9 +257,10 @@
                         <span class="fw-semibold text-navy-dark" id="rtRetSubtotal">₹0</span>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted small">GST (5%) & Fees:</span>
+                        <span class="text-muted small">GST ({{ sys_settings.gst_percentage|floatformat:0 }}%) & Fees:</span>
                         <span class="fw-semibold text-navy-dark" id="rtTaxes">₹0</span>
                     </div>
+
                     
                     <div class="d-flex justify-content-between align-items-center my-3 bg-light p-3 rounded-4 border">
                         <span class="fw-bold text-navy-dark text-uppercase small">Grand Total</span>
@@ -383,8 +384,12 @@
                 const depSub = rtDepSeats.length * DEP_BUS_FARE;
                 const retSub = rtRetSeats.length * RET_BUS_FARE;
                 const subtotal = depSub + retSub;
-                const gst = Math.round(subtotal * 0.05);
-                const fee = 40 * PASSENGERS_COUNT;
+                const gstRate = parseFloat("{{ sys_settings.gst_percentage|default:'5' }}") / 100.0;
+                const gst = Math.round(subtotal * gstRate);
+                const feeRate = (typeof window.BUSYATRA_CONVENIENCE_FEE !== 'undefined') ? window.BUSYATRA_CONVENIENCE_FEE : 20;
+                const fee = feeRate * PASSENGERS_COUNT;
+
+
                 const grandTotal = subtotal + gst + fee;
 
                 document.getElementById("rtDepSubtotal").textContent = "₹" + depSub;
@@ -510,9 +515,15 @@
     </div>
 </div>
 
+<script>
+window.BUSYATRA_GST_RATE = parseFloat("{{ sys_settings.gst_percentage|default:'5' }}");
+window.BUSYATRA_CONVENIENCE_FEE = parseFloat("{{ sys_settings.convenience_fee|default:'20' }}");
+</script>
+
 <div class="custom-alert-toast" id="customToast">
     <i class="bi bi-exclamation-triangle-fill text-warning fs-5"></i>
     <span id="toastMsg" class="small fw-bold"></span>
+
 </div>
 
 {% endblock %}
