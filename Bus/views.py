@@ -1560,19 +1560,24 @@ def generate_ticket_pdf_bytes(bookings):
             f"Payment: {p_stat}\n"
             f"Booking: {b_stat}"
         )
-        qr = qrcode.QRCode(version=1, box_size=3, border=1)
-        qr.add_data(q_data)
-        qr.make(fit=True)
-        qr_img = qr.make_image(fill_color="#0F172A", back_color="white")
-        qr_buf = BytesIO()
-        qr_img.save(qr_buf, format="PNG")
-        qr_buf.seek(0)
-        qr_flow = Image(qr_buf, width=95, height=95)
+        try:
+            qr = qrcode.QRCode(version=1, box_size=3, border=1)
+            qr.add_data(q_data)
+            qr.make(fit=True)
+            qr_img = qr.make_image(fill_color="#0F172A", back_color="white")
+            qr_buf = BytesIO()
+            qr_img.save(qr_buf, format="PNG")
+            qr_buf.seek(0)
+            qr_flow = Image(qr_buf, width=95, height=95)
+        except Exception as qr_err:
+            logger.warning(f"QR code generation failed: {qr_err}")
+            qr_flow = Paragraph(f"<b>Ticket #{first_b.id}</b>", label_style)
 
         j_right = [
             [qr_flow],
             [Paragraph("Show QR while Boarding", qr_text_style)]
         ]
+
         j_right_tbl = Table(j_right, colWidths=[150])
         j_right_tbl.setStyle(TableStyle([
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
@@ -1805,7 +1810,8 @@ def download_ticket_pdf(request):
         return response
     except Exception as e:
         logger.error(f"PDF Download Error: {e}")
-        return HttpResponse("Error generating PDF")
+        return HttpResponse(f"Error generating PDF: {e}")
+
 
 #==========================================================================
 #    Manager Views
