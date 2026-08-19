@@ -425,7 +425,8 @@ def index(request):
         return render(request, 'index.html', context)
     except Exception as e:
         logger.error(f"Error loading homepage: {e}")
-        return HttpResponse("An error occurred loading the home page.")
+        return HttpResponse(f"An error occurred loading the home page: {e}")
+
 
 
 def about(request):
