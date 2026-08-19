@@ -6,12 +6,17 @@
     var IS_ROUND_TRIP = true;
     var DEP_BUS_ID = "{{ dep_bus.id }}";
     var RET_BUS_ID = "{{ ret_bus.id }}";
+    var DEP_BUS_TYPE = "{{ dep_bus.bus_type|escapejs }}";
+    var RET_BUS_TYPE = "{{ ret_bus.bus_type|escapejs }}";
+    var IS_DEP_SLEEPER = DEP_BUS_TYPE.toLowerCase().indexOf("sleeper") !== -1;
+    var IS_RET_SLEEPER = RET_BUS_TYPE.toLowerCase().indexOf("sleeper") !== -1;
     var DEP_BUS_FARE = parseFloat("{{ dep_bus.fare }}") || 0;
     var RET_BUS_FARE = parseFloat("{{ ret_bus.fare }}") || 0;
     var PASSENGERS_COUNT = parseInt("{{ passengers_count }}") || 1;
     var DEP_BOOKED_SEATS = {{ dep_booked_seats|safe }};
     var RET_BOOKED_SEATS = {{ ret_booked_seats|safe }};
     {% else %}
+
     var IS_ROUND_TRIP = false;
     sessionStorage.setItem("selectedBusName", "{{ bus.bus_name|escapejs }}");
     sessionStorage.setItem("selectedBusType", "{{ bus.bus_type|escapejs }}");
@@ -117,6 +122,46 @@
         color: var(--seat-occupied-text) !important;
         cursor: not-allowed;
     }
+    .bus-seat.sleeper-vertical {
+        width: 40px;
+        height: 65px;
+        border-radius: 10px;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding-top: 8px;
+    }
+    .bus-seat.sleeper-vertical::after {
+        content: '';
+        position: absolute;
+        top: 5px;
+        left: 5px;
+        right: 5px;
+        height: 10px;
+        border-radius: 4px;
+        background: rgba(0, 0, 0, 0.1);
+    }
+    .bus-seat.sleeper-vertical.selected::after {
+        background: rgba(255, 255, 255, 0.35);
+    }
+    .legend-grid {
+        display: flex;
+        justify-content: center;
+        gap: 1.5rem;
+        margin-top: 1.5rem;
+        padding-top: 1rem;
+        border-top: 1px dashed #e2e8f0;
+    }
+    .legend-pill {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #475569;
+    }
+
     .glass-checkout-card {
         background: var(--glass-bg);
         border: 1px solid var(--glass-border);
@@ -201,10 +246,15 @@
                     <!-- 1. DEPARTURE SEATS -->
                     <div class="seat-selection-card">
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h5 class="fw-bold text-navy-dark mb-0">
-                                <span class="badge bg-primary me-2">1</span>Departure Seats ({{ dep_bus.bus_name }})
+                            <h5 class="fw-bold text-navy-dark mb-0 d-flex align-items-center gap-2 flex-wrap">
+                                <span class="badge bg-primary">1</span>Departure Seats ({{ dep_bus.bus_name }})
+                                <span class="badge bg-light text-primary border px-2 py-1 rounded-pill small">{{ dep_bus.bus_type }}</span>
                             </h5>
                             <span class="small fw-bold text-primary" id="rtDepCountLabel">Selected: 0 / {{ passengers_count }}</span>
+                        </div>
+                        <div class="deck-tab-container d-none mb-3" id="rtDepDeckSelector">
+                            <button type="button" class="deck-tab-btn active" id="rtDepLowerBtn" onclick="switchRtDepDeck('lower')">Lower Deck</button>
+                            <button type="button" class="deck-tab-btn" id="rtDepUpperBtn" onclick="switchRtDepDeck('upper')">Upper Deck</button>
                         </div>
                         <div class="cabin-layout shadow-sm mb-3">
                             <div class="cabin-steering">
@@ -218,10 +268,15 @@
                     <!-- 2. RETURN SEATS -->
                     <div class="seat-selection-card">
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h5 class="fw-bold text-navy-dark mb-0">
-                                <span class="badge bg-success me-2">2</span>Return Seats ({{ ret_bus.bus_name }})
+                            <h5 class="fw-bold text-navy-dark mb-0 d-flex align-items-center gap-2 flex-wrap">
+                                <span class="badge bg-success">2</span>Return Seats ({{ ret_bus.bus_name }})
+                                <span class="badge bg-light text-success border px-2 py-1 rounded-pill small">{{ ret_bus.bus_type }}</span>
                             </h5>
                             <span class="small fw-bold text-success" id="rtRetCountLabel">Selected: 0 / {{ passengers_count }}</span>
+                        </div>
+                        <div class="deck-tab-container d-none mb-3" id="rtRetDeckSelector">
+                            <button type="button" class="deck-tab-btn active" id="rtRetLowerBtn" onclick="switchRtRetDeck('lower')">Lower Deck</button>
+                            <button type="button" class="deck-tab-btn" id="rtRetUpperBtn" onclick="switchRtRetDeck('upper')">Upper Deck</button>
                         </div>
                         <div class="cabin-layout shadow-sm mb-3">
                             <div class="cabin-steering">
@@ -231,6 +286,7 @@
                             <div class="grid-container" id="rtRetCabinGrid"></div>
                         </div>
                     </div>
+
 
                 </div>
             </div>
@@ -315,54 +371,89 @@
         </div>
 
         <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            const rtDepSeats = [];
-            const rtRetSeats = [];
+        let rtDepCurrentDeck = "lower";
+        let rtRetCurrentDeck = "lower";
 
+        const rtDepSeats = [];
+        const rtRetSeats = [];
+
+        window.switchRtDepDeck = function(deck) {
+            rtDepCurrentDeck = deck;
+            const lowerBtn = document.getElementById("rtDepLowerBtn");
+            const upperBtn = document.getElementById("rtDepUpperBtn");
+            if (lowerBtn) lowerBtn.classList.toggle("active", deck === "lower");
+            if (upperBtn) upperBtn.classList.toggle("active", deck === "upper");
+            renderRtDepGrid();
+        };
+
+        window.switchRtRetDeck = function(deck) {
+            rtRetCurrentDeck = deck;
+            const lowerBtn = document.getElementById("rtRetLowerBtn");
+            const upperBtn = document.getElementById("rtRetUpperBtn");
+            if (lowerBtn) lowerBtn.classList.toggle("active", deck === "lower");
+            if (upperBtn) upperBtn.classList.toggle("active", deck === "upper");
+            renderRtRetGrid();
+        };
+
+        function renderRtDepGrid() {
             const depGrid = document.getElementById("rtDepCabinGrid");
-            const retGrid = document.getElementById("rtRetCabinGrid");
+            if (!depGrid) return;
+            createRtGrid(depGrid, IS_DEP_SLEEPER, rtDepCurrentDeck, DEP_BOOKED_SEATS, rtDepSeats);
+        }
 
-            function createGrid(container, prefix, bookedList, selectedArr, countLabelId, seatsTextId) {
-                if (!container) return;
-                container.innerHTML = "";
+        function renderRtRetGrid() {
+            const retGrid = document.getElementById("rtRetCabinGrid");
+            if (!retGrid) return;
+            createRtGrid(retGrid, IS_RET_SLEEPER, rtRetCurrentDeck, RET_BOOKED_SEATS, rtRetSeats);
+        }
+
+        function createRtGrid(container, isSleeper, activeDeck, bookedList, selectedArr) {
+            if (!container) return;
+            container.innerHTML = "";
+
+            if (isSleeper) {
+                const deckPrefix = (activeDeck === "lower") ? "L" : "U";
                 for (let r = 1; r <= 6; r++) {
                     const row = document.createElement("div");
                     row.className = "seat-row-custom";
 
-                    const seatsInRow = ["S" + (4*r - 3), "S" + (4*r - 2), "S" + (4*r - 1), "S" + (4*r)];
-                    
+                    const code1 = deckPrefix + (3 * r - 2);
+                    const code2 = deckPrefix + (3 * r - 1);
+                    const code3 = deckPrefix + (3 * r);
+
                     const g1 = document.createElement("div"); g1.className = "seat-pair";
+                    g1.appendChild(createRtSeatNode(code1, true, bookedList, selectedArr));
+
                     const gap = document.createElement("div"); gap.className = "seat-gap";
+
                     const g2 = document.createElement("div"); g2.className = "seat-pair";
+                    g2.appendChild(createRtSeatNode(code2, true, bookedList, selectedArr));
+                    g2.appendChild(createRtSeatNode(code3, true, bookedList, selectedArr));
 
-                    seatsInRow.forEach((code, idx) => {
-                        const seat = document.createElement("div");
-                        seat.className = "bus-seat";
-                        seat.textContent = code;
-                        
-                        if (bookedList.includes(code)) {
-                            seat.classList.add("occupied");
-                        } else {
-                            seat.addEventListener("click", function() {
-                                const pos = selectedArr.indexOf(code);
-                                if (pos > -1) {
-                                    selectedArr.splice(pos, 1);
-                                    seat.classList.remove("selected");
-                                } else {
-                                    if (selectedArr.length >= PASSENGERS_COUNT) {
-                                        alert("You can only select " + PASSENGERS_COUNT + " seat(s) for this journey!");
-                                        return;
-                                    }
-                                    selectedArr.push(code);
-                                    seat.classList.add("selected");
-                                }
-                                updateSummary();
-                            });
-                        }
+                    row.appendChild(g1);
+                    row.appendChild(gap);
+                    row.appendChild(g2);
+                    container.appendChild(row);
+                }
+            } else {
+                for (let r = 1; r <= 6; r++) {
+                    const row = document.createElement("div");
+                    row.className = "seat-row-custom";
 
-                        if (idx < 2) g1.appendChild(seat);
-                        else g2.appendChild(seat);
-                    });
+                    const code1 = "S" + (4 * r - 3);
+                    const code2 = "S" + (4 * r - 2);
+                    const code3 = "S" + (4 * r - 1);
+                    const code4 = "S" + (4 * r);
+
+                    const g1 = document.createElement("div"); g1.className = "seat-pair";
+                    g1.appendChild(createRtSeatNode(code1, false, bookedList, selectedArr));
+                    g1.appendChild(createRtSeatNode(code2, false, bookedList, selectedArr));
+
+                    const gap = document.createElement("div"); gap.className = "seat-gap";
+
+                    const g2 = document.createElement("div"); g2.className = "seat-pair";
+                    g2.appendChild(createRtSeatNode(code3, false, bookedList, selectedArr));
+                    g2.appendChild(createRtSeatNode(code4, false, bookedList, selectedArr));
 
                     row.appendChild(g1);
                     row.appendChild(gap);
@@ -370,45 +461,89 @@
                     container.appendChild(row);
                 }
             }
+        }
 
-            function updateSummary() {
-                document.getElementById("rtDepSeatsText").textContent = rtDepSeats.length ? rtDepSeats.join(", ") : "None";
-                document.getElementById("rtRetSeatsText").textContent = rtRetSeats.length ? rtRetSeats.join(", ") : "None";
-                
-                document.getElementById("rtDepCountLabel").textContent = "Selected: " + rtDepSeats.length + " / " + PASSENGERS_COUNT;
-                document.getElementById("rtRetCountLabel").textContent = "Selected: " + rtRetSeats.length + " / " + PASSENGERS_COUNT;
+        function createRtSeatNode(code, isSleeper, bookedList, selectedArr) {
+            const seat = document.createElement("div");
+            seat.className = "bus-seat";
+            if (isSleeper) {
+                seat.classList.add("sleeper-vertical");
+            }
+            seat.textContent = code;
 
-                document.getElementById("rtDepSelectedInput").value = rtDepSeats.join(",");
-                document.getElementById("rtRetSelectedInput").value = rtRetSeats.join(",");
-
-                const depSub = rtDepSeats.length * DEP_BUS_FARE;
-                const retSub = rtRetSeats.length * RET_BUS_FARE;
-                const subtotal = depSub + retSub;
-                const gstRate = parseFloat("{{ sys_settings.gst_percentage|default:'5' }}") / 100.0;
-                const gst = Math.round(subtotal * gstRate);
-                const feeRate = (typeof window.BUSYATRA_CONVENIENCE_FEE !== 'undefined') ? window.BUSYATRA_CONVENIENCE_FEE : 20;
-                const fee = feeRate * PASSENGERS_COUNT;
-
-
-                const grandTotal = subtotal + gst + fee;
-
-                document.getElementById("rtDepSubtotal").textContent = "₹" + depSub;
-                document.getElementById("rtRetSubtotal").textContent = "₹" + retSub;
-                document.getElementById("rtTaxes").textContent = "₹" + (gst + fee);
-                document.getElementById("rtGrandTotal").textContent = "₹" + grandTotal;
-
-                const submitBtn = document.getElementById("rtSubmitBtn");
-                if (rtDepSeats.length === PASSENGERS_COUNT && rtRetSeats.length === PASSENGERS_COUNT) {
-                    submitBtn.disabled = false;
-                } else {
-                    submitBtn.disabled = true;
+            if (bookedList.includes(code)) {
+                seat.classList.add("occupied");
+            } else {
+                if (selectedArr.includes(code)) {
+                    seat.classList.add("selected");
                 }
+                seat.addEventListener("click", function() {
+                    const pos = selectedArr.indexOf(code);
+                    if (pos > -1) {
+                        selectedArr.splice(pos, 1);
+                        seat.classList.remove("selected");
+                    } else {
+                        if (selectedArr.length >= PASSENGERS_COUNT) {
+                            alert("You can only select " + PASSENGERS_COUNT + " seat(s) for this journey!");
+                            return;
+                        }
+                        selectedArr.push(code);
+                        seat.classList.add("selected");
+                    }
+                    updateSummary();
+                });
+            }
+            return seat;
+        }
+
+        function updateSummary() {
+            document.getElementById("rtDepSeatsText").textContent = rtDepSeats.length ? rtDepSeats.join(", ") : "None";
+            document.getElementById("rtRetSeatsText").textContent = rtRetSeats.length ? rtRetSeats.join(", ") : "None";
+            
+            document.getElementById("rtDepCountLabel").textContent = "Selected: " + rtDepSeats.length + " / " + PASSENGERS_COUNT;
+            document.getElementById("rtRetCountLabel").textContent = "Selected: " + rtRetSeats.length + " / " + PASSENGERS_COUNT;
+
+            document.getElementById("rtDepSelectedInput").value = rtDepSeats.join(",");
+            document.getElementById("rtRetSelectedInput").value = rtRetSeats.join(",");
+
+            const depSub = rtDepSeats.length * DEP_BUS_FARE;
+            const retSub = rtRetSeats.length * RET_BUS_FARE;
+            const subtotal = depSub + retSub;
+            const gstRate = parseFloat("{{ sys_settings.gst_percentage|default:'5' }}") / 100.0;
+            const gst = Math.round(subtotal * gstRate);
+            const feeRate = (typeof window.BUSYATRA_CONVENIENCE_FEE !== 'undefined') ? window.BUSYATRA_CONVENIENCE_FEE : 20;
+            const fee = feeRate * PASSENGERS_COUNT;
+
+            const grandTotal = subtotal + gst + fee;
+
+            document.getElementById("rtDepSubtotal").textContent = "₹" + depSub;
+            document.getElementById("rtRetSubtotal").textContent = "₹" + retSub;
+            document.getElementById("rtTaxes").textContent = "₹" + (gst + fee);
+            document.getElementById("rtGrandTotal").textContent = "₹" + grandTotal;
+
+            const submitBtn = document.getElementById("rtSubmitBtn");
+            if (rtDepSeats.length === PASSENGERS_COUNT && rtRetSeats.length === PASSENGERS_COUNT) {
+                submitBtn.disabled = false;
+            } else {
+                submitBtn.disabled = true;
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            if (IS_DEP_SLEEPER) {
+                const selector = document.getElementById("rtDepDeckSelector");
+                if (selector) selector.classList.remove("d-none");
+            }
+            if (IS_RET_SLEEPER) {
+                const selector = document.getElementById("rtRetDeckSelector");
+                if (selector) selector.classList.remove("d-none");
             }
 
-            createGrid(depGrid, "dep", DEP_BOOKED_SEATS, rtDepSeats, "rtDepCountLabel", "rtDepSeatsText");
-            createGrid(retGrid, "ret", RET_BOOKED_SEATS, rtRetSeats, "rtRetCountLabel", "rtRetSeatsText");
+            renderRtDepGrid();
+            renderRtRetGrid();
         });
         </script>
+
 
         {% else %}
 
