@@ -224,5 +224,92 @@
             </div>
         </div>
     </div>
+
+    <!-- Ratings & Reviews Section -->
+    <div class="card border-0 shadow-sm rounded-4 mt-4 overflow-hidden" style="border: 1px solid var(--gray-border) !important;">
+        <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+            <h5 class="mb-0 fw-bold text-navy-dark d-flex align-items-center gap-2">
+                <i class="bi bi-star-fill text-warning"></i> Passenger Ratings & Reviews
+            </h5>
+            <span class="badge bg-light text-dark border px-3 py-1.5 rounded-pill">
+                {{ total_reviews }} Review{% if total_reviews != 1 %}s{% endif %}
+            </span>
+        </div>
+        <div class="card-body p-4">
+            {% if total_reviews > 0 %}
+                <div class="row g-4 align-items-center border-bottom pb-4 mb-4">
+                    <!-- Rating Score Overview -->
+                    <div class="col-md-4 text-center border-end-md">
+                        <h1 class="display-3 fw-bold text-navy-dark mb-0">{{ avg_rating }}<span class="fs-4 text-warning ms-1">★</span></h1>
+                        <div class="text-warning mb-2 fs-5">
+                            {% for i in "12345" %}
+                                {% if forloop.counter <= avg_rating %}
+                                    <i class="bi bi-star-fill"></i>
+                                {% elif forloop.counter|add:"-0.5" <= avg_rating %}
+                                    <i class="bi bi-star-half"></i>
+                                {% else %}
+                                    <i class="bi bi-star text-muted opacity-25"></i>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        <span class="text-muted small">Based on {{ total_reviews }} verified passenger review{% if total_reviews != 1 %}s{% endif %}</span>
+                    </div>
+
+                    <!-- Rating Distribution Progress Bars -->
+                    <div class="col-md-8">
+                        <div class="d-flex flex-column gap-2">
+                            {% for item in star_breakdown %}
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="text-muted small fw-semibold" style="width: 50px;">{{ item.stars }} ★</div>
+                                    <div class="progress flex-grow-1" style="height: 10px; border-radius: 5px;">
+                                        <div class="progress-bar bg-warning" role="progressbar" style="width: {{ item.pct }}%;" aria-valuenow="{{ item.pct }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                    <div class="text-muted small text-end" style="width: 40px;">{{ item.count }}</div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Customer Reviews List -->
+                <h6 class="fw-bold text-navy-dark mb-3">Customer Feedback</h6>
+                <div class="d-flex flex-column gap-3">
+                    {% for review in reviews %}
+                        <div class="p-3 border rounded-3 shadow-sm" style="background-color: #f8fafc;">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold shadow-sm" style="width: 38px; height: 38px; font-size: 0.9rem;">
+                                        {{ review.user.name|slice:":1"|upper }}
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0 fw-bold text-navy-dark">{{ review.user.name }}</h6>
+                                        <div class="text-warning small">
+                                            {% for i in "12345" %}
+                                                {% if forloop.counter <= review.rating %}
+                                                    <i class="bi bi-star-fill"></i>
+                                                {% else %}
+                                                    <i class="bi bi-star text-muted opacity-25"></i>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                                <small class="text-muted"><i class="bi bi-clock me-1"></i>{{ review.created_at|timesince }} ago</small>
+                            </div>
+                            <p class="mb-0 text-dark opacity-90 small ps-1" style="line-height: 1.5;">
+                                {{ review.comment }}
+                            </p>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="bi bi-chat-square-quote text-muted fs-1 mb-2 d-block"></i>
+                    <h6 class="text-navy-dark fw-bold mb-1">No Reviews Yet</h6>
+                    <p class="text-muted small mb-0">Be the first passenger to complete a journey on this bus and leave a review!</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
 </div>
-{% endblock %}
+{% endblock %}

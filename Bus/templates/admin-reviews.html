@@ -1,0 +1,277 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage All Reviews - BusYatra Admin</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="{% static 'assets/images/favicon.svg' %}">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css" rel="stylesheet">
+    <!-- Custom Style Sheet -->
+    <link rel="stylesheet" href="{% static 'assets/css/style.css' %}">
+</head>
+
+<body>
+
+    <div class="admin-wrapper">
+        <!-- Sidebar Navigation -->
+        <nav class="admin-sidebar">
+            <div class="sidebar-header">
+                <span class="fs-6 text-warning ms-1 opacity-75">Admin System</span>
+            </div>
+            <div class="nav flex-column mt-3">
+                <a href="{% url 'admin_dashboard' %}" class="nav-link"><i class="bi bi-speedometer2"></i>Dashboard</a>
+                <a href="{% url 'admin_users' %}" class="nav-link"><i class="bi bi-person"></i>Manage Customers</a>
+                <a href="{% url 'admin_managers' %}" class="nav-link"><i class="bi bi-people"></i>Manage Managers</a>
+                <a href="{% url 'admin_buses' %}" class="nav-link"><i class="bi bi-bus-front"></i>Manage Buses</a>
+                <a href="{% url 'admin_routes' %}" class="nav-link"><i class="bi bi-signpost-split"></i>Manage Routes</a>
+                <a href="{% url 'admin_schedules' %}" class="nav-link"><i class="bi bi-calendar-event"></i>Manage Schedules</a>
+                <a href="{% url 'admin_bookings' %}" class="nav-link"><i class="bi bi-card-list"></i>Manage Bookings</a>
+                <a href="{% url 'admin_payments' %}" class="nav-link"><i class="bi bi-credit-card"></i>Manage Payments</a>
+                <a href="{% url 'admin_reviews' %}" class="nav-link active"><i class="bi bi-star"></i>Manage Reviews</a>
+                <a href="{% url 'admin_settings' %}" class="nav-link"><i class="bi bi-gear"></i>Settings</a>
+                <hr class="text-white opacity-25 my-2 mx-3">
+                <a href="{% url 'admin_profile' %}" class="nav-link"><i class="bi bi-person-circle"></i>My Profile</a>
+                <a href="{% url 'index' %}" class="nav-link"><i class="bi bi-arrow-left-circle"></i>Client View</a>
+                <a href="{% url 'logout' %}" class="nav-link text-danger mt-auto"><i class="bi bi-box-arrow-left"></i>Logout</a>
+            </div>
+        </nav>
+
+        <!-- Main Content Panel -->
+        <div class="admin-content d-flex flex-column">
+            <!-- Top Header -->
+            <header class="admin-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 text-navy-dark fw-bold"><i class="bi bi-star-fill text-warning me-2"></i>Platform Reviews Management (Admin)</h5>
+                <div class="user-profile d-flex align-items-center gap-2">
+                    <i class="bi bi-shield-check fs-4 text-warning"></i>
+                    <span class="fw-semibold text-navy-dark small">{{ admin.name }}</span>
+                </div>
+            </header>
+
+            <!-- Dashboard Content Container -->
+            <div class="p-4 flex-grow-1">
+
+                {% if messages %}
+                    {% for message in messages %}
+                        {% if 'customer_review' not in message.tags %}
+                            <div class="alert alert-{% if 'error' in message.tags %}danger{% else %}success{% endif %} alert-dismissible fade show rounded-3 shadow-sm mb-4" role="alert">
+                                <i class="bi bi-check-circle-fill me-2"></i>{{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+
+
+                <!-- Overview Stat Cards -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <span class="text-muted small fw-semibold d-block mb-1">Total System Reviews</span>
+                                    <h3 class="fw-bold text-navy-dark mb-0">{{ total_reviews }}</h3>
+                                </div>
+                                <div class="bg-primary-subtle text-primary p-3 rounded-4">
+                                    <i class="bi bi-chat-left-quote fs-3"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <span class="text-muted small fw-semibold d-block mb-1">Homepage Featured</span>
+                                    <h3 class="fw-bold text-success mb-0">{{ featured_count }}</h3>
+                                </div>
+                                <div class="bg-success-subtle text-success p-3 rounded-4">
+                                    <i class="bi bi-award fs-3"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <span class="text-muted small fw-semibold d-block mb-1">Platform Average Rating</span>
+                                    <h3 class="fw-bold text-warning mb-0">{{ avg_rating }} <small class="fs-6">★</small></h3>
+                                </div>
+                                <div class="bg-warning-subtle text-warning p-3 rounded-4">
+                                    <i class="bi bi-star-fill fs-3"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filter & Search Bar -->
+                <div class="card border-0 shadow-sm rounded-4 mb-4 p-3 bg-white">
+                    <form method="GET" class="row g-2 align-items-center">
+                        <div class="col-md-3">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-light border-0"><i class="bi bi-search"></i></span>
+                                <input type="text" name="q" value="{{ q }}" class="form-control bg-light border-0" placeholder="Search customer, bus or comment...">
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <select name="manager_id" class="form-select form-select-sm bg-light border-0">
+                                <option value="">All Managers</option>
+                                {% for m in all_managers %}
+                                    <option value="{{ m.id }}" {% if manager_id == m.id|stringformat:"s" %}selected{% endif %}>{{ m.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select name="bus_id" class="form-select form-select-sm bg-light border-0">
+                                <option value="">All Buses</option>
+                                {% for bus in all_buses %}
+                                    <option value="{{ bus.id }}" {% if bus_id == bus.id|stringformat:"s" %}selected{% endif %}>{{ bus.bus_name }} ({{ bus.bus_number }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <select name="rating" class="form-select form-select-sm bg-light border-0">
+                                <option value="">All Ratings</option>
+                                <option value="5" {% if rating_filter == '5' %}selected{% endif %}>5 Stars (★★★★★)</option>
+                                <option value="4" {% if rating_filter == '4' %}selected{% endif %}>4 Stars (★★★★☆)</option>
+                                <option value="3" {% if rating_filter == '3' %}selected{% endif %}>3 Stars (★★★☆☆)</option>
+                                <option value="2" {% if rating_filter == '2' %}selected{% endif %}>2 Stars (★★☆☆☆)</option>
+                                <option value="1" {% if rating_filter == '1' %}selected{% endif %}>1 Star (★☆☆☆☆)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2 d-flex gap-1">
+                            <select name="featured" class="form-select form-select-sm bg-light border-0">
+                                <option value="">All Statuses</option>
+                                <option value="1" {% if featured_filter == '1' %}selected{% endif %}>Featured</option>
+                                <option value="0" {% if featured_filter == '0' %}selected{% endif %}>Non-Featured</option>
+                            </select>
+                            <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-filter"></i></button>
+                            {% if q or manager_id or bus_id or rating_filter or featured_filter %}
+                                <a href="{% url 'admin_reviews' %}" class="btn btn-sm btn-outline-secondary" title="Reset Filters"><i class="bi bi-x-circle"></i></a>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Reviews List Table -->
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr class="text-muted small">
+                                    <th class="ps-4">Passenger</th>
+                                    <th>Bus & Operator</th>
+                                    <th>Rating</th>
+                                    <th>Review Comment</th>
+                                    <th>Date</th>
+                                    <th>Homepage Status</th>
+                                    <th class="text-end pe-4">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for rev in page_obj %}
+                                    <tr>
+                                        <td class="ps-4">
+                                            <div class="fw-bold text-navy-dark">{{ rev.user.name }}</div>
+                                            <small class="text-muted">{{ rev.user.email }}</small>
+                                        </td>
+                                        <td>
+                                            <div class="fw-semibold text-navy-dark">{{ rev.bus.bus_name }} ({{ rev.bus.bus_number }})</div>
+                                            <small class="text-muted"><i class="bi bi-person me-1"></i>{{ rev.bus.manager.name|default:"Unassigned" }}</small>
+                                        </td>
+                                        <td>
+                                            <div class="text-warning fw-bold">
+                                                {% for i in "12345" %}
+                                                    {% if forloop.counter <= rev.rating %}
+                                                        <i class="bi bi-star-fill"></i>
+                                                    {% else %}
+                                                        <i class="bi bi-star text-muted opacity-25"></i>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </div>
+                                            <small class="text-muted fw-semibold">{{ rev.rating }}.0 / 5.0</small>
+                                        </td>
+                                        <td style="max-width: 280px;">
+                                            <p class="mb-0 text-dark small fst-italic text-truncate" title="{{ rev.comment }}">
+                                                "{{ rev.comment }}"
+                                            </p>
+                                        </td>
+                                        <td>
+                                            <span class="small text-muted">{{ rev.created_at|date:"M d, Y" }}</span>
+                                        </td>
+                                        <td>
+                                            {% if rev.is_featured %}
+                                                <span class="badge bg-success-subtle text-success border border-success px-2.5 py-1 rounded-pill"><i class="bi bi-check-circle-fill me-1"></i>Showing on Homepage</span>
+                                            {% else %}
+                                                <span class="badge bg-light text-secondary border px-2.5 py-1 rounded-pill">Hidden</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-end pe-4">
+                                            <div class="d-inline-flex gap-2">
+                                                <a href="{% url 'toggle_feature_review' rev.id %}" class="btn btn-sm {% if rev.is_featured %}btn-success{% else %}btn-outline-warning text-dark{% endif %} rounded-3 fw-semibold">
+                                                    {% if rev.is_featured %}
+                                                        <i class="bi bi-check2-circle me-1"></i>Featured
+                                                    {% else %}
+                                                        <i class="bi bi-star me-1"></i>Show on Homepage
+                                                    {% endif %}
+                                                </a>
+                                                <form action="{% url 'delete_review_management' rev.id %}" method="POST" onsubmit="return confirm('Are you sure you want to delete this review?');" class="d-inline">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-3" title="Delete Review"><i class="bi bi-trash"></i></button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="7" class="text-center p-5 text-muted">
+                                            <i class="bi bi-chat-square-text fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                                            <h6 class="fw-bold">No Customer Reviews Found</h6>
+                                            <p class="small mb-0">No customer reviews match your search/filter criteria.</p>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if page_obj.paginator.num_pages > 1 %}
+                        <div class="card-footer bg-white border-0 py-3">
+                            <nav aria-label="Review pagination">
+                                <ul class="pagination justify-content-center mb-0 pagination-sm">
+                                    {% if page_obj.has_previous %}
+                                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ q }}&manager_id={{ manager_id }}&bus_id={{ bus_id }}&rating={{ rating_filter }}&featured={{ featured_filter }}">&laquo; Previous</a></li>
+                                    {% endif %}
+                                    {% for num in page_obj.paginator.page_range %}
+                                        {% if page_obj.number == num %}
+                                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                            <li class="page-item"><a class="page-link" href="?page={{ num }}&q={{ q }}&manager_id={{ manager_id }}&bus_id={{ bus_id }}&rating={{ rating_filter }}&featured={{ featured_filter }}">{{ num }}</a></li>
+                                        {% endif %}
+                                    {% endfor %}
+                                    {% if page_obj.has_next %}
+                                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ q }}&manager_id={{ manager_id }}&bus_id={{ bus_id }}&rating={{ rating_filter }}&featured={{ featured_filter }}">Next &raquo;</a></li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        </div>
+                    {% endif %}
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

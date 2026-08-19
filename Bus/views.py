@@ -1,11 +1,12 @@
 from django.shortcuts import render, redirect
-from django.http import HttpResponse
-from .models import User, Bus, Booking, Route, SeatBooking, Schedule, Contact
+from django.http import HttpResponse, JsonResponse, HttpResponseForbidden
+from .models import User, Bus, Booking, Route, SeatBooking, Schedule, Contact, Review
+from django.contrib import messages
 from django.core.mail import send_mail
 from django.conf import settings
 from django.views.decorators.csrf import csrf_protect, csrf_exempt
 from django.db import transaction
-from django.db.models import Sum, Count, Q
+from django.db.models import Sum, Count, Q, Avg
 from django.db.models.functions import TruncMonth
 from django.core.paginator import Paginator, Page, EmptyPage, PageNotAnInteger
 import random
@@ -298,12 +299,15 @@ def build_order_groups(bookings):
                     group['dep_bus'] = booking.bus
                     group['dep_date'] = booking.travel_date
                     group['dep_seats'].append(booking.seat_number)
+                    group['dep_booking_id'] = booking.id
                 elif group['dep_bus'].id == booking.bus.id:
                     group['dep_seats'].append(booking.seat_number)
                 else:
                     group['ret_bus'] = booking.bus
                     group['ret_date'] = booking.travel_date
                     group['ret_seats'].append(booking.seat_number)
+                    if not group.get('ret_booking_id'):
+                        group['ret_booking_id'] = booking.id
 
         for group in groups:
             group['seat_numbers_str'] = ", ".join(list(dict.fromkeys(group['seat_numbers'])))
@@ -327,15 +331,16 @@ def split_orders_by_date(groups):
         for group in groups:
             if group['status'] == 'cancelled':
                 cancelled.append(group)
-            elif group['travel_date'] >= today:
-                upcoming.append(group)
-            else:
+            elif group['status'] == 'completed' or group['travel_date'] < today:
                 past.append(group)
+            else:
+                upcoming.append(group)
 
         return upcoming, past, cancelled
     except Exception as e:
         logger.error(f"Error splitting orders: {e}")
         return [], [], []
+
 
 def create_pending_bookings(customer, bus, seats, travel_date, post_data):
     try:
@@ -402,15 +407,21 @@ def index(request):
         routes = Route.objects.all()
         sources = Bus.objects.values_list('source', flat=True).distinct().order_by('source')
         destinations = Bus.objects.values_list('destination', flat=True).distinct().order_by('destination')
+        featured_reviews = Review.objects.filter(
+            is_featured=True, is_active=True
+        ).select_related('user', 'bus').order_by('-created_at')[:6]
+        
         context = {
             'routes': routes,
             'sources': sources,
-            'destinations': destinations
+            'destinations': destinations,
+            'featured_reviews': featured_reviews
         }
         return render(request, 'index.html', context)
     except Exception as e:
         logger.error(f"Error loading homepage: {e}")
         return HttpResponse("An error occurred loading the home page.")
+
 
 def about(request):
     try:
@@ -821,13 +832,44 @@ def bus_detail(request, pk):
     search = get_search_details(request)
     set_live_available_seats([bus], search['travel_date'])
 
+    reviews = Review.objects.filter(bus=bus, is_active=True).select_related('user', 'booking').order_by('-created_at')
+    
+    stats = reviews.aggregate(
+        avg_rating=Avg('rating'),
+        total_reviews=Count('id'),
+        star_5=Count('id', filter=Q(rating=5)),
+        star_4=Count('id', filter=Q(rating=4)),
+        star_3=Count('id', filter=Q(rating=3)),
+        star_2=Count('id', filter=Q(rating=2)),
+        star_1=Count('id', filter=Q(rating=1)),
+    )
+
+    avg_rating = round(stats['avg_rating'], 1) if stats['avg_rating'] else 0.0
+    total_reviews = stats['total_reviews'] or 0
+
+    def get_pct(count):
+        return round((count / total_reviews) * 100) if total_reviews > 0 else 0
+
+    star_breakdown = [
+        {'stars': 5, 'count': stats['star_5'] or 0, 'pct': get_pct(stats['star_5'] or 0)},
+        {'stars': 4, 'count': stats['star_4'] or 0, 'pct': get_pct(stats['star_4'] or 0)},
+        {'stars': 3, 'count': stats['star_3'] or 0, 'pct': get_pct(stats['star_3'] or 0)},
+        {'stars': 2, 'count': stats['star_2'] or 0, 'pct': get_pct(stats['star_2'] or 0)},
+        {'stars': 1, 'count': stats['star_1'] or 0, 'pct': get_pct(stats['star_1'] or 0)},
+    ]
+
     return render(request, 'bus_detail.html', {
         'bus': bus,
         'from_city': search['from_city'],
         'to_city': search['to_city'],
         'travel_date': search['travel_date'],
         'passengers': search['passengers'],
+        'reviews': reviews,
+        'avg_rating': avg_rating,
+        'total_reviews': total_reviews,
+        'star_breakdown': star_breakdown,
     })
+
 
 def seat_booking(request, pk=None):
     customer = get_customer_user(request)
@@ -1019,6 +1061,28 @@ def my_orders(request):
         grouped_bookings = build_order_groups(bookings)
         upcoming, past, cancelled = split_orders_by_date(grouped_bookings)
 
+        # Attach review status to past bookings
+        user_reviews = {r.booking_id: r for r in Review.objects.filter(user=customer)}
+        today_date = date.today()
+
+        for group in past:
+            j_type = group.get('journey_type', 'ONE_WAY')
+            if j_type == 'ROUND_TRIP':
+                dep_id = group.get('dep_booking_id') or group['id']
+                group['dep_booking_id'] = dep_id
+                group['dep_review'] = user_reviews.get(dep_id)
+                group['dep_can_review'] = bool(group['payment'] and group['status'] != 'cancelled' and group.get('dep_date', group['travel_date']) <= today_date and not group['dep_review'])
+
+                ret_id = group.get('ret_booking_id')
+                group['ret_booking_id'] = ret_id
+                group['ret_review'] = user_reviews.get(ret_id) if ret_id else None
+                group['ret_can_review'] = bool(group['payment'] and group['status'] != 'cancelled' and group.get('ret_date') and group['ret_date'] <= today_date and not group['ret_review']) if ret_id else False
+            else:
+                primary_id = group['id']
+                group['primary_booking_id'] = primary_id
+                group['review'] = user_reviews.get(primary_id)
+                group['can_review'] = bool(group['payment'] and group['status'] != 'cancelled' and group['travel_date'] <= today_date and not group['review'])
+
         active_tab = request.GET.get('tab', 'upcoming')
         if active_tab not in ['upcoming', 'past', 'cancelled']:
             active_tab = 'upcoming'
@@ -1056,6 +1120,192 @@ def my_orders(request):
     except Exception as e:
         logger.error(f"My Orders View Error: {e}")
         return HttpResponse("An error occurred loading bookings.")
+
+
+#==========================================================================
+#    Reviews & Ratings Views
+#==========================================================================
+
+def add_review(request, booking_id):
+    customer = get_customer_user(request)
+    if not customer:
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'error': 'Please login to submit a review.'}, status=401)
+        messages.error(request, 'Please login to submit a review.', extra_tags='customer_review')
+        return redirect('login')
+
+    try:
+        booking = Booking.objects.select_related('bus', 'user').get(id=booking_id, user=customer)
+    except Booking.DoesNotExist:
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'error': 'Booking not found or unauthorized.'}, status=404)
+        messages.error(request, 'Booking not found or unauthorized.', extra_tags='customer_review')
+        return redirect('my_orders')
+
+    today_date = date.today()
+
+    if not booking.payment:
+        msg = "Only paid bookings are eligible for review."
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'error': msg}, status=400)
+        messages.error(request, msg, extra_tags='customer_review')
+        return redirect('my_orders')
+
+    if booking.status == 'cancelled':
+        msg = "Cancelled bookings cannot be reviewed."
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'error': msg}, status=400)
+        messages.error(request, msg, extra_tags='customer_review')
+        return redirect('my_orders')
+
+    if booking.travel_date > today_date:
+        msg = "You can only review a booking after completing your journey."
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'error': msg}, status=400)
+        messages.error(request, msg, extra_tags='customer_review')
+        return redirect('my_orders')
+
+    if hasattr(booking, 'review') or Review.objects.filter(booking=booking).exists():
+        msg = "You have already submitted a review for this booking."
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'error': msg}, status=400)
+        messages.error(request, msg, extra_tags='customer_review')
+        return redirect('my_orders')
+
+    if request.method == 'POST':
+        try:
+            rating_str = request.POST.get('rating', '').strip()
+            comment = request.POST.get('comment', '').strip()
+
+            if not rating_str or not rating_str.isdigit():
+                msg = "Please select a valid star rating (1 to 5)."
+                if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                    return JsonResponse({'success': False, 'error': msg}, status=400)
+                messages.error(request, msg, extra_tags='customer_review')
+                return redirect('my_orders')
+
+            rating = int(rating_str)
+            if rating < 1 or rating > 5:
+                msg = "Rating must be between 1 and 5 stars."
+                if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                    return JsonResponse({'success': False, 'error': msg}, status=400)
+                messages.error(request, msg, extra_tags='customer_review')
+                return redirect('my_orders')
+
+            if not comment:
+                msg = "Please enter a comment for your review."
+                if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                    return JsonResponse({'success': False, 'error': msg}, status=400)
+                messages.error(request, msg, extra_tags='customer_review')
+                return redirect('my_orders')
+
+            review = Review.objects.create(
+                user=customer,
+                bus=booking.bus,
+                booking=booking,
+                rating=rating,
+                comment=comment
+            )
+
+            success_msg = "Thank you! Your review has been submitted successfully."
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'success': True, 'message': success_msg, 'review_id': review.id, 'rating': review.rating})
+            messages.success(request, success_msg, extra_tags='customer_review')
+            return redirect('/my-orders/?tab=past')
+        except Exception as e:
+            logger.error(f"Error submitting review: {e}")
+            msg = "An error occurred while submitting your review. Please try again."
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': msg}, status=500)
+            messages.error(request, msg, extra_tags='customer_review')
+            return redirect('my_orders')
+
+    return redirect('/my-orders/?tab=past')
+
+
+
+def edit_review(request, review_id):
+    customer = get_customer_user(request)
+    if not customer:
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'error': 'Please login.'}, status=401)
+        messages.error(request, 'Please login.')
+        return redirect('login')
+
+    try:
+        review = Review.objects.get(id=review_id, user=customer)
+    except Review.DoesNotExist:
+        msg = "Review not found or unauthorized."
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'error': msg}, status=404)
+        messages.error(request, msg)
+        return redirect('my_orders')
+
+    if request.method == 'POST':
+        try:
+            rating_str = request.POST.get('rating', '').strip()
+            comment = request.POST.get('comment', '').strip()
+
+            if rating_str and rating_str.isdigit():
+                rating = int(rating_str)
+                if 1 <= rating <= 5:
+                    review.rating = rating
+
+            if comment:
+                review.comment = comment
+
+            review.save()
+            success_msg = "Your review has been updated successfully."
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'success': True, 'message': success_msg})
+            messages.success(request, success_msg)
+            return redirect('/my-orders/?tab=past')
+        except Exception as e:
+            logger.error(f"Error editing review: {e}")
+            msg = "An error occurred while updating your review."
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': msg}, status=500)
+            messages.error(request, msg)
+            return redirect('my_orders')
+
+    return redirect('/my-orders/?tab=past')
+
+
+def delete_review(request, review_id):
+    customer = get_customer_user(request)
+    if not customer:
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'error': 'Please login.'}, status=401)
+        messages.error(request, 'Please login.')
+        return redirect('login')
+
+    try:
+        review = Review.objects.get(id=review_id, user=customer)
+    except Review.DoesNotExist:
+        msg = "Review not found or unauthorized."
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'error': msg}, status=404)
+        messages.error(request, msg)
+        return redirect('my_orders')
+
+    if request.method == 'POST':
+        try:
+            review.delete()
+            success_msg = "Your review has been deleted."
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'success': True, 'message': success_msg})
+            messages.success(request, success_msg)
+            return redirect('/my-orders/?tab=past')
+        except Exception as e:
+            logger.error(f"Error deleting review: {e}")
+            msg = "An error occurred while deleting your review."
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': msg}, status=500)
+            messages.error(request, msg)
+            return redirect('my_orders')
+
+    return redirect('/my-orders/?tab=past')
+
 
 def payment(request):
     customer = get_customer_user(request)
@@ -3263,3 +3513,199 @@ def admin_settings(request):
     except Exception as e:
         logger.error(f"Error in admin settings view: {e}")
         return redirect('login')
+
+
+#==========================================================================
+#    Manager & Admin Review Management Views
+#==========================================================================
+
+def manager_reviews(request):
+    manager = get_manager_user(request)
+    if not manager:
+        return redirect('login')
+
+    try:
+        my_buses = Bus.objects.filter(manager=manager)
+        review_list = Review.objects.filter(bus__in=my_buses).select_related('user', 'bus')
+
+        # Calculate Stats before filtering
+        total_reviews = review_list.count()
+        featured_count = review_list.filter(is_featured=True).count()
+        avg_rating_val = review_list.aggregate(avg=Avg('rating'))['avg'] or 0.0
+        avg_rating = round(float(avg_rating_val), 1)
+
+        # Filters
+        q = request.GET.get('q', '').strip()
+        if q:
+            review_list = review_list.filter(
+                Q(user__name__icontains=q) |
+                Q(user__email__icontains=q) |
+                Q(bus__bus_name__icontains=q) |
+                Q(comment__icontains=q)
+            )
+
+        rating_filter = request.GET.get('rating', '').strip()
+        if rating_filter.isdigit():
+            review_list = review_list.filter(rating=int(rating_filter))
+
+        featured_filter = request.GET.get('featured', '').strip()
+        if featured_filter == '1':
+            review_list = review_list.filter(is_featured=True)
+        elif featured_filter == '0':
+            review_list = review_list.filter(is_featured=False)
+
+        bus_id = request.GET.get('bus_id', '').strip()
+        if bus_id.isdigit():
+            review_list = review_list.filter(bus_id=int(bus_id))
+
+        paginator = Paginator(review_list, 10)
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+
+        context = {
+            'manager': manager,
+            'my_buses': my_buses,
+            'page_obj': page_obj,
+            'total_reviews': total_reviews,
+            'featured_count': featured_count,
+            'avg_rating': avg_rating,
+            'q': q,
+            'rating_filter': rating_filter,
+            'featured_filter': featured_filter,
+            'bus_id': bus_id,
+        }
+        return render(request, 'manager-reviews.html', context)
+    except Exception as e:
+        logger.error(f"Error loading manager reviews: {e}")
+        messages.error(request, "Error loading review management page.")
+        return redirect('manager_dashboard')
+
+
+def admin_reviews(request):
+    admin = get_admin_user(request)
+    if not admin:
+        return redirect('login')
+
+    try:
+        all_buses = Bus.objects.all()
+        all_managers = User.objects.filter(usertype='manager')
+        review_list = Review.objects.all().select_related('user', 'bus', 'bus__manager')
+
+        # Calculate Stats before filtering
+        total_reviews = review_list.count()
+        featured_count = review_list.filter(is_featured=True).count()
+        avg_rating_val = review_list.aggregate(avg=Avg('rating'))['avg'] or 0.0
+        avg_rating = round(float(avg_rating_val), 1)
+
+        # Filters
+        q = request.GET.get('q', '').strip()
+        if q:
+            review_list = review_list.filter(
+                Q(user__name__icontains=q) |
+                Q(user__email__icontains=q) |
+                Q(bus__bus_name__icontains=q) |
+                Q(bus__bus_number__icontains=q) |
+                Q(comment__icontains=q)
+            )
+
+        manager_id = request.GET.get('manager_id', '').strip()
+        if manager_id.isdigit():
+            review_list = review_list.filter(bus__manager_id=int(manager_id))
+
+        bus_id = request.GET.get('bus_id', '').strip()
+        if bus_id.isdigit():
+            review_list = review_list.filter(bus_id=int(bus_id))
+
+        rating_filter = request.GET.get('rating', '').strip()
+        if rating_filter.isdigit():
+            review_list = review_list.filter(rating=int(rating_filter))
+
+        featured_filter = request.GET.get('featured', '').strip()
+        if featured_filter == '1':
+            review_list = review_list.filter(is_featured=True)
+        elif featured_filter == '0':
+            review_list = review_list.filter(is_featured=False)
+
+        paginator = Paginator(review_list, 10)
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+
+        context = {
+            'admin': admin,
+            'all_buses': all_buses,
+            'all_managers': all_managers,
+            'page_obj': page_obj,
+            'total_reviews': total_reviews,
+            'featured_count': featured_count,
+            'avg_rating': avg_rating,
+            'q': q,
+            'manager_id': manager_id,
+            'bus_id': bus_id,
+            'rating_filter': rating_filter,
+            'featured_filter': featured_filter,
+        }
+        return render(request, 'admin-reviews.html', context)
+    except Exception as e:
+        logger.error(f"Error loading admin reviews: {e}")
+        messages.error(request, "Error loading review management page.")
+        return redirect('admin_dashboard')
+
+
+def toggle_feature_review(request, review_id):
+    manager = get_manager_user(request)
+    admin = get_admin_user(request)
+
+    if not manager and not admin:
+        return HttpResponseForbidden("Unauthorized access.")
+
+    try:
+        review = Review.objects.select_related('bus', 'bus__manager').get(id=review_id)
+    except Review.DoesNotExist:
+        messages.error(request, "Review not found.")
+        return redirect(request.META.get('HTTP_REFERER', 'index'))
+
+    if manager and not admin:
+        if review.bus.manager != manager:
+            return HttpResponseForbidden("You are not authorized to feature reviews for buses belonging to another manager.")
+
+    review.is_featured = not review.is_featured
+    review.save()
+
+    status_str = "featured on the homepage" if review.is_featured else "removed from homepage featuring"
+    messages.success(request, f"Review for '{review.bus.bus_name}' has been {status_str}.")
+
+    referer = request.META.get('HTTP_REFERER')
+    if referer:
+        return redirect(referer)
+    return redirect('admin_reviews' if admin else 'manager_reviews')
+
+
+def delete_review_management(request, review_id):
+    if request.method != 'POST':
+        return HttpResponseForbidden("POST request required.")
+
+    manager = get_manager_user(request)
+    admin = get_admin_user(request)
+
+    if not manager and not admin:
+        return HttpResponseForbidden("Unauthorized access.")
+
+    try:
+        review = Review.objects.select_related('bus', 'bus__manager').get(id=review_id)
+    except Review.DoesNotExist:
+        messages.error(request, "Review not found.")
+        return redirect(request.META.get('HTTP_REFERER', 'index'))
+
+    if manager and not admin:
+        if review.bus.manager != manager:
+            return HttpResponseForbidden("You are not authorized to delete reviews for another manager's buses.")
+
+    bus_name = review.bus.bus_name
+    review.delete()
+    messages.success(request, f"Review for '{bus_name}' deleted successfully.")
+
+    referer = request.META.get('HTTP_REFERER')
+    if referer:
+        return redirect(referer)
+    return redirect('admin_reviews' if admin else 'manager_reviews')
+

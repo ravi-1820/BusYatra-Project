@@ -1,6 +1,36 @@
 {% extends 'base.html' %}
 {% load static %}
 {% block content %}
+<style>
+.star-rating-picker {
+    display: inline-flex;
+    flex-direction: row-reverse;
+    justify-content: center;
+    gap: 6px;
+    position: relative;
+}
+.star-rating-picker input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+}
+.star-rating-picker label {
+    color: #cbd5e1;
+    cursor: pointer;
+    font-size: 1.8rem;
+    line-height: 1;
+    transition: color 0.1s linear;
+}
+.star-rating-picker label:hover,
+.star-rating-picker label:hover ~ label,
+.star-rating-picker input[type="radio"]:checked ~ label {
+    color: #f59e0b;
+}
+</style>
+
+
 <!-- Top Account Banner -->
     <section class="modify-banner shadow-sm py-4">
         <div class="container">
@@ -29,10 +59,26 @@
 
     <!-- Dashboard Body -->
     <main class="container my-5">
+        {% if messages %}
+            <div class="row mb-3">
+                <div class="col-12">
+                    {% for message in messages %}
+                        {% if 'customer_review' in message.tags or 'customer' in message.tags %}
+                            <div class="alert alert-{% if 'error' in message.tags %}danger{% else %}success{% endif %} alert-dismissible fade show rounded-4 shadow-sm mb-3" role="alert">
+                                <i class="bi bi-check-circle-fill me-2"></i>{{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
         <div class="row g-4">
             
             <!-- Left Navigation Menu -->
             <aside class="col-lg-3">
+
                 <div class="dashboard-sidebar mb-4">
                     <div class="text-center border-bottom pb-3 mb-3">
                         <h6 class="text-navy-dark fw-bold mb-1">Total Savings</h6>
@@ -374,6 +420,28 @@
                                                             <div class="d-flex flex-column gap-2 max-width-200 mx-auto">
                                                                 <a href="{% url 'ticket' %}?booking_ids={{ booking.booking_ids_str }}" class="btn btn-sm btn-outline-primary rounded-3"><i class="bi bi-ticket-detailed me-1"></i>View E-Ticket</a>
                                                                 <a href="{% url 'download_ticket_pdf' %}?booking_ids={{ booking.booking_ids_str }}" class="btn btn-sm btn-outline-secondary rounded-3"><i class="bi bi-download me-1"></i>Download PDF</a>
+
+                                                                {% if booking.journey_type == 'ROUND_TRIP' %}
+                                                                    {% if booking.dep_can_review %}
+                                                                        <button type="button" class="btn btn-sm btn-warning text-white fw-bold rounded-3" data-bs-toggle="modal" data-bs-target="#reviewModalDep{{ booking.dep_booking_id }}" style="background-color: var(--amber-accent);"><i class="bi bi-star-fill me-1"></i>Review Departure</button>
+                                                                    {% elif booking.dep_review %}
+                                                                        <span class="badge bg-success-subtle text-success border border-success px-2 py-1.5 rounded-3" title="{{ booking.dep_review.comment }}"><i class="bi bi-check-circle-fill me-1"></i>Dep. Reviewed ({{ booking.dep_review.rating }}★)</span>
+                                                                    {% endif %}
+
+                                                                    {% if booking.ret_can_review %}
+                                                                        <button type="button" class="btn btn-sm btn-warning text-white fw-bold rounded-3" data-bs-toggle="modal" data-bs-target="#reviewModalRet{{ booking.ret_booking_id }}" style="background-color: var(--amber-accent);"><i class="bi bi-star-fill me-1"></i>Review Return</button>
+                                                                    {% elif booking.ret_review %}
+                                                                        <span class="badge bg-success-subtle text-success border border-success px-2 py-1.5 rounded-3" title="{{ booking.ret_review.comment }}"><i class="bi bi-check-circle-fill me-1"></i>Ret. Reviewed ({{ booking.ret_review.rating }}★)</span>
+                                                                    {% endif %}
+                                                                {% else %}
+                                                                    {% if booking.can_review %}
+                                                                        <button type="button" class="btn btn-sm btn-warning text-white fw-bold rounded-3" data-bs-toggle="modal" data-bs-target="#reviewModal{{ booking.primary_booking_id }}" style="background-color: var(--amber-accent);"><i class="bi bi-star-fill me-1"></i>Write a Review</button>
+                                                                    {% elif booking.review %}
+                                                                        <span class="badge bg-success-subtle text-success border border-success px-2 py-1.5 rounded-3" title="{{ booking.review.comment }}"><i class="bi bi-check-circle-fill me-1"></i>Reviewed ({{ booking.review.rating }}★)</span>
+                                                                    {% endif %}
+                                                                {% endif %}
+                                                            </div>
+
                                                             </div>
                                                         {% else %}
                                                             <div class="text-muted py-4">
@@ -398,6 +466,138 @@
                                             <p class="text-muted small mb-0">You have no past journey history.</p>
                                         </div>
                                     {% endfor %}
+
+                                    <!-- Modals Rendered Outside Booking Cards (Prevents Stacking Context & Hover Flicker) -->
+                                    {% for booking in past_bookings %}
+                                        {% if booking.journey_type == 'ROUND_TRIP' %}
+                                            {% if booking.dep_can_review %}
+                                            <div class="modal fade text-start" id="reviewModalDep{{ booking.dep_booking_id }}" tabindex="-1" aria-hidden="true">
+                                                <div class="modal-dialog modal-dialog-centered">
+                                                    <div class="modal-content border-0 shadow rounded-4">
+                                                        <div class="modal-header border-bottom py-3 bg-light">
+                                                            <h5 class="modal-title fw-bold text-navy-dark fs-6"><i class="bi bi-star-fill text-warning me-1"></i> Review Departure: {{ booking.dep_bus.bus_name }}</h5>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                        </div>
+                                                        <form action="{% url 'add_review' booking.dep_booking_id %}" method="POST">
+                                                            {% csrf_token %}
+                                                            <div class="modal-body p-4">
+                                                                <p class="text-muted small mb-3">How was your departure journey on <strong>{{ booking.dep_bus.bus_name }}</strong> ({{ booking.dep_date }})?</p>
+                                                                <div class="mb-3 text-center">
+                                                                    <label class="form-label d-block text-navy-dark fw-bold small mb-2">Star Rating</label>
+                                                                    <div class="star-rating-picker d-inline-flex flex-row-reverse justify-content-center gap-1">
+                                                                        <input type="radio" id="starDep5-{{ booking.dep_booking_id }}" name="rating" value="5" required />
+                                                                        <label for="starDep5-{{ booking.dep_booking_id }}"><i class="bi bi-star-fill"></i></label>
+                                                                        <input type="radio" id="starDep4-{{ booking.dep_booking_id }}" name="rating" value="4" />
+                                                                        <label for="starDep4-{{ booking.dep_booking_id }}"><i class="bi bi-star-fill"></i></label>
+                                                                        <input type="radio" id="starDep3-{{ booking.dep_booking_id }}" name="rating" value="3" />
+                                                                        <label for="starDep3-{{ booking.dep_booking_id }}"><i class="bi bi-star-fill"></i></label>
+                                                                        <input type="radio" id="starDep2-{{ booking.dep_booking_id }}" name="rating" value="2" />
+                                                                        <label for="starDep2-{{ booking.dep_booking_id }}"><i class="bi bi-star-fill"></i></label>
+                                                                        <input type="radio" id="starDep1-{{ booking.dep_booking_id }}" name="rating" value="1" />
+                                                                        <label for="starDep1-{{ booking.dep_booking_id }}"><i class="bi bi-star-fill"></i></label>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="mb-2">
+                                                                    <label class="form-label text-navy-dark fw-bold small">Your Comment</label>
+                                                                    <textarea name="comment" rows="3" class="form-control rounded-3" placeholder="Describe your travel experience..." required></textarea>
+                                                                </div>
+                                                            </div>
+                                                            <div class="modal-footer border-top py-2.5 px-4 bg-light">
+                                                                <button type="button" class="btn btn-sm btn-light border fw-semibold rounded-3 px-3" data-bs-dismiss="modal">Cancel</button>
+                                                                <button type="submit" class="btn btn-sm btn-warning text-white fw-bold rounded-3 px-4 shadow-sm" style="background-color: var(--amber-accent);">Submit Review</button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {% endif %}
+
+                                            {% if booking.ret_can_review %}
+                                            <div class="modal fade text-start" id="reviewModalRet{{ booking.ret_booking_id }}" tabindex="-1" aria-hidden="true">
+                                                <div class="modal-dialog modal-dialog-centered">
+                                                    <div class="modal-content border-0 shadow rounded-4">
+                                                        <div class="modal-header border-bottom py-3 bg-light">
+                                                            <h5 class="modal-title fw-bold text-navy-dark fs-6"><i class="bi bi-star-fill text-warning me-1"></i> Review Return: {{ booking.ret_bus.bus_name }}</h5>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                        </div>
+                                                        <form action="{% url 'add_review' booking.ret_booking_id %}" method="POST">
+                                                            {% csrf_token %}
+                                                            <div class="modal-body p-4">
+                                                                <p class="text-muted small mb-3">How was your return journey on <strong>{{ booking.ret_bus.bus_name }}</strong> ({{ booking.ret_date }})?</p>
+                                                                <div class="mb-3 text-center">
+                                                                    <label class="form-label d-block text-navy-dark fw-bold small mb-2">Star Rating</label>
+                                                                    <div class="star-rating-picker d-inline-flex flex-row-reverse justify-content-center gap-1">
+                                                                        <input type="radio" id="starRet5-{{ booking.ret_booking_id }}" name="rating" value="5" required />
+                                                                        <label for="starRet5-{{ booking.ret_booking_id }}"><i class="bi bi-star-fill"></i></label>
+                                                                        <input type="radio" id="starRet4-{{ booking.ret_booking_id }}" name="rating" value="4" />
+                                                                        <label for="starRet4-{{ booking.ret_booking_id }}"><i class="bi bi-star-fill"></i></label>
+                                                                        <input type="radio" id="starRet3-{{ booking.ret_booking_id }}" name="rating" value="3" />
+                                                                        <label for="starRet3-{{ booking.ret_booking_id }}"><i class="bi bi-star-fill"></i></label>
+                                                                        <input type="radio" id="starRet2-{{ booking.ret_booking_id }}" name="rating" value="2" />
+                                                                        <label for="starRet2-{{ booking.ret_booking_id }}"><i class="bi bi-star-fill"></i></label>
+                                                                        <input type="radio" id="starRet1-{{ booking.ret_booking_id }}" name="rating" value="1" />
+                                                                        <label for="starRet1-{{ booking.ret_booking_id }}"><i class="bi bi-star-fill"></i></label>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="mb-2">
+                                                                    <label class="form-label text-navy-dark fw-bold small">Your Comment</label>
+                                                                    <textarea name="comment" rows="3" class="form-control rounded-3" placeholder="Describe your travel experience..." required></textarea>
+                                                                </div>
+                                                            </div>
+                                                            <div class="modal-footer border-top py-2.5 px-4 bg-light">
+                                                                <button type="button" class="btn btn-sm btn-light border fw-semibold rounded-3 px-3" data-bs-dismiss="modal">Cancel</button>
+                                                                <button type="submit" class="btn btn-sm btn-warning text-white fw-bold rounded-3 px-4 shadow-sm" style="background-color: var(--amber-accent);">Submit Review</button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {% endif %}
+                                        {% else %}
+                                            {% if booking.can_review %}
+                                            <div class="modal fade text-start" id="reviewModal{{ booking.primary_booking_id }}" tabindex="-1" aria-hidden="true">
+                                                <div class="modal-dialog modal-dialog-centered">
+                                                    <div class="modal-content border-0 shadow rounded-4">
+                                                        <div class="modal-header border-bottom py-3 bg-light">
+                                                            <h5 class="modal-title fw-bold text-navy-dark fs-6"><i class="bi bi-star-fill text-warning me-1"></i> Review Journey: {{ booking.bus.bus_name }}</h5>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                        </div>
+                                                        <form action="{% url 'add_review' booking.primary_booking_id %}" method="POST">
+                                                            {% csrf_token %}
+                                                            <div class="modal-body p-4">
+                                                                <p class="text-muted small mb-3">How was your journey from <strong>{{ booking.bus.source }}</strong> to <strong>{{ booking.bus.destination }}</strong> on {{ booking.travel_date }}?</p>
+                                                                <div class="mb-3 text-center">
+                                                                    <label class="form-label d-block text-navy-dark fw-bold small mb-2">Star Rating</label>
+                                                                    <div class="star-rating-picker d-inline-flex flex-row-reverse justify-content-center gap-1">
+                                                                        <input type="radio" id="star5-{{ booking.primary_booking_id }}" name="rating" value="5" required />
+                                                                        <label for="star5-{{ booking.primary_booking_id }}"><i class="bi bi-star-fill"></i></label>
+                                                                        <input type="radio" id="star4-{{ booking.primary_booking_id }}" name="rating" value="4" />
+                                                                        <label for="star4-{{ booking.primary_booking_id }}"><i class="bi bi-star-fill"></i></label>
+                                                                        <input type="radio" id="star3-{{ booking.primary_booking_id }}" name="rating" value="3" />
+                                                                        <label for="star3-{{ booking.primary_booking_id }}"><i class="bi bi-star-fill"></i></label>
+                                                                        <input type="radio" id="star2-{{ booking.primary_booking_id }}" name="rating" value="2" />
+                                                                        <label for="star2-{{ booking.primary_booking_id }}"><i class="bi bi-star-fill"></i></label>
+                                                                        <input type="radio" id="star1-{{ booking.primary_booking_id }}" name="rating" value="1" />
+                                                                        <label for="star1-{{ booking.primary_booking_id }}"><i class="bi bi-star-fill"></i></label>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="mb-2">
+                                                                    <label class="form-label text-navy-dark fw-bold small">Your Comment</label>
+                                                                    <textarea name="comment" rows="3" class="form-control rounded-3" placeholder="Describe your travel experience..." required></textarea>
+                                                                </div>
+                                                            </div>
+                                                            <div class="modal-footer border-top py-2.5 px-4 bg-light">
+                                                                <button type="button" class="btn btn-sm btn-light border fw-semibold rounded-3 px-3" data-bs-dismiss="modal">Cancel</button>
+                                                                <button type="submit" class="btn btn-sm btn-warning text-white fw-bold rounded-3 px-4 shadow-sm" style="background-color: var(--amber-accent);">Submit Review</button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endfor %}
+
                                 </div>
                                 {% if past_page_obj.paginator.num_pages > 1 %}
                                 <nav aria-label="Past trips pagination" class="mt-4">
@@ -681,7 +881,18 @@
                 </div>
             </div>
         </div>
-    </div>
-
-    <!-- Footer Section -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('form[action*="review/add"]').forEach(function(form) {
+            form.addEventListener('submit', function(e) {
+                const btn = form.querySelector('button[type="submit"]');
+                if (btn && !btn.disabled) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Submitting...';
+                }
+            });
+        });
+    });
+    </script>
 {% endblock %}
+

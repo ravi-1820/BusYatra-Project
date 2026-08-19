@@ -319,6 +319,48 @@
     </div>
 </section>
 
+{% if featured_reviews %}
+<!-- Featured Passenger Reviews Section (Manager/Admin Curated) -->
+<section id="customer-reviews" class="py-5 bg-white border-top">
+    <div class="container py-2">
+        <div class="text-center mb-5">
+            <span class="badge bg-warning-subtle text-warning border border-warning border-opacity-25 px-3 py-1.5 rounded-pill fw-semibold small mb-2">Verified Feedback</span>
+            <h2 class="section-title text-center mb-2">What Our Passengers Say</h2>
+            <p class="text-muted small">Real travel experiences shared by verified BusYatra travelers</p>
+        </div>
+
+        <div class="row g-4 justify-content-center">
+            {% for rev in featured_reviews %}
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 border-0 shadow-sm rounded-4 p-4 position-relative bg-light hover-scale transition-all">
+                    <div class="text-warning fs-5 mb-2">
+                        {% for i in "12345" %}
+                            {% if forloop.counter <= rev.rating %}
+                                <i class="bi bi-star-fill"></i>
+                            {% else %}
+                                <i class="bi bi-star text-muted opacity-25"></i>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                    <p class="card-text text-navy-dark small mb-4 fst-italic">
+                        "{{ rev.comment }}"
+                    </p>
+                    <div class="mt-auto d-flex align-items-center gap-3 pt-3 border-top border-secondary border-opacity-10">
+                        <div class="rounded-circle bg-warning text-white fw-bold d-flex align-items-center justify-content-center" style="width:42px; height:42px; background-color: var(--amber-accent) !important;">
+                            {{ rev.user.name|first|upper }}
+                        </div>
+                        <div>
+                            <h6 class="fw-bold text-navy-dark mb-0 small">{{ rev.user.name }}</h6>
+                            <small class="text-muted d-block" style="font-size:0.75rem;"><i class="bi bi-bus-front me-1"></i>{{ rev.bus.bus_name }}</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% else %}
 <!-- Testimonials Section -->
 <section class="py-5 bg-white">
     <div class="container">
@@ -377,6 +419,8 @@
         </div>
     </div>
 </section>
+{% endif %}
+
 
 <!-- Search Validation Modal -->
 <div class="modal fade" id="searchValidationModal" tabindex="-1" aria-labelledby="searchValidationModalLabel" aria-hidden="true">

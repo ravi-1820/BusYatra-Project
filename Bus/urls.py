@@ -28,6 +28,16 @@ urlpatterns = [
     path('download-ticket/', views.download_ticket_pdf, name='download_ticket_pdf'),
     path('travel-guidelines/', views.travel_guidelines, name='travel_guidelines'),
     
+    # Review URL patterns
+    path('review/add/<int:booking_id>/', views.add_review, name='add_review'),
+    path('review/edit/<int:review_id>/', views.edit_review, name='edit_review'),
+    path('review/delete/<int:review_id>/', views.delete_review, name='delete_review'),
+    path('review/feature/<int:review_id>/', views.toggle_feature_review, name='toggle_feature_review'),
+    path('review/management-delete/<int:review_id>/', views.delete_review_management, name='delete_review_management'),
+    path('manager-reviews/', views.manager_reviews, name='manager_reviews'),
+    path('admin-reviews/', views.admin_reviews, name='admin_reviews'),
+
+    
     #Manager URL patterns
     path('manager-bookings/', views.manager_bookings, name='manager_bookings')  ,
     path('manager-buses/', views.manager_buses, name='manager_buses'),
