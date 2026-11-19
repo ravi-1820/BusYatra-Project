@@ -1,0 +1,664 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<script>
+    {% if is_round_trip %}
+    var IS_ROUND_TRIP = true;
+    var DEP_BUS_ID = "{{ dep_bus.id }}";
+    var RET_BUS_ID = "{{ ret_bus.id }}";
+    var DEP_BUS_TYPE = "{{ dep_bus.bus_type|escapejs }}";
+    var RET_BUS_TYPE = "{{ ret_bus.bus_type|escapejs }}";
+    var IS_DEP_SLEEPER = DEP_BUS_TYPE.toLowerCase().indexOf("sleeper") !== -1;
+    var IS_RET_SLEEPER = RET_BUS_TYPE.toLowerCase().indexOf("sleeper") !== -1;
+    var DEP_BUS_FARE = parseFloat("{{ dep_bus.fare }}") || 0;
+    var RET_BUS_FARE = parseFloat("{{ ret_bus.fare }}") || 0;
+    var PASSENGERS_COUNT = parseInt("{{ passengers_count }}") || 1;
+    var DEP_BOOKED_SEATS = {{ dep_booked_seats|safe }};
+    var RET_BOOKED_SEATS = {{ ret_booked_seats|safe }};
+    {% else %}
+
+    var IS_ROUND_TRIP = false;
+    sessionStorage.setItem("selectedBusName", "{{ bus.bus_name|escapejs }}");
+    sessionStorage.setItem("selectedBusType", "{{ bus.bus_type|escapejs }}");
+    sessionStorage.setItem("selectedBusPrice", "{{ bus.fare|escapejs }}");
+    sessionStorage.setItem("selectedBusDepTime", "{{ bus.departure_time|time:'h:i A'|escapejs }}");
+    sessionStorage.setItem("journeyFrom", "{{ bus.source|escapejs }}");
+    sessionStorage.setItem("journeyTo", "{{ bus.destination|escapejs }}");
+    sessionStorage.setItem("journeyDate", "{{ travel_date|escapejs }}");
+    
+    var BUS_NAME = "{{ bus.bus_name|escapejs }}";
+    var BUS_TYPE = "{{ bus.bus_type|escapejs }}";
+    var BUS_FARE = "{{ bus.fare|escapejs }}";
+    var BUS_ROUTE = "{{ bus.source|escapejs }} → {{ bus.destination|escapejs }}";
+    var BUS_ID = "{{ bus.id }}";
+    var BOOKED_SEATS = {{ booked_seats|safe }};
+    {% endif %}
+</script>
+
+<style>
+    :root {
+        --seat-available: #ffffff;
+        --seat-available-border: #cbd5e1;
+        --seat-occupied: #e2e8f0;
+        --seat-occupied-border: #cbd5e1;
+        --seat-occupied-text: #94a3b8;
+        --seat-selected: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        --seat-selected-border: #1d4ed8;
+        --glass-bg: rgba(255, 255, 255, 0.95);
+        --glass-border: rgba(226, 232, 240, 0.8);
+    }
+    .booking-wrapper {
+        background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.05) 0%, transparent 60%);
+        min-height: calc(100vh - 120px);
+        padding: 2.5rem 0;
+    }
+    .premium-banner {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        border-radius: 20px;
+        padding: 2rem;
+        color: #ffffff;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15);
+        margin-bottom: 2rem;
+    }
+    .seat-selection-card {
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: 24px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        padding: 2rem;
+    }
+    .cabin-layout {
+        border: 3px solid #e2e8f0;
+        border-radius: 28px;
+        padding: 1.5rem;
+        background: #ffffff;
+        max-width: 380px;
+        margin: 0 auto;
+    }
+    .cabin-steering {
+        border-bottom: 2px dashed #e2e8f0;
+        padding-bottom: 1rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .grid-container {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    .seat-row-custom {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .seat-pair { display: flex; gap: 0.5rem; }
+    .seat-gap { width: 35px; }
+    .bus-seat {
+        width: 38px;
+        height: 38px;
+        border-radius: 8px;
+        border: 1.5px solid var(--seat-available-border);
+        background: var(--seat-available);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        font-weight: 700;
+        cursor: pointer;
+        user-select: none;
+        color: #0f172a;
+    }
+    .bus-seat.selected {
+        background: var(--seat-selected) !important;
+        border-color: var(--seat-selected-border) !important;
+        color: #ffffff !important;
+    }
+    .bus-seat.occupied {
+        background: var(--seat-occupied) !important;
+        border-color: var(--seat-occupied-border) !important;
+        color: var(--seat-occupied-text) !important;
+        cursor: not-allowed;
+    }
+    .bus-seat.sleeper-vertical {
+        width: 40px;
+        height: 65px;
+        border-radius: 10px;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding-top: 8px;
+    }
+    .bus-seat.sleeper-vertical::after {
+        content: '';
+        position: absolute;
+        top: 5px;
+        left: 5px;
+        right: 5px;
+        height: 10px;
+        border-radius: 4px;
+        background: rgba(0, 0, 0, 0.1);
+    }
+    .bus-seat.sleeper-vertical.selected::after {
+        background: rgba(255, 255, 255, 0.35);
+    }
+    .legend-grid {
+        display: flex;
+        justify-content: center;
+        gap: 1.5rem;
+        margin-top: 1.5rem;
+        padding-top: 1rem;
+        border-top: 1px dashed #e2e8f0;
+    }
+    .legend-pill {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #475569;
+    }
+
+    .glass-checkout-card {
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: 24px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        padding: 2rem;
+        position: sticky;
+        top: 6.5rem;
+    }
+    .deck-tab-container {
+        display: inline-flex;
+        align-items: center;
+        background: #f1f5f9;
+        padding: 5px;
+        border-radius: 14px;
+        gap: 6px;
+        margin-bottom: 1.5rem;
+        border: 1px solid #e2e8f0;
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+    }
+    .deck-tab-btn {
+        border: none;
+        background: transparent;
+        padding: 8px 20px;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: #64748b;
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+        outline: none;
+    }
+    .deck-tab-btn:hover:not(.active) {
+        color: #1e293b;
+        background: rgba(255, 255, 255, 0.6);
+    }
+    .deck-tab-btn.active {
+        background: #ffffff;
+        color: #1d4ed8;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        font-weight: 700;
+    }
+</style>
+
+<div class="booking-wrapper">
+    <div class="container">
+
+        {% if msg %}
+        <div class="alert alert-danger alert-dismissible fade show rounded-4 shadow-sm mb-4" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> {{ msg }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endif %}
+
+        {% if is_round_trip %}
+
+        <!-- ROUND TRIP SEAT BOOKING HEADER -->
+        <div class="premium-banner">
+            <div class="row align-items-center">
+                <div class="col-lg-9">
+                    <span class="badge bg-primary px-3 py-1 rounded-pill mb-2">Round Trip Booking</span>
+                    <h3 class="fw-bold text-white mb-2">Select Seats for Departure & Return Journeys</h3>
+                    <p class="text-white-50 mb-0 small">
+                        <strong>Departure:</strong> {{ dep_bus.source }} → {{ dep_bus.destination }} ({{ travel_date }}) &nbsp;|&nbsp;
+                        <strong>Return:</strong> {{ ret_bus.source }} → {{ ret_bus.destination }} ({{ return_date }}) &nbsp;|&nbsp;
+                        <strong>Passengers:</strong> {{ passengers_count }}
+                    </p>
+                </div>
+                <div class="col-lg-3 text-lg-end mt-3 mt-lg-0">
+                    <a href="{% url 'bus_list' %}" class="btn btn-outline-light btn-sm rounded-pill px-3">
+                        <i class="bi bi-arrow-left me-1"></i> Change Buses
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- Left Side: Departure & Return Seat Maps -->
+            <div class="col-lg-7">
+                <div class="d-flex flex-column gap-4">
+                    
+                    <!-- 1. DEPARTURE SEATS -->
+                    <div class="seat-selection-card">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="fw-bold text-navy-dark mb-0 d-flex align-items-center gap-2 flex-wrap">
+                                <span class="badge bg-primary">1</span>Departure Seats ({{ dep_bus.bus_name }})
+                                <span class="badge bg-light text-primary border px-2 py-1 rounded-pill small">{{ dep_bus.bus_type }}</span>
+                            </h5>
+                            <span class="small fw-bold text-primary" id="rtDepCountLabel">Selected: 0 / {{ passengers_count }}</span>
+                        </div>
+                        <div class="deck-tab-container d-none mb-3" id="rtDepDeckSelector">
+                            <button type="button" class="deck-tab-btn active" id="rtDepLowerBtn" onclick="switchRtDepDeck('lower')">Lower Deck</button>
+                            <button type="button" class="deck-tab-btn" id="rtDepUpperBtn" onclick="switchRtDepDeck('upper')">Upper Deck</button>
+                        </div>
+                        <div class="cabin-layout shadow-sm mb-3">
+                            <div class="cabin-steering">
+                                <span class="badge bg-light text-secondary border px-3 py-1 rounded-pill small">Entry / Front</span>
+                                <div class="driver-icon"><i class="bi bi-steering"></i></div>
+                            </div>
+                            <div class="grid-container" id="rtDepCabinGrid"></div>
+                        </div>
+                    </div>
+
+                    <!-- 2. RETURN SEATS -->
+                    <div class="seat-selection-card">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="fw-bold text-navy-dark mb-0 d-flex align-items-center gap-2 flex-wrap">
+                                <span class="badge bg-success">2</span>Return Seats ({{ ret_bus.bus_name }})
+                                <span class="badge bg-light text-success border px-2 py-1 rounded-pill small">{{ ret_bus.bus_type }}</span>
+                            </h5>
+                            <span class="small fw-bold text-success" id="rtRetCountLabel">Selected: 0 / {{ passengers_count }}</span>
+                        </div>
+                        <div class="deck-tab-container d-none mb-3" id="rtRetDeckSelector">
+                            <button type="button" class="deck-tab-btn active" id="rtRetLowerBtn" onclick="switchRtRetDeck('lower')">Lower Deck</button>
+                            <button type="button" class="deck-tab-btn" id="rtRetUpperBtn" onclick="switchRtRetDeck('upper')">Upper Deck</button>
+                        </div>
+                        <div class="cabin-layout shadow-sm mb-3">
+                            <div class="cabin-steering">
+                                <span class="badge bg-light text-secondary border px-3 py-1 rounded-pill small">Entry / Front</span>
+                                <div class="driver-icon"><i class="bi bi-steering"></i></div>
+                            </div>
+                            <div class="grid-container" id="rtRetCabinGrid"></div>
+                        </div>
+                    </div>
+
+
+                </div>
+            </div>
+
+            <!-- Right Side: Single Passenger Details Form & Fare Summary -->
+            <div class="col-lg-5">
+                <div class="glass-checkout-card">
+                    <h5 class="fw-bold mb-4 text-navy-dark"><i class="bi bi-receipt text-primary me-2"></i>Round Trip Fare Summary</h5>
+                    
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted small">Departure Seats:</span>
+                        <span class="fw-bold text-primary" id="rtDepSeatsText">None</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted small">Return Seats:</span>
+                        <span class="fw-bold text-success" id="rtRetSeatsText">None</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted small">Departure Subtotal:</span>
+                        <span class="fw-semibold text-navy-dark" id="rtDepSubtotal">₹0</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted small">Return Subtotal:</span>
+                        <span class="fw-semibold text-navy-dark" id="rtRetSubtotal">₹0</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted small">GST ({{ sys_settings.gst_percentage|floatformat:0 }}%) & Fees:</span>
+                        <span class="fw-semibold text-navy-dark" id="rtTaxes">₹0</span>
+                    </div>
+
+                    
+                    <div class="d-flex justify-content-between align-items-center my-3 bg-light p-3 rounded-4 border">
+                        <span class="fw-bold text-navy-dark text-uppercase small">Grand Total</span>
+                        <span class="fw-extrabold text-success fs-4" id="rtGrandTotal">₹0</span>
+                    </div>
+
+                    <!-- SINGLE PASSENGER FORM -->
+                    <form id="rtBookingForm" method="POST" action="{% url 'seat_booking' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="round_trip" value="1">
+                        <input type="hidden" name="dep_bus_id" value="{{ dep_bus.id }}">
+                        <input type="hidden" name="ret_bus_id" value="{{ ret_bus.id }}">
+                        <input type="hidden" name="date" value="{{ travel_date }}">
+                        <input type="hidden" name="return_date" value="{{ return_date }}">
+                        <input type="hidden" name="passengers" value="{{ passengers_count }}">
+                        <input type="hidden" name="dep_selected_seats" id="rtDepSelectedInput">
+                        <input type="hidden" name="ret_selected_seats" id="rtRetSelectedInput">
+
+                        <h6 class="fw-bold text-navy-dark mb-3 border-bottom pb-2">
+                            <i class="bi bi-people-fill text-primary me-2"></i>Passenger Information (Filled Once)
+                        </h6>
+
+                        {% for i in "x"|rjust:passengers_count %}
+                        <div class="p-3 border rounded-4 bg-white shadow-sm mb-3">
+                            <span class="badge bg-primary text-white rounded-pill mb-2">Passenger {{ forloop.counter }}</span>
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <input type="text" name="passenger_name_{{ forloop.counter }}" class="form-control form-control-sm" placeholder="Full Name" required>
+                                </div>
+                                <div class="col-md-3 col-6">
+                                    <input type="number" name="passenger_age_{{ forloop.counter }}" class="form-control form-control-sm" placeholder="Age" min="5" max="100" required>
+                                </div>
+                                <div class="col-md-3 col-6">
+                                    <select name="passenger_gender_{{ forloop.counter }}" class="form-select form-select-sm" required>
+                                        <option value="" disabled selected>Gender</option>
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+
+                        <button type="submit" id="rtSubmitBtn" class="btn btn-warning btn-lg w-100 py-3 rounded-4 fw-bold text-navy-dark border-0 shadow-sm mt-2" disabled>
+                            <i class="bi bi-wallet2 me-2"></i>Proceed to Booking Summary
+                        </button>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+
+        <script>
+        let rtDepCurrentDeck = "lower";
+        let rtRetCurrentDeck = "lower";
+
+        const rtDepSeats = [];
+        const rtRetSeats = [];
+
+        window.switchRtDepDeck = function(deck) {
+            rtDepCurrentDeck = deck;
+            const lowerBtn = document.getElementById("rtDepLowerBtn");
+            const upperBtn = document.getElementById("rtDepUpperBtn");
+            if (lowerBtn) lowerBtn.classList.toggle("active", deck === "lower");
+            if (upperBtn) upperBtn.classList.toggle("active", deck === "upper");
+            renderRtDepGrid();
+        };
+
+        window.switchRtRetDeck = function(deck) {
+            rtRetCurrentDeck = deck;
+            const lowerBtn = document.getElementById("rtRetLowerBtn");
+            const upperBtn = document.getElementById("rtRetUpperBtn");
+            if (lowerBtn) lowerBtn.classList.toggle("active", deck === "lower");
+            if (upperBtn) upperBtn.classList.toggle("active", deck === "upper");
+            renderRtRetGrid();
+        };
+
+        function renderRtDepGrid() {
+            const depGrid = document.getElementById("rtDepCabinGrid");
+            if (!depGrid) return;
+            createRtGrid(depGrid, IS_DEP_SLEEPER, rtDepCurrentDeck, DEP_BOOKED_SEATS, rtDepSeats);
+        }
+
+        function renderRtRetGrid() {
+            const retGrid = document.getElementById("rtRetCabinGrid");
+            if (!retGrid) return;
+            createRtGrid(retGrid, IS_RET_SLEEPER, rtRetCurrentDeck, RET_BOOKED_SEATS, rtRetSeats);
+        }
+
+        function createRtGrid(container, isSleeper, activeDeck, bookedList, selectedArr) {
+            if (!container) return;
+            container.innerHTML = "";
+
+            if (isSleeper) {
+                const deckPrefix = (activeDeck === "lower") ? "L" : "U";
+                for (let r = 1; r <= 6; r++) {
+                    const row = document.createElement("div");
+                    row.className = "seat-row-custom";
+
+                    const code1 = deckPrefix + (3 * r - 2);
+                    const code2 = deckPrefix + (3 * r - 1);
+                    const code3 = deckPrefix + (3 * r);
+
+                    const g1 = document.createElement("div"); g1.className = "seat-pair";
+                    g1.appendChild(createRtSeatNode(code1, true, bookedList, selectedArr));
+
+                    const gap = document.createElement("div"); gap.className = "seat-gap";
+
+                    const g2 = document.createElement("div"); g2.className = "seat-pair";
+                    g2.appendChild(createRtSeatNode(code2, true, bookedList, selectedArr));
+                    g2.appendChild(createRtSeatNode(code3, true, bookedList, selectedArr));
+
+                    row.appendChild(g1);
+                    row.appendChild(gap);
+                    row.appendChild(g2);
+                    container.appendChild(row);
+                }
+            } else {
+                for (let r = 1; r <= 6; r++) {
+                    const row = document.createElement("div");
+                    row.className = "seat-row-custom";
+
+                    const code1 = "S" + (4 * r - 3);
+                    const code2 = "S" + (4 * r - 2);
+                    const code3 = "S" + (4 * r - 1);
+                    const code4 = "S" + (4 * r);
+
+                    const g1 = document.createElement("div"); g1.className = "seat-pair";
+                    g1.appendChild(createRtSeatNode(code1, false, bookedList, selectedArr));
+                    g1.appendChild(createRtSeatNode(code2, false, bookedList, selectedArr));
+
+                    const gap = document.createElement("div"); gap.className = "seat-gap";
+
+                    const g2 = document.createElement("div"); g2.className = "seat-pair";
+                    g2.appendChild(createRtSeatNode(code3, false, bookedList, selectedArr));
+                    g2.appendChild(createRtSeatNode(code4, false, bookedList, selectedArr));
+
+                    row.appendChild(g1);
+                    row.appendChild(gap);
+                    row.appendChild(g2);
+                    container.appendChild(row);
+                }
+            }
+        }
+
+        function createRtSeatNode(code, isSleeper, bookedList, selectedArr) {
+            const seat = document.createElement("div");
+            seat.className = "bus-seat";
+            if (isSleeper) {
+                seat.classList.add("sleeper-vertical");
+            }
+            seat.textContent = code;
+
+            if (bookedList.includes(code)) {
+                seat.classList.add("occupied");
+            } else {
+                if (selectedArr.includes(code)) {
+                    seat.classList.add("selected");
+                }
+                seat.addEventListener("click", function() {
+                    const pos = selectedArr.indexOf(code);
+                    if (pos > -1) {
+                        selectedArr.splice(pos, 1);
+                        seat.classList.remove("selected");
+                    } else {
+                        if (selectedArr.length >= PASSENGERS_COUNT) {
+                            alert("You can only select " + PASSENGERS_COUNT + " seat(s) for this journey!");
+                            return;
+                        }
+                        selectedArr.push(code);
+                        seat.classList.add("selected");
+                    }
+                    updateSummary();
+                });
+            }
+            return seat;
+        }
+
+        function updateSummary() {
+            document.getElementById("rtDepSeatsText").textContent = rtDepSeats.length ? rtDepSeats.join(", ") : "None";
+            document.getElementById("rtRetSeatsText").textContent = rtRetSeats.length ? rtRetSeats.join(", ") : "None";
+            
+            document.getElementById("rtDepCountLabel").textContent = "Selected: " + rtDepSeats.length + " / " + PASSENGERS_COUNT;
+            document.getElementById("rtRetCountLabel").textContent = "Selected: " + rtRetSeats.length + " / " + PASSENGERS_COUNT;
+
+            document.getElementById("rtDepSelectedInput").value = rtDepSeats.join(",");
+            document.getElementById("rtRetSelectedInput").value = rtRetSeats.join(",");
+
+            const depSub = rtDepSeats.length * DEP_BUS_FARE;
+            const retSub = rtRetSeats.length * RET_BUS_FARE;
+            const subtotal = depSub + retSub;
+            const gstRate = parseFloat("{{ sys_settings.gst_percentage|default:'5' }}") / 100.0;
+            const gst = Math.round(subtotal * gstRate);
+            const feeRate = (typeof window.BUSYATRA_CONVENIENCE_FEE !== 'undefined') ? window.BUSYATRA_CONVENIENCE_FEE : 20;
+            const fee = feeRate * PASSENGERS_COUNT;
+
+            const grandTotal = subtotal + gst + fee;
+
+            document.getElementById("rtDepSubtotal").textContent = "₹" + depSub;
+            document.getElementById("rtRetSubtotal").textContent = "₹" + retSub;
+            document.getElementById("rtTaxes").textContent = "₹" + (gst + fee);
+            document.getElementById("rtGrandTotal").textContent = "₹" + grandTotal;
+
+            const submitBtn = document.getElementById("rtSubmitBtn");
+            if (rtDepSeats.length === PASSENGERS_COUNT && rtRetSeats.length === PASSENGERS_COUNT) {
+                submitBtn.disabled = false;
+            } else {
+                submitBtn.disabled = true;
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            if (IS_DEP_SLEEPER) {
+                const selector = document.getElementById("rtDepDeckSelector");
+                if (selector) selector.classList.remove("d-none");
+            }
+            if (IS_RET_SLEEPER) {
+                const selector = document.getElementById("rtRetDeckSelector");
+                if (selector) selector.classList.remove("d-none");
+            }
+
+            renderRtDepGrid();
+            renderRtRetGrid();
+        });
+        </script>
+
+
+        {% else %}
+
+        <!-- ONE WAY SEAT BOOKING CONTAINER -->
+        <div class="premium-banner">
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <div class="d-flex align-items-center gap-3 mb-2 flex-wrap">
+                        <h2 class="mb-0 fw-bold fs-3 text-white" id="displayBusName">{{ bus.bus_name }}</h2>
+                        <span class="badge bg-primary px-3 py-1 rounded-pill fw-semibold" id="displayBusType">{{ bus.bus_type }}</span>
+                    </div>
+                    <p class="mb-0 text-white-50 small d-flex align-items-center flex-wrap gap-3">
+                        <span><strong class="text-white" id="displayRoute">{{ bus.source }} → {{ bus.destination }}</strong></span>
+                        <span><i class="bi bi-clock-fill text-warning me-1"></i>Departure : <strong class="text-white" id="displayDepTime">{{ bus.departure_time|time:"h:i A" }}</strong></span>
+                        <span><i class="bi bi-calendar-event-fill text-warning me-1"></i>Journey Date : <strong class="text-white" id="displayDate">{{ travel_date }}</strong></span>
+                    </p>
+                </div>
+                <div class="col-lg-4 text-lg-end text-start mt-3 mt-lg-0">
+                    <a href="{% url 'bus_list' %}" class="btn btn-outline-light border-2 px-4 py-2 rounded-4 fw-bold shadow-sm transition-all"><i class="bi bi-arrow-left me-2"></i>Change Trip</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-lg-7">
+                <div class="seat-selection-card">
+                    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                        <h4 class="mb-0 fw-bold text-navy-dark"><i class="bi bi-grid-3x3-gap-fill text-primary me-2"></i>Choose Seats</h4>
+                        <span class="text-muted small fw-semibold" id="seatSelectionCount">Selected: <strong class="text-primary">0 / 5</strong> max</span>
+                    </div>
+                    <div class="deck-tab-container d-none" id="deckSelector">
+                        <button class="deck-tab-btn active" id="lowerDeckBtn" onclick="switchDeck('lower')">Lower Deck</button>
+                        <button class="deck-tab-btn" id="upperDeckBtn" onclick="switchDeck('upper')">Upper Deck</button>
+                    </div>
+                    <div class="cabin-layout shadow-sm" id="cabinMain">
+                        <div class="cabin-steering">
+                            <span class="badge bg-light text-secondary border px-3 py-1.5 rounded-pill fw-semibold">Entry / Front</span>
+                            <div class="driver-icon" title="Driver's Cabin"><i class="bi bi-steering"></i></div>
+                        </div>
+                        <div class="grid-container" id="cabinGrid"></div>
+                    </div>
+                    <div class="legend-grid">
+                        <div class="legend-pill">
+                            <div class="bus-seat" style="width:22px; height:22px; font-size: 0px; border-radius:5px;"></div>
+                            <span>Available</span>
+                        </div>
+                        <div class="legend-pill">
+                            <div class="bus-seat occupied" style="width:22px; height:22px; font-size: 0px; border-radius:5px;"></div>
+                            <span>Occupied</span>
+                        </div>
+                        <div class="legend-pill">
+                            <div class="bus-seat selected" style="width:22px; height:22px; font-size: 0px; border-radius:5px;"></div>
+                            <span>Your Selection</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="glass-checkout-card">
+                    <h5 class="fw-bold mb-4 text-navy-dark d-flex align-items-center justify-content-between">
+                        <span><i class="bi bi-receipt text-primary me-2"></i>Fare Details</span>
+                    </h5>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted font-medium">Selected Seat(s)</span>
+                        <span class="fw-bold text-navy-dark" id="displaySelectedSeats">None</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted font-medium">Base Ticket Price</span>
+                        <span class="fw-semibold text-navy-dark" id="calcBaseFare">₹0</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted font-medium">Convenience & GST Fee</span>
+                        <span class="fw-semibold text-navy-dark" id="calcTaxes">₹0</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-4 bg-light p-3 rounded-4 border">
+                        <span class="fw-bold text-navy-dark text-uppercase small letter-spacing-1">Amount to Pay</span>
+                        <span class="fw-extrabold text-success fs-4" id="calcTotal">₹0</span>
+                    </div>
+
+                    <form id="bookingCheckoutForm" class="d-none" method="POST" action="{% url 'seat_booking' bus.id %}" onsubmit="handleProceedCheckout(event)">
+                        {% csrf_token %}
+                        <input type="hidden" name="selected_seats" id="selectedSeatsInput">
+                        <input type="hidden" name="date" value="{{ travel_date }}">
+                        <input type="hidden" id="primaryEmail" name="email" value="{{ request.session.email|default:'' }}">
+                        <input type="hidden" id="primaryMobile" name="mobile" value="{{ login_user.phone|default:'' }}">
+                        <h6 class="fw-bold text-navy-dark mb-3 border-bottom pb-2"><i class="bi bi-people-fill text-primary me-2"></i>Passenger Information</h6>
+                        <div id="dynamicPassengerFields" class="d-flex flex-column gap-3 mb-4"></div>
+                        <button type="submit" class="btn btn-warning btn-lg w-100 py-3 rounded-4 fw-bold text-navy-dark border-0 hover-scale">
+                            <i class="bi bi-wallet2 me-2"></i>Proceed to Payment
+                        </button>
+                    </form>
+
+                    <div class="text-center p-4 text-muted border border-dashed rounded-4 bg-light" id="unselectedPlaceholder">
+                        <i class="bi bi-cursor-fill fs-3 mb-2 d-block text-primary opacity-50"></i>
+                        <p class="mb-0 fw-medium small">Please select seats from the interactive bus grid to view details and proceed.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% endif %}
+
+    </div>
+</div>
+
+<script>
+window.BUSYATRA_GST_RATE = parseFloat("{{ sys_settings.gst_percentage|default:'5' }}");
+window.BUSYATRA_CONVENIENCE_FEE = parseFloat("{{ sys_settings.convenience_fee|default:'20' }}");
+</script>
+
+<div class="custom-alert-toast" id="customToast">
+    <i class="bi bi-exclamation-triangle-fill text-warning fs-5"></i>
+    <span id="toastMsg" class="small fw-bold"></span>
+
+</div>
+
+{% endblock %}

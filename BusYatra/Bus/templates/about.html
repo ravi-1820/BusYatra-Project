@@ -1,0 +1,330 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<!-- About Hero Section -->
+    <section class="about-hero text-dark">
+        <div class="container position-relative" style="z-index: 1;">
+            <div class="row align-items-center gy-4">
+                <div class="col-lg-7">
+                    <p class="section-label text-warning mb-3"><i class="bi bi-info-circle me-1"></i>About BusYatra</p>
+                    <h1 class="display-5 fw-bold mb-3" style="line-height: 1.2;">
+                        India's Most Trusted<br>
+                        <span style="color: #F59E0B;">Bus Booking Platform</span>
+                    </h1>
+                    <p class="fs-5 text-muted mb-4">
+                        Since 2018, BusYatra has been connecting millions of travellers with safe, affordable, and comfortable bus journeys across India. We bring the best operators, the lowest prices, and a seamless digital experience — all in one place.
+                    </p>
+                    <div class="d-flex flex-wrap gap-3">
+                        <a href="{% url 'bus_list' %}" class="btn btn-warning fw-bold px-4 py-2 rounded-3">
+                            <i class="bi bi-search me-2"></i>Search Buses
+                        </a>
+                        <a href="{% url 'contact' %}" class="btn btn-outline-primary px-4 py-2 rounded-3">
+                            <i class="bi bi-envelope me-2"></i>Get in Touch
+                        </a>
+                    </div>
+                </div>
+                <div class="col-lg-5 text-center d-none d-lg-block">
+                    <div style="font-size: 9rem; opacity: 0.15; line-height: 1;">🚌</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="py-5" style="background: #F8FAFC; margin-top: -1px;">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-6 col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-number">5</div>
+                        <div class="stat-label"><i class="bi bi-people me-1 text-primary"></i>Happy Travellers</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-number">5+</div>
+                        <div class="stat-label"><i class="bi bi-geo-alt me-1 text-success"></i>Routes Covered</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-number">20+</div>
+                        <div class="stat-label"><i class="bi bi-bus-front me-1 text-warning"></i>Bus Operators</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-number">4.5★</div>
+                        <div class="stat-label"><i class="bi bi-star me-1 text-danger"></i>Average Rating</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Mission & Vision -->
+    <section class="py-5" style="font-family: Arial, sans-serif;">
+        <div class="container">
+            <div class="row gy-5 align-items-center">
+                <div class="col-lg-6">
+                    <p class="section-label">Our Mission</p>
+                    <h2 class="fw-bold text-navy-dark mb-4">Making Travel <span class="text-primary">Accessible</span> for Every Indian</h2>
+                    <p class="text-muted mb-3">
+                        BusYatra was founded with one simple goal — to make long-distance travel in India affordable, safe, and stress-free. We believe every person deserves the right to travel comfortably, regardless of their budget.
+                    </p>
+                    <p class="text-muted mb-4">
+                        We partner with hundreds of bus operators across the country, providing passengers with verified schedules, real-time seat availability, instant booking confirmations, and 24/7 customer support.
+                    </p>
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <div class="d-flex align-items-start gap-3 p-3 bg-light rounded-3">
+                                <i class="bi bi-shield-check text-primary fs-4"></i>
+                                <div>
+                                    <div class="fw-bold small text-navy-dark">Verified Operators</div>
+                                    <div class="text-muted" style="font-size: 0.8rem;">All partners are background checked & licensed</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="d-flex align-items-start gap-3 p-3 bg-light rounded-3">
+                                <i class="bi bi-lock text-success fs-4"></i>
+                                <div>
+                                    <div class="fw-bold small text-navy-dark">Secure Payments</div>
+                                    <div class="text-muted" style="font-size: 0.8rem;">100% encrypted transactions always</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="d-flex align-items-start gap-3 p-3 bg-light rounded-3">
+                                <i class="bi bi-headset text-warning fs-4"></i>
+                                <div>
+                                    <div class="fw-bold small text-navy-dark">24/7 Support</div>
+                                    <div class="text-muted" style="font-size: 0.8rem;">Always here to help you on your journey</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="d-flex align-items-start gap-3 p-3 bg-light rounded-3">
+                                <i class="bi bi-cash-coin text-danger fs-4"></i>
+                                <div>
+                                    <div class="fw-bold small text-navy-dark">Best Prices</div>
+                                    <div class="text-muted" style="font-size: 0.8rem;">Guaranteed lowest fares across all routes</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="rounded-4 p-4 text-dark" style="background: linear-gradient(135deg, #F8FBFF 0%, #EAF3FF 50%, #DCEBFF 100%) !important; font-family: Arial, sans-serif; border: 1px solid rgba(37,99,235,0.15); box-shadow: 0 8px 30px rgba(37,99,235,0.08);">
+                        <h4 class="mb-4 fw-bold" style="font-family: Arial, sans-serif;"><i class="bi bi-eye me-2 text-warning"></i>Our Vision</h4>
+                        <p class="mb-4 text-dark opacity-75">
+                            To become the number one travel companion for every Indian — from remote villages to metro cities — making bus travel as easy as a single tap on your phone.
+                        </p>
+                        <hr style="border-color: rgba(0,0,0,0.15);">
+                        <div class="row g-3 mt-2">
+                            <div class="col-6 text-center">
+                                <div style="font-size: 2rem;">🌍</div>
+                                <div class="fw-bold mt-1">Ahmedabad-India</div>
+                                <div class="text-dark opacity-75 small">Coverage by 2026</div>
+                            </div>
+                            <div class="col-6 text-center">
+                                <div style="font-size: 2rem;">📱</div>
+                                <div class="fw-bold mt-1">Mobile-First</div>
+                                <div class="text-dark opacity-75 small">Digital Ticketing</div>
+                            </div>
+                            <div class="col-6 text-center">
+                                <div style="font-size: 2rem;">♻️</div>
+                                <div class="fw-bold mt-1">Eco-Friendly</div>
+                                <div class="text-dark opacity-75 small">Paperless Booking</div>
+                            </div>
+                            <div class="col-6 text-center">
+                                <div style="font-size: 2rem;">🤝</div>
+                                <div class="fw-bold mt-1">Community</div>
+                                <div class="text-dark opacity-75 small">Trusted Partners</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Our Values -->
+    <section class="py-5" style="background: #F8FAFC;">
+        <div class="container">
+            <div class="text-center mb-5">
+                <p class="section-label">What We Stand For</p>
+                <h2 class="fw-bold text-navy-dark">Our Core <span class="text-primary">Values</span></h2>
+                <p class="text-muted mx-auto" style="max-width: 550px;">These principles guide every decision we make — from the operators we partner with to the features we build.</p>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="value-card">
+                        <div class="value-icon" style="background: rgba(37,99,235,0.1);">
+                            <i class="bi bi-shield-fill-check text-primary"></i>
+                        </div>
+                        <h5 class="fw-bold text-navy-dark mb-2">Safety First</h5>
+                        <p class="text-muted small mb-0">We rigorously vet every bus operator, check safety records, and only partner with those who meet our high standards for passenger safety.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="value-card">
+                        <div class="value-icon" style="background: rgba(16,185,129,0.1);">
+                            <i class="bi bi-transparency text-success"></i>
+                        </div>
+                        <h5 class="fw-bold text-navy-dark mb-2">Full Transparency</h5>
+                        <p class="text-muted small mb-0">No hidden charges. No surprise fees. What you see is what you pay — always. We believe in complete honesty with our customers.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="value-card">
+                        <div class="value-icon" style="background: rgba(245,158,11,0.1);">
+                            <i class="bi bi-lightning-charge text-warning"></i>
+                        </div>
+                        <h5 class="fw-bold text-navy-dark mb-2">Innovation</h5>
+                        <p class="text-muted small mb-0">We continuously improve our platform with smarter search, real-time tracking, instant refunds, and features built based on traveller feedback.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="value-card">
+                        <div class="value-icon" style="background: rgba(239,68,68,0.1);">
+                            <i class="bi bi-heart text-danger"></i>
+                        </div>
+                        <h5 class="fw-bold text-navy-dark mb-2">Customer First</h5>
+                        <p class="text-muted small mb-0">Every feature, every policy, every update starts with one question: "Does this make travel better for our customers?"</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="value-card">
+                        <div class="value-icon" style="background: rgba(99,102,241,0.1);">
+                            <i class="bi bi-globe-asia-australia" style="color: #6366F1;"></i>
+                        </div>
+                        <h5 class="fw-bold text-navy-dark mb-2">Inclusivity</h5>
+                        <p class="text-muted small mb-0">We design for all Indians — in multiple languages, for all screen sizes, and with accessibility at the heart of our product design.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="value-card">
+                        <div class="value-icon" style="background: rgba(20,184,166,0.1);">
+                            <i class="bi bi-recycle" style="color: #14B8A6;"></i>
+                        </div>
+                        <h5 class="fw-bold text-navy-dark mb-2">Sustainability</h5>
+                        <p class="text-muted small mb-0">100% digital, paperless ticketing reduces our environmental footprint. We actively promote shared travel over individual transport.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Our Journey Timeline -->
+    <section class="py-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-5 mb-5 mb-lg-0">
+                    <p class="section-label">Our Story</p>
+                    <h2 class="fw-bold text-navy-dark mb-3">The BusYatra <span class="text-primary">Journey</span></h2>
+                    <p class="text-muted">From a small startup in Bangalore to India's most loved bus booking platform — here's how we grew.</p>
+                </div>
+                <div class="col-lg-7">
+                    <div class="timeline-item">
+                        <div class="timeline-dot">18</div>
+                        <div class="bg-white border rounded-3 p-3 shadow-sm">
+                            <div class="fw-bold text-navy-dark">2018 — The Beginning</div>
+                            <div class="text-muted small mt-1">BusYatra launched with just 12 bus operators and 3 routes. The idea was simple: one app for all your bus bookings.</div>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-dot">19</div>
+                        <div class="bg-white border rounded-3 p-3 shadow-sm">
+                            <div class="fw-bold text-navy-dark">2019 — First 1 Lakh Users</div>
+                            <div class="text-muted small mt-1">Within a year, we reached 1 lakh registered users and expanded to 50+ routes across South India.</div>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-dot">21</div>
+                        <div class="bg-white border rounded-3 p-3 shadow-sm">
+                            <div class="fw-bold text-navy-dark">2021 — Pan-India Expansion</div>
+                            <div class="text-muted small mt-1">Post-pandemic, we expanded to 500+ routes and launched our digital QR ticketing system, eliminating paper tickets entirely.</div>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-dot">23</div>
+                        <div class="bg-white border rounded-3 p-3 shadow-sm">
+                            <div class="fw-bold text-navy-dark">2023 — 5 Million Travellers</div>
+                            <div class="text-muted small mt-1">We crossed the 5 million traveller milestone and launched our Operator Manager Portal, empowering bus companies to manage their fleet digitally.</div>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-dot">26</div>
+                        <div class="bg-white border rounded-3 p-3 shadow-sm border-primary" style="border-width: 2px !important;">
+                            <div class="fw-bold text-primary">2026 — Today & Beyond</div>
+                            <div class="text-muted small mt-1">With 800+ routes, 200+ operators, and a 4.9-star average rating, BusYatra continues to redefine bus travel in India.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Team Section -->
+    <section class="py-5" style="background: #F8FAFC;">
+        <div class="container">
+            <div class="text-center mb-5">
+                <p class="section-label">The People Behind BusYatra</p>
+                <h2 class="fw-bold text-navy-dark">Meet Our <span class="text-primary">Leadership Team</span></h2>
+            </div>
+            <div class="row g-4 justify-content-center">
+                <div class="col-6 col-md-3">
+                    <div class="team-card">
+                        <div class="team-avatar" style="background: linear-gradient(135deg, #2563EB, #1D4ED8);">AR</div>
+                        <h6 class="fw-bold text-navy-dark mb-1">Arjun Rao</h6>
+                        <div class="text-primary small fw-semibold mb-2">CEO & Co-Founder</div>
+                        <div class="text-muted" style="font-size: 0.78rem;">12 years in travel tech. Previously at MakeMyTrip.</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="team-card">
+                        <div class="team-avatar" style="background: linear-gradient(135deg, #059669, #10B981);">PM</div>
+                        <h6 class="fw-bold text-navy-dark mb-1">Priya Menon</h6>
+                        <div class="text-primary small fw-semibold mb-2">CTO & Co-Founder</div>
+                        <div class="text-muted" style="font-size: 0.78rem;">IIT Bombay graduate. Expert in scalable backend systems.</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="team-card">
+                        <div class="team-avatar" style="background: linear-gradient(135deg, #D97706, #F59E0B);">SK</div>
+                        <h6 class="fw-bold text-navy-dark mb-1">Suresh Kumar</h6>
+                        <div class="text-primary small fw-semibold mb-2">Head of Operations</div>
+                        <div class="text-muted" style="font-size: 0.78rem;">Manages 200+ operator partnerships across India.</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="team-card">
+                        <div class="team-avatar" style="background: linear-gradient(135deg, #7C3AED, #8B5CF6);">NP</div>
+                        <h6 class="fw-bold text-navy-dark mb-1">Neha Patel</h6>
+                        <div class="text-primary small fw-semibold mb-2">Head of Product</div>
+                        <div class="text-muted" style="font-size: 0.78rem;">Design-first thinker. Obsessed with customer experience.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-5" style="background: linear-gradient(135deg, #F8FBFF 0%, #EAF3FF 50%, #DCEBFF 100%); font-family: Arial, sans-serif;">
+        <div class="container text-center py-3" style="color: black !important; font-family: Arial, sans-serif;">
+            <h2 class="fw-bold mb-3" style="color: black !important; font-family: Arial, sans-serif;">Ready to Travel with BusYatra?</h2>
+            <p class="mb-4 mx-auto" style="max-width: 500px; color: black !important; opacity: 0.8; font-family: Arial, sans-serif;">Join 5 million travellers who trust BusYatra for safe, affordable, and comfortable bus journeys.</p>
+            <div class="d-flex flex-wrap justify-content-center gap-3">
+                <a href="{% url 'bus_list' %}" class="btn btn-warning fw-bold px-5 py-2 rounded-3" style="font-family: Arial, sans-serif;">
+                    <i class="bi bi-search me-2"></i>Search Buses Now
+                </a>
+                <a href="{% url 'register' %}" class="btn btn-outline-dark px-5 py-2 rounded-3" style="font-family: Arial, sans-serif;">
+                    <i class="bi bi-person-plus me-2"></i>Create Free Account
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+{% endblock %}

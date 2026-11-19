@@ -1,0 +1,27 @@
+# Core Web Framework
+Django>=5.0.6
+asgiref>=3.7.0
+sqlparse>=0.4.4
+python-dotenv>=1.0.0
+
+# Payment Integration
+razorpay>=2.0.1
+requests>=2.31.0
+
+# Document & QR Code Generation
+reportlab>=4.0.0
+qrcode>=8.0
+
+# Media & Image Handling
+pillow>=10.0.0
+
+# Production Deployment & Static Files
+gunicorn>=21.2.0
+whitenoise>=6.5.0
+
+# Utilities & Networking
+tzdata>=2023.3
+urllib3>=2.0.0
+certifi>=2023.7.22
+charset-normalizer>=3.2.0
+idna>=3.4

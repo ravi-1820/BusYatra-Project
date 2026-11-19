@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+    <defs>
+        <linearGradient id="blueGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#1d4ed8" />
+            <stop offset="100%" stop-color="#1e3a8a" />
+        </linearGradient>
+        <linearGradient id="yellowBadge" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#fbbf24" />
+            <stop offset="100%" stop-color="#f59e0b" />
+        </linearGradient>
+    </defs>
+    <!-- Background Circle -->
+    <circle cx="50" cy="50" r="48" fill="url(#blueGradient)" />
+    <!-- Bus Body -->
+    <rect x="22" y="30" width="56" height="34" rx="7" ry="7" fill="#ffffff" />
+    <!-- Windshield -->
+    <rect x="26" y="35" width="48" height="13" rx="3" ry="3" fill="#0f172a" />
+    <!-- Driver Window Divider -->
+    <line x1="50" y1="35" x2="50" y2="48" stroke="#ffffff" stroke-width="1.5" />
+    <!-- Headlights -->
+    <circle cx="30" cy="55" r="3.5" fill="#f59e0b" />
+    <circle cx="70" cy="55" r="3.5" fill="#f59e0b" />
+    <!-- Bumper Grille -->
+    <rect x="40" y="53" width="20" height="4" rx="2" fill="#94a3b8" />
+    <!-- Wheels -->
+    <circle cx="33" cy="65" r="6.5" fill="#0f172a" />
+    <circle cx="33" cy="65" r="2.5" fill="#cbd5e1" />
+    <circle cx="67" cy="65" r="6.5" fill="#0f172a" />
+    <circle cx="67" cy="65" r="2.5" fill="#cbd5e1" />
+    <!-- Badge Ribbons -->
+    <path d="M72 14 L88 24 L78 30 Z" fill="url(#yellowBadge)" />
+</svg>

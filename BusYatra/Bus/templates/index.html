@@ -1,0 +1,558 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+
+<!-- Hero Banner Section -->
+<header class="hero-section">
+    <div class="container position-relative z-1">
+        <div class="row align-items-center gy-4">
+            <!-- Left Side: Bus Card Banner with Star Rating -->
+            <div class="col-lg-6 text-center">
+                <div class="hero-bus-card-wrapper d-inline-block position-relative">
+                    <img src="{% static 'assets/images/hero-bus.jpg' %}?v=2" alt="Travel Bus Banner"
+                        class="img-fluid hero-bus-card-img">
+                    <span class="hero-rating-badge">
+                        <i class="bi bi-star-fill me-1"></i>4.5 rated
+                    </span>
+                </div>
+            </div>
+            <!-- Right Side: Eyebrow, Heading, Subtitle & Action Buttons -->
+            <div class="col-lg-6 text-center text-lg-start ps-lg-4">
+                <span class="badge bg-primary-subtle text-white border border-light border-opacity-25 px-3 py-2 rounded-pill fw-bold text-uppercase tracking-wider small mb-3 d-inline-block opacity-90" style="background: rgba(255,255,255,0.15) !important;">
+                    <i class="bi bi-lightning-charge-fill me-1 text-warning"></i>Travel Smarter With BusYatra
+                </span>
+                <h1 class="hero-title mb-3">Explore The World <span class="d-block">Comfortably</span></h1>
+                <p class="hero-subtitle mb-4">Book premium AC sleeper and seater bus tickets at great prices. Enjoy safe and reliable journeys with top-rated travel operators across the country.</p>
+                <div class="d-flex flex-wrap justify-content-center justify-content-lg-start gap-3">
+                    <a href="{% url 'bus_list' %}" class="btn btn-hero-primary btn-lg">
+                        <i class="bi bi-search me-2"></i>Book Now
+                    </a>
+                    <a href="{% url 'travel_guidelines' %}" class="btn btn-hero-outline btn-lg">
+                        <i class="bi bi-shield-check me-2"></i>Safe Travel Guidelines
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- Search Form Section -->
+<section id="search-section" class="container mb-5">
+    <div class="search-card">
+        <form action="{% url 'bus_list' %}" method="GET" id="busSearchForm">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
+                <h4 class="mb-0 text-navy-dark"><i class="bi bi-ticket-perforated text-primary me-2"></i>Search Bus Tickets</h4>
+                <!-- Premium Segmented Radio Control -->
+                <div class="trip-type-segmented-control">
+                    <input type="radio" class="btn-check" name="round_trip" id="tripOneWay" value="0" checked autocomplete="off">
+                    <label class="trip-type-pill" for="tripOneWay">
+                        <i class="bi bi-arrow-right text-primary me-1"></i>One Way
+                    </label>
+
+                    <input type="radio" class="btn-check" name="round_trip" id="tripRoundTrip" value="1" autocomplete="off">
+                    <label class="trip-type-pill" for="tripRoundTrip">
+                        <i class="bi bi-arrow-left-right text-primary me-1"></i>Round Trip
+                    </label>
+                </div>
+            </div>
+            <div class="row g-3 align-items-end">
+                <!-- From Field -->
+                <div class="col-lg-3 col-md-6">
+                    <label class="form-label fw-semibold text-secondary">From City</label>
+                    <div class="input-group-custom">
+                        <i class="bi bi-geo-alt-fill text-primary"></i>
+                        <select class="form-select" name="from" id="fromCity">
+                            <option value="" selected>Select Source</option>
+                            {% for src in sources %}
+                            <option value="{{ src }}">{{ src }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Swap Button -->
+                <div class="col-lg-1 col-md-12 text-center my-2 my-lg-0">
+                    <button type="button" class="btn btn-swap-cities" id="swapBtn" title="Swap Cities">
+                        <i class="bi bi-arrow-left-right"></i>
+                    </button>
+                </div>
+
+                <!-- To Field -->
+                <div class="col-lg-3 col-md-6">
+                    <label class="form-label fw-semibold text-secondary">To City</label>
+                    <div class="input-group-custom">
+                        <i class="bi bi-geo-fill text-primary"></i>
+                        <select class="form-select" name="to" id="toCity">
+                            <option value="" selected>Select Destination</option>
+                            {% for dest in destinations %}
+                            <option value="{{ dest }}">{{ dest }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Date Field -->
+                <div class="col-lg-3 col-md-6" id="travelDateCol">
+                    <label class="form-label fw-semibold text-secondary">Travel Date</label>
+                    <div class="input-group-custom">
+                        <i class="bi bi-calendar-event-fill text-primary"></i>
+                        <input type="date" class="form-control" name="date" id="travelDate" required>
+                    </div>
+                </div>
+
+                <!-- Return Date Field (Visible only in Round Trip mode) -->
+                <div class="col-lg-2 col-md-6" id="returnDateCol" style="display: none;">
+                    <label class="form-label fw-semibold text-secondary">Return Date</label>
+                    <div class="input-group-custom">
+                        <i class="bi bi-calendar2-check-fill text-primary"></i>
+                        <input type="date" class="form-control" name="return_date" id="returnDate">
+                    </div>
+                    <div id="returnDateError" class="text-danger small mt-1 fw-semibold" style="display: none;">
+                        Return date cannot be earlier than travel date.
+                    </div>
+                </div>
+
+                <!-- Passengers Field -->
+                <div class="col-lg-2 col-md-6" id="passengersCol">
+                    <label class="form-label fw-semibold text-secondary">Passengers</label>
+                    <div class="input-group-custom">
+                        <i class="bi bi-people-fill text-primary"></i>
+                        <input type="number" class="form-control" name="passengers" id="passengers" value="1" min="1" max="10" placeholder="1" required>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="col-12 mt-4">
+                    <button type="submit" class="btn btn-primary-custom w-100 py-3 fs-5 shadow-sm">
+                        <i class="bi bi-search me-2"></i>Search Available Buses
+                    </button>
+                </div>
+            </div>
+        </form>
+
+        <!-- Quick Trust / Service Features Bar -->
+        <hr class="my-4 text-secondary opacity-25">
+        <div class="row g-3 justify-content-between text-center text-md-start">
+            <div class="col-6 col-md-3">
+                <div class="d-flex align-items-center justify-content-center justify-content-md-start gap-2 text-secondary fw-medium small">
+                    <i class="bi bi-patch-check-fill text-primary fs-5"></i>
+                    <span>Instant Booking</span>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="d-flex align-items-center justify-content-center justify-content-md-start gap-2 text-secondary fw-medium small">
+                    <i class="bi bi-shield-lock-fill text-primary fs-5"></i>
+                    <span>Verified Bus Operators</span>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="d-flex align-items-center justify-content-center justify-content-md-start gap-2 text-secondary fw-medium small">
+                    <i class="bi bi-tag-fill text-primary fs-5"></i>
+                    <span>Zero Hidden Fees</span>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="d-flex align-items-center justify-content-center justify-content-md-start gap-2 text-secondary fw-medium small">
+                    <i class="bi bi-headset text-primary fs-5"></i>
+                    <span>24/7 Customer Support</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Popular Routes Section -->
+<section class="py-5 bg-white position-relative overflow-hidden">
+    <div class="container">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+            <div>
+                <h2 class="section-title text-start mb-1">Popular Bus Routes</h2>
+                <p class="text-muted mb-0 small">Explore top-rated routes with real-time bus schedules and instant booking</p>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <span class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill fw-semibold">
+                    <i class="bi bi-geo-alt-fill me-1"></i>Total Active Routes: {{ routes.count }}
+                </span>
+                <!-- Shadcn Style Carousel Navigation Controls -->
+                <div class="shadcn-carousel-controls d-flex align-items-center gap-2">
+                    <button type="button" class="carousel-btn-prev btn rounded-circle shadow-sm" aria-label="Previous Slide">
+                        <i class="bi bi-arrow-left"></i>
+                    </button>
+                    <button type="button" class="carousel-btn-next btn rounded-circle shadow-sm" aria-label="Next Slide">
+                        <i class="bi bi-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        {% if routes %}
+        <!-- Swiper Carousel Container -->
+        <div class="swiper popular-routes-swiper pb-2">
+            <div class="swiper-wrapper">
+                {% for route in routes %}
+                <div class="swiper-slide h-auto">
+                    <div class="card route-card-carousel h-100 border-0 shadow-sm rounded-4 p-3 bg-white">
+                        <div class="card-body p-2 d-flex flex-column justify-content-between">
+                            <div>
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <span class="badge bg-success-subtle text-success px-3 py-1 rounded-pill small fw-medium">
+                                        <i class="bi bi-lightning-charge-fill me-1"></i>Daily Runs
+                                    </span>
+                                    <span class="text-muted small">
+                                        <i class="bi bi-clock me-1 text-primary"></i>{{ route.duration }} hrs
+                                    </span>
+                                </div>
+                                <h5 class="card-title fw-bold text-navy-dark mb-1 d-flex align-items-center justify-content-between fs-6">
+                                    <span>{{ route.source }}</span>
+                                    <i class="bi bi-arrow-right text-primary mx-2 route-arrow-icon"></i>
+                                    <span>{{ route.destination }}</span>
+                                </h5>
+                                <p class="text-muted small mb-0 opacity-75">Express Non-Stop</p>
+                            </div>
+                            <div>
+                                <hr class="my-3 text-secondary opacity-25">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <span class="text-muted small d-block">Distance</span>
+                                        <h4 class="text-primary fw-bold mb-0 fs-5">
+                                            {{ route.distance }} <span class="fs-6 fw-normal text-secondary">KM</span>
+                                        </h4>
+                                    </div>
+                                    <a href="{% url 'bus_list' %}?from={{ route.source|urlencode }}&to={{ route.destination|urlencode }}&source={{ route.source|urlencode }}&destination={{ route.destination|urlencode }}"
+                                        class="btn btn-primary rounded-pill px-3 py-2 d-flex align-items-center gap-1 route-arrow-btn">
+                                        <span class="small fw-semibold">Book Now</span>
+                                        <i class="bi bi-arrow-right fs-6"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <!-- Restored Pagination Dots (.....) -->
+            <div class="swiper-pagination"></div>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <h5 class="text-muted">No Routes Available</h5>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        if (document.querySelector('.popular-routes-swiper')) {
+            new Swiper('.popular-routes-swiper', {
+                slidesPerView: 1,
+                spaceBetween: 20,
+                loop: true,
+                autoplay: {
+                    delay: 3500,
+                    disableOnInteraction: false,
+                    pauseOnMouseEnter: true,
+                },
+                pagination: {
+                    el: '.popular-routes-swiper .swiper-pagination',
+                    clickable: true,
+                },
+                navigation: {
+                    nextEl: '.carousel-btn-next',
+                    prevEl: '.carousel-btn-prev',
+                },
+                breakpoints: {
+                    576: { slidesPerView: 2, spaceBetween: 20 },
+                    992: { slidesPerView: 3, spaceBetween: 24 },
+                    1200: { slidesPerView: 4, spaceBetween: 24 }
+                }
+            });
+        }
+    });
+</script>
+
+<!-- Why Choose Us Section -->
+<section id="why-choose-us" class="py-5 bg-light">
+    <div class="container">
+        <h2 class="section-title text-center">Why Book With BusYatra?</h2>
+        <div class="row g-4">
+            <!-- Card 1 -->
+            <div class="col-md-4 text-center">
+                <div class="card card-custom h-100 p-4 border-0">
+                    <div class="card-body">
+                        <div class="icon-container icon-blue mx-auto">
+                            <i class="bi bi-shield-fill-check fs-3"></i>
+                        </div>
+                        <h5 class="mb-2 text-navy-dark">100% Safe Travel</h5>
+                        <p class="text-muted mb-0">Track your bus live, get emergency alert buttons, and travel with
+                            certified drivers.</p>
+                    </div>
+                </div>
+            </div>
+            <!-- Card 2 -->
+            <div class="col-md-4 text-center">
+                <div class="card card-custom h-100 p-4 border-0">
+                    <div class="card-body">
+                        <div class="icon-container icon-amber mx-auto">
+                            <i class="bi bi-cash-stack fs-3"></i>
+                        </div>
+                        <h5 class="mb-2 text-navy-dark">No Booking Fees</h5>
+                        <p class="text-muted mb-0">We guarantee the lowest ticket pricing. Zero hidden commissions or
+                            extra checkout fees.</p>
+                    </div>
+                </div>
+            </div>
+            <!-- Card 3 -->
+            <div class="col-md-4 text-center">
+                <div class="card card-custom h-100 p-4 border-0">
+                    <div class="card-body">
+                        <div class="icon-container icon-green mx-auto">
+                            <i class="bi bi-headset fs-3"></i>
+                        </div>
+                        <h5 class="mb-2 text-navy-dark">24/7 Customer Care</h5>
+                        <p class="text-muted mb-0">Dedicated support team available round the clock to help with
+                            scheduling issues and refunds.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% if featured_reviews %}
+<!-- Featured Passenger Reviews Section (Manager/Admin Curated) -->
+<section id="customer-reviews" class="py-5 bg-white border-top">
+    <div class="container py-2">
+        <div class="text-center mb-5">
+            <span class="badge bg-warning-subtle text-warning border border-warning border-opacity-25 px-3 py-1.5 rounded-pill fw-semibold small mb-2">Verified Feedback</span>
+            <h2 class="section-title text-center mb-2">What Our Passengers Say</h2>
+            <p class="text-muted small">Real travel experiences shared by verified BusYatra travelers</p>
+        </div>
+
+        <div class="row g-4 justify-content-center">
+            {% for rev in featured_reviews %}
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 border-0 shadow-sm rounded-4 p-4 position-relative bg-light hover-scale transition-all">
+                    <div class="text-warning fs-5 mb-2">
+                        {% for i in "12345" %}
+                            {% if forloop.counter <= rev.rating %}
+                                <i class="bi bi-star-fill"></i>
+                            {% else %}
+                                <i class="bi bi-star text-muted opacity-25"></i>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                    <p class="card-text text-navy-dark small mb-4 fst-italic">
+                        "{{ rev.comment }}"
+                    </p>
+                    <div class="mt-auto d-flex align-items-center gap-3 pt-3 border-top border-secondary border-opacity-10">
+                        <div class="rounded-circle bg-warning text-white fw-bold d-flex align-items-center justify-content-center" style="width:42px; height:42px; background-color: var(--amber-accent) !important;">
+                            {{ rev.user.name|first|upper }}
+                        </div>
+                        <div>
+                            <h6 class="fw-bold text-navy-dark mb-0 small">{{ rev.user.name }}</h6>
+                            <small class="text-muted d-block" style="font-size:0.75rem;"><i class="bi bi-bus-front me-1"></i>{{ rev.bus.bus_name }}</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% else %}
+<!-- Testimonials Section -->
+<section class="py-5 bg-white">
+    <div class="container">
+        <h2 class="section-title text-center">What Our Travelers Say</h2>
+        <div id="testimonialCarousel" class="carousel slide" data-bs-ride="carousel">
+            <div class="carousel-inner">
+                <!-- Slide 1 -->
+                <div class="carousel-item active">
+                    <div class="row justify-content-center">
+                        <div class="col-md-8 text-center">
+                            <div class="rating-badge mb-3 bg-amber-light text-warning px-3 py-1">
+                                <i class="bi bi-star-fill me-1"></i>
+                                <i class="bi bi-star-fill me-1"></i>
+                                <i class="bi bi-star-fill me-1"></i>
+                                <i class="bi bi-star-fill me-1"></i>
+                                <i class="bi bi-star-fill"></i>
+                            </div>
+                            <p class="fs-5 italic text-secondary px-4">"Booking tickets with BusYatra was an absolute
+                                breeze. The seat selection interface is interactive and easy to use. The bus arrived on
+                                time and was very comfortable!"</p>
+                            <h6 class="mt-4 mb-0 text-navy-dark">Rahul Verma</h6>
+                            <small class="text-muted">Travelled to Goa</small>
+                        </div>
+                    </div>
+                </div>
+                <!-- Slide 2 -->
+                <div class="carousel-item">
+                    <div class="row justify-content-center">
+                        <div class="col-md-8 text-center">
+                            <div class="rating-badge mb-3 bg-amber-light text-warning px-3 py-1">
+                                <i class="bi bi-star-fill me-1"></i>
+                                <i class="bi bi-star-fill me-1"></i>
+                                <i class="bi bi-star-fill me-1"></i>
+                                <i class="bi bi-star-fill me-1"></i>
+                                <i class="bi bi-star-half"></i>
+                            </div>
+                            <p class="fs-5 italic text-secondary px-4">"I highly recommend the sleeper coach option.
+                                Super spacious seats, clean linens, and a helper to carry bags. The digital QR ticket on
+                                my phone made boarding seamless."</p>
+                            <h6 class="mt-4 mb-0 text-navy-dark">Sneha Patil</h6>
+                            <small class="text-muted">Travelled to Bangalore</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button class="carousel-control-prev" type="button" data-bs-target="#testimonialCarousel"
+                data-bs-slide="prev">
+                <span class="carousel-control-prev-icon bg-navy-dark p-3 rounded-circle" aria-hidden="true"></span>
+                <span class="visually-hidden">Previous</span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#testimonialCarousel"
+                data-bs-slide="next">
+                <span class="carousel-control-next-icon bg-navy-dark p-3 rounded-circle" aria-hidden="true"></span>
+                <span class="visually-hidden">Next</span>
+            </button>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+
+<!-- Search Validation Modal -->
+<div class="modal fade" id="searchValidationModal" tabindex="-1" aria-labelledby="searchValidationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
+        <div class="modal-content modal-content-clean text-center">
+            <!-- Close Button (Top Right Inside White Card) -->
+            <button type="button" class="modal-close-btn-clean" data-bs-dismiss="modal" aria-label="Close">
+                <i class="bi bi-x-lg"></i>
+            </button>
+
+            <!-- Center Layered Blue Location Ring -->
+            <div class="validation-icon-ring">
+                <i class="bi bi-geo-alt-fill"></i>
+            </div>
+
+            <!-- Title -->
+            <h4 class="modal-title-clean" id="searchValidationModalLabel">Select Origin &amp; Destination</h4>
+
+            <!-- Description -->
+            <p class="modal-text-clean" id="searchValidationMessage">
+                Please choose your source and destination cities from the dropdown to view available buses.
+            </p>
+
+            <!-- Action Button -->
+            <button type="button" class="btn-validation-pill" data-bs-dismiss="modal">Got It, Thanks</button>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const tripOneWay = document.getElementById("tripOneWay");
+    const tripRoundTrip = document.getElementById("tripRoundTrip");
+    const returnDateCol = document.getElementById("returnDateCol");
+    const travelDate = document.getElementById("travelDate");
+    const returnDate = document.getElementById("returnDate");
+    const returnDateError = document.getElementById("returnDateError");
+
+    // Set min date to today for travelDate
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (travelDate) {
+        travelDate.min = todayStr;
+        if (!travelDate.value) {
+            travelDate.value = todayStr;
+        }
+    }
+
+    function toggleReturnDate() {
+        if (tripRoundTrip && tripRoundTrip.checked) {
+            if (returnDateCol) returnDateCol.style.display = "block";
+            if (returnDate) {
+                returnDate.required = true;
+                returnDate.min = travelDate ? travelDate.value : todayStr;
+                if (!returnDate.value || returnDate.value < (travelDate ? travelDate.value : todayStr)) {
+                    returnDate.value = travelDate ? travelDate.value : todayStr;
+                }
+            }
+        } else {
+            if (returnDateCol) returnDateCol.style.display = "none";
+            if (returnDate) {
+                returnDate.required = false;
+            }
+            if (returnDateError) returnDateError.style.display = "none";
+        }
+    }
+
+    if (tripOneWay) tripOneWay.addEventListener("change", toggleReturnDate);
+    if (tripRoundTrip) tripRoundTrip.addEventListener("change", toggleReturnDate);
+    if (travelDate) {
+        travelDate.addEventListener("change", function () {
+            if (returnDate) {
+                returnDate.min = travelDate.value;
+                if (returnDate.value && returnDate.value < travelDate.value) {
+                    returnDate.value = travelDate.value;
+                }
+            }
+            if (returnDateError) returnDateError.style.display = "none";
+        });
+    }
+
+    if (returnDate) {
+        returnDate.addEventListener("change", function () {
+            if (travelDate && returnDate.value < travelDate.value) {
+                if (returnDateError) returnDateError.style.display = "block";
+            } else {
+                if (returnDateError) returnDateError.style.display = "none";
+            }
+        });
+    }
+
+    toggleReturnDate();
+
+    const searchForm = document.getElementById("busSearchForm");
+    if (searchForm) {
+        searchForm.addEventListener("submit", function (e) {
+            const fromCity = document.getElementById("fromCity");
+            const toCity = document.getElementById("toCity");
+
+            const fromVal = fromCity ? fromCity.value.trim() : "";
+            const toVal = toCity ? toCity.value.trim() : "";
+
+            const isFromEmpty = !fromVal || fromVal.toLowerCase() === "select source";
+            const isToEmpty = !toVal || toVal.toLowerCase() === "select destination";
+
+            if (isFromEmpty || isToEmpty) {
+                e.preventDefault();
+                let msg = "";
+                if (isFromEmpty && isToEmpty) {
+                    msg = "Please choose your source and destination cities from the dropdown to view available buses.";
+                } else if (isFromEmpty) {
+                    msg = "Please choose your source city from the dropdown to view available buses.";
+                } else {
+                    msg = "Please choose your destination city from the dropdown to view available buses.";
+                }
+
+                const msgEl = document.getElementById("searchValidationMessage");
+                if (msgEl) msgEl.innerText = msg;
+
+                const validationModal = new bootstrap.Modal(document.getElementById('searchValidationModal'));
+                validationModal.show();
+                return;
+            }
+
+            if (tripRoundTrip && tripRoundTrip.checked) {
+                if (returnDate && travelDate && returnDate.value < travelDate.value) {
+                    e.preventDefault();
+                    if (returnDateError) returnDateError.style.display = "block";
+                    return;
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+
+
+<head>
+   <!-- Microsoft Clarity tracking code for analytics and user behavior insights -->
+   <script type="text/javascript">
+        (function (c, l, a, r, i, t, y) {
+            c[a] = c[a] || function () { (c[a].q = c[a].q || []).push(arguments) };
+            t = l.createElement(r); t.async = 1; t.src = "https://www.clarity.ms/tag/" + i;
+            y = l.getElementsByTagName(r)[0]; y.parentNode.insertBefore(t, y);
+        })(window, document, "clarity", "script", "xwyvranqrl");
+    </script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BusYatra - Premium Bus Ticket Booking System</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="{% static 'assets/images/favicon.svg' %}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'assets/images/favicon-32x32.png' %}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{% static 'assets/images/favicon-16x16.png' %}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'assets/images/apple-touch-icon.png' %}">
+    <link rel="shortcut icon" href="{% static 'assets/images/favicon.ico' %}">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Custom Style Sheet -->
+    <link rel="stylesheet" href="{% static 'assets/css/style.css' %}?v=1.5">
+
+    <!-- Swiper CSS for Modern Carousel Slider -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+</head>
+
+<body>
+
+    {% if sys_settings.maintenance_mode and not request.path|slice:":6" == "/admin" and not request.path|slice:":8" == "/manager" %}
+    <!-- Maintenance Banner & Modal -->
+    <div class="bg-danger text-white py-2 px-3 text-center sticky-top shadow-sm z-3 d-flex align-items-center justify-content-center gap-2" id="maintenanceTopBanner">
+        <i class="bi bi-tools fs-5"></i>
+        <span class="fw-semibold small">Website Under Scheduled Maintenance: Ticket bookings are temporarily unavailable. Please try again later.</span>
+    </div>
+
+    <div class="modal fade show" id="maintenanceModal" tabindex="-1" style="display: block; background: rgba(0,0,0,0.6);" aria-modal="true" role="dialog">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 shadow-lg text-center p-4">
+                <div class="modal-body">
+                    <div class="bg-warning-subtle text-warning rounded-circle d-inline-flex p-3 mb-3">
+                        <i class="bi bi-gear-wide-connected fs-1"></i>
+                    </div>
+                    <h4 class="fw-bold text-navy-dark mb-2">Website Under Maintenance</h4>
+                    <p class="text-muted mb-4">
+                        {{ sys_settings.app_name|default:'BusYatra' }} is currently undergoing scheduled system maintenance to improve our platform.
+                        Ticket bookings are temporarily paused. We apologize for any inconvenience.
+                    </p>
+                    <button type="button" class="btn btn-primary px-4 py-2 rounded-3 text-white fw-semibold" onclick="document.getElementById('maintenanceModal').style.display='none'">
+                        Understood
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Header Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-custom sticky-top">
+
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="{% url 'index' %}">
+                <img src="{% static 'assets/images/logo.png' %}" alt="BusYatra Logo" height="68">
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    <li class="nav-item">
+                        <a class="nav-link fw-bold {% if request.resolver_match.url_name == 'index' %}active{% endif %}" href="{% url 'index' %}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link fw-bold {% if request.resolver_match.url_name == 'bus_list' %}active{% endif %}" href="{% url 'bus_list' %}">Buses</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link fw-bold {% if request.resolver_match.url_name == 'my_orders' %}active{% endif %}" href="{% url 'my_orders' %}">My bookings</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link fw-bold {% if request.resolver_match.url_name == 'about' %}active{% endif %}" href="{% url 'about' %}">About us</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link fw-bold {% if request.resolver_match.url_name == 'contact' %}active{% endif %}" href="{% url 'contact' %}">Contact</a>
+                    </li>
+
+                    <li class="nav-item ms-lg-3 mt-2 mt-lg-0 d-flex align-items-center gap-2" id="navUserArea">
+                        {% if request.session.email %}
+                        <div class="dropdown profile-dropdown">
+                            {% if login_user and login_user.profile and login_user.profile.name %}
+                            <!-- Dropdown toggle button for users with custom profile photos -->
+                            <a href="#"
+                                class="dropdown-toggle ms-2 d-inline-flex align-items-center gap-2 text-dark text-decoration-none"
+                                role="button" data-bs-toggle="dropdown" data-bs-offset="0,8" aria-expanded="false"
+                                title="{{ login_user.name|default:request.session.name }}">
+                                <img src="{{ login_user.profile.url }}" width="42" height="42"
+                                    class="rounded-circle border border-2 object-fit-cover">
+                                <span class="fw-semibold text-black notranslate" style="color: #000 !important;">{{ login_user.name|default:request.session.name }}</span>
+                            </a>
+                            {% else %}
+                            <!-- Dropdown toggle button for users without profile photos (default icon) -->
+                            <a href="#"
+                                class="dropdown-toggle ms-2 d-inline-flex align-items-center gap-2 text-dark text-decoration-none"
+                                role="button" data-bs-toggle="dropdown" data-bs-offset="0,8" aria-expanded="false"
+                                title="{{ login_user.name|default:request.session.name }}">
+                                <i class="bi bi-person-circle fs-2 text-dark"></i>
+                                <span class="fw-semibold text-black notranslate" style="color: #000 !important;">{{ login_user.name|default:request.session.name }}</span>
+                            </a>
+                            {% endif %}
+                            <!-- Redesigned profile menu list -->
+                            <ul class="dropdown-menu dropdown-menu-end header-profile-menu">
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'account' %}">
+                                        View Profile
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'logout' %}">
+                                        Logout
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                        {% else %}
+                        <a href="{% url 'login' %}" class="btn btn-outline-nav">
+                            <i class="bi bi-box-arrow-in-right me-1"></i>Login
+                        </a>
+                        {% endif %}
+                    </li>
+
+                    <!-- Language Translator Dropdown -->
+                    <li class="nav-item dropdown ms-lg-2 mt-2 mt-lg-0">
+                        <a class="nav-link dropdown-toggle d-inline-flex align-items-center gap-1 bg-white border border-light-subtle rounded-pill px-3 py-1 shadow-sm text-dark fw-medium"
+                            href="#" role="button" id="languageDropdown" data-bs-toggle="dropdown"
+                            aria-expanded="false">
+                            <i class="bi bi-translate text-primary me-1 fs-6"></i>
+                            <span id="selectedLanguageText">English</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 mt-2"
+                            aria-labelledby="languageDropdown">
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="javascript:void(0);"
+                                    onclick="changeLanguage('en', 'English')">
+                                    <span>🇬🇧</span> English
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="javascript:void(0);"
+                                    onclick="changeLanguage('hi', 'हिंदी')">
+                                    <span>🇮🇳</span> Hindi (हिंदी)
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="javascript:void(0);"
+                                    onclick="changeLanguage('gu', 'ગુજરાતી')">
+                                    <span>🇮🇳</span> Gujarati (ગુજરાતી)
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    {% block content %}
+
+
+    {% endblock %}
+    <!-- Footer Section -->
+    <footer class="footer-custom pt-5 pb-4">
+        <div class="container">
+            <div class="row gy-4">
+                <div class="col-md-4">
+                    <a class="d-inline-block mb-3" href="{% url 'index' %}">
+                        <img src="{% static 'assets/images/logo.png' %}" alt="BusYatra Logo" height="75">
+                    </a>
+                    <div class="footer-card p-4 mb-3">
+                        <h6 class="fw-bold text-navy-dark mb-2 d-flex align-items-center">
+                            <i class="bi bi-geo-alt-fill me-2 text-primary"></i>Head Office Address
+                        </h6>
+                        <p class="small mb-0 text-secondary" style="line-height: 1.6;">
+                            BusYatra Technologies Pvt. Ltd.<br>
+                            3rd Floor, Tech Park, 5th Main,<br>
+                            Koramangala, Bangalore — 560034<br>
+                            Karnataka, India
+                        </p>
+                    </div>
+
+                </div>
+                <div class="col-md-2 col-6">
+                    <h6 class="footer-heading mb-4">Popular Links</h6>
+                    <ul class="list-unstyled small mb-0">
+                        <li class="mb-2"><a href="{% url 'bus_list' %}" class="text-decoration-none">Search Buses</a>
+                        </li>
+                        <li class="mb-2"><a href="{% url 'user_dashboard' %}" class="text-decoration-none">My
+                                Dashboard</a></li>
+                        <li class="mb-2"><a href="{% url 'manager_dashboard' %}" class="text-decoration-none">Manager
+                                Area</a></li>
+                        <li class="mb-2"><a href="{% url 'admin_dashboard' %}" class="text-decoration-none">Admin
+                                Area</a></li>
+                        <li class="mb-2"><a href="#" class="text-decoration-none">Special Offers</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-2 col-6">
+                    <h6 class="footer-heading mb-4">Company</h6>
+                    <ul class="list-unstyled small mb-0">
+                        <li class="mb-2"><a href="{% url 'about' %}" class="text-decoration-none">About Us</a></li>
+                        <li class="mb-2"><a href="{% url 'contact' %}" class="text-decoration-none">Contact Us</a></li>
+                        <li class="mb-2"><a href="#" class="text-decoration-none">Cancellation Policy</a></li>
+                        <li class="mb-2"><a href="#" class="text-decoration-none">Terms of Service</a></li>
+                        <li class="mb-2"><a href="#" class="text-decoration-none">Privacy Policy</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h6 class="footer-heading mb-4">Newsletter</h6>
+                    <p class="small mb-3 text-secondary">Subscribe to get travel discount coupons and system updates
+                        directly in your inbox.</p>
+                    <div class="input-group">
+                        <input type="email" class="form-control" placeholder="Your Email Address"
+                            aria-label="Your Email Address">
+                        <button class="btn btn-subscribe" type="button" aria-label="Subscribe">
+                            <i class="bi bi-send-fill"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <hr class="my-4">
+            <div class="row align-items-center">
+                <div class="col-md-12 text-center small text-secondary">
+                    &copy; 2026 BusYatra Online Booking Systems. All rights reserved.
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+
+    <!-- Synchronize Django User details with LocalStorage for Customer Dashboard -->
+    {% if request.session.email and login_user %}
+    <script>
+        (function () {
+            let userData = JSON.parse(localStorage.getItem('busyatra_logged_in_user')) || {};
+            userData.name = "{{ login_user.name|escapejs }}";
+            userData.email = "{{ login_user.email|escapejs }}";
+            userData.phone = "{{ login_user.phone|escapejs }}";
+            userData.usertype = "{{ login_user.usertype|escapejs }}";
+            {% if login_user.profile and login_user.profile.name %}
+            userData.profileImage = "{{ login_user.profile.url|escapejs }}";
+            {% else %}
+            userData.profileImage = "";
+            {% endif %}
+            localStorage.setItem('busyatra_logged_in_user', JSON.stringify(userData));
+        })();
+    </script>
+    {% endif %}
+
+    <!-- Hidden Google Translate Element -->
+    <div id="google_translate_element" style="display:none;"></div>
+
+    <script type="text/javascript">
+        function googleTranslateElementInit() {
+            new google.translate.TranslateElement({
+                pageLanguage: 'en',
+                includedLanguages: 'en,hi,gu',
+                autoDisplay: false
+            }, 'google_translate_element');
+        }
+
+        function setCookie(name, value, days) {
+            var expires = "";
+            if (days) {
+                var date = new Date();
+                date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+                expires = "; expires=" + date.toUTCString();
+            }
+            document.cookie = name + "=" + (value || "") + expires + "; path=/";
+        }
+
+        function changeLanguage(langCode, langName) {
+            var currentLang = localStorage.getItem('busyatra_lang') || 'en';
+            if (currentLang === langCode) return;
+
+            localStorage.setItem('busyatra_lang', langCode);
+            localStorage.setItem('busyatra_lang_name', langName);
+
+            setCookie('googtrans', '/en/' + langCode, 30);
+
+            var textEl = document.getElementById('selectedLanguageText');
+            if (textEl) {
+                textEl.textContent = langName;
+            }
+
+            window.location.reload();
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var savedLang = localStorage.getItem('busyatra_lang') || 'en';
+            var savedLangName = localStorage.getItem('busyatra_lang_name') || 'English';
+
+            var textEl = document.getElementById('selectedLanguageText');
+            if (textEl) {
+                textEl.textContent = savedLangName;
+            }
+        });
+    </script>
+    <script type="text/javascript"
+        src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
+    <!-- Swiper JS -->
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <!-- Template Javascript -->
+    <script src="{% static 'assets/js/main.js' %}?v=1.2"></script>
+</body>
+
+</html>
